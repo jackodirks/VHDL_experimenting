@@ -1,0 +1,58 @@
+----------------------------------------------------------------------------------
+-- Company: 
+-- Engineer: 
+-- 
+-- Create Date:    21:26:21 08/26/2015 
+-- Design Name: 
+-- Module Name:    bits_to_seven_segement_translation - Behavioral 
+-- Project Name: 
+-- Target Devices: 
+-- Tool versions: 
+-- Description: 
+--
+-- Dependencies: 
+--
+-- Revision: 
+-- Revision 0.01 - File Created
+-- Additional Comments: 
+--
+----------------------------------------------------------------------------------
+library IEEE;
+use IEEE.STD_LOGIC_1164.ALL;
+
+-- Uncomment the following library declaration if using
+-- arithmetic functions with Signed or Unsigned values
+--use IEEE.NUMERIC_STD.ALL;
+
+-- Uncomment the following library declaration if instantiating
+-- any Xilinx primitives in this code.
+--library UNISIM;
+--use UNISIM.VComponents.all;
+
+entity bits_to_seven_segement_translation is
+    Port ( bit_input : in  STD_LOGIC_VECTOR (3 downto 0);
+           ss_out : out  STD_LOGIC_VECTOR (7 downto 0));
+end bits_to_seven_segement_translation;
+
+architecture Behavioral of bits_to_seven_segement_translation is
+
+begin
+ ss_out <=  "00000011" when (bit_input = "0000") else
+                    "10011111" WHEN (bit_input = "0001") else
+                    "00100101" WHEN (bit_input = "0010") else
+                    "00001101" WHEN (bit_input = "0011") else
+                    "10011001" WHEN (bit_input = "0100") else
+                    "01001001" WHEN (bit_input = "0101") else
+                    "01000001" WHEN (bit_input = "0110") else
+                    "00011111" WHEN (bit_input = "0111") else
+                    "00000001" WHEN (bit_input = "1000") else
+                    "00001001" WHEN (bit_input = "1001") else
+                    "00010001" WHEN (bit_input = "1010") else
+                    "11000001" WHEN (bit_input = "1011") else
+                    "01100011" WHEN (bit_input = "1100") else
+                    "10000101" WHEN (bit_input = "1101") else
+                    "01100001" WHEN (bit_input = "1110") else
+                    "01110001" WHEN (bit_input = "1111") else
+                    "00000000";
+end Behavioral;
+
