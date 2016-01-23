@@ -1,22 +1,3 @@
-----------------------------------------------------------------------------------
--- Company:
--- Engineer:
---
--- Create Date:    20:00:14 01/21/2016
--- Design Name:
--- Module Name:    uart_main - Behavioral
--- Project Name:
--- Target Devices:
--- Tool versions:
--- Description:
---
--- Dependencies:
---
--- Revision:
--- Revision 0.01 - File Created
--- Additional Comments:
---
-----------------------------------------------------------------------------------
 library IEEE;
 use IEEE.STD_LOGIC_1164.ALL;
 
@@ -33,7 +14,7 @@ entity uart_main is
     generic (
     CLOCKSPEED : natural;
     BAUDRATE : natural
-)
+);
 Port (
          rst : in STD_LOGIC;
          clk : in STD_LOGIC;
@@ -49,7 +30,6 @@ end uart_main;
 architecture Behavioral of uart_main is
 
 begin
-
 
 end Behavioral;
 
