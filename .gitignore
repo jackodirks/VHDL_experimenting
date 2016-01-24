@@ -1,3 +1,6 @@
 *
 !*.vhd
 !*/
+!Makefile
+!*.mk
+!README

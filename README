@@ -1,0 +1,9 @@
+This project is basically a huge VHDL experiment. This project is focused on only testbenching.
+
+The project uses GHDL:
+https://github.com/tgingold/ghdl
+And gtkwave, but that should be in your repo's.        
+
+Sources of information:
+Usage of GHDL:
+http://www.armadeus.com/wiki/index.php?title=How_to_make_a_VHDL_design_in_Ubuntu/Debian#Using_Xilinx_command_line_tools_for_shell_syntesis
