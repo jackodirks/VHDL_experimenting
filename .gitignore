@@ -1,6 +1,2 @@
-*
-!*.vhd
-!*/
-!Makefile
-!*.mk
-!README
+simu_workdir/
+*.swp
