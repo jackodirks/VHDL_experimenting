@@ -7,7 +7,7 @@ TESTBENCHFILE := tb_main.vhd
 TESTBENCH := tb_main
 SRC += main_file.vhd $(TESTBENCHFILE)
 WORKFILE = $(WORKDIR)$(WORKNAMEPREFIX)-$(WORKNAMESUFFIX)
-TARGET = $(WORKDIR)$(TESTBENCH).vcdgz
+TARGET = $(WORKDIR)$(TESTBENCH).vcd
 
 TOP := ./
 DIRS := $(shell ls -d */)

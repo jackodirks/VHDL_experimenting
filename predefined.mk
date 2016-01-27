@@ -1,4 +1,0 @@
-STD := 93c
-WORKNAMEPREFIX := work
-WORKNAMESUFFIX := obj93.cf
-WORKDIR := simWorkdir/
