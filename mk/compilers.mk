@@ -1,0 +1,2 @@
+GHDL := ghdl
+VIEUWER := gtkwave

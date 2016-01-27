@@ -7,13 +7,14 @@ entity tb_main is
 
 architecture tb of tb_main is
     component main_file is
-        port (
-                 slide_switch : in  STD_LOGIC_VECTOR (7 downto 0);
-                 led : out  STD_LOGIC_VECTOR (7 downto 0)
-             );
+    Port (
+             slide_switch : in  STD_LOGIC_VECTOR (7 downto 0);
+             led : out  STD_LOGIC_VECTOR (7 downto 0)
+         );
     end component;
-    signal led : STD_LOGIC_VECTOR (7 DOWNTO 0);
-    signal slide_switch : STD_LOGIC_VECTOR(7 DOWNTO 0);
+
+signal led : STD_LOGIC_VECTOR (7 DOWNTO 0);
+signal slide_switch : STD_LOGIC_VECTOR(7 DOWNTO 0);
 begin
     main : main_file
     port map (

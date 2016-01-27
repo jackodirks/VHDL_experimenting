@@ -1,7 +1,7 @@
 #!/bin/bash
-mkdir -p simu
-ghdl --remove --workdir=simu
-ghdl -a --workdir=simu main_file.vhd
-ghdl -a --workdir=simu tb_main.vhd
-ghdl -e --workdir=simu tb_main
-ghdl -r --workdir=simu tb_main
+mkdir -p work
+ghdl --remove --workdir=work
+ghdl -i --work=work --std=93c --workdir=work *.vhd
+ghdl -m --work=work --std=93c --workdir=work tb_main
+ghdl -r --work=work --std=93c --workdir=work tb_main --vcd=work/tb_main.vcd
+gtkwave work/tb_main.vcd
