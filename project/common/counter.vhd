@@ -17,7 +17,6 @@ end counter;
 architecture behavioral of counter is
 
     constant count_bits_count : integer := (integer(ceil(log2(real(match_val)))));
-    --constant count_bits_count : integer := 12;
     signal timer_value : STD_LOGIC_VECTOR(count_bits_count DOWNTO 0) := (others => '0');
     begin
         process (clk_50MHZ)
@@ -26,7 +25,7 @@ architecture behavioral of counter is
                 if (rst = '1') then
                     timer_value <= (others => '0');
                     done <= '0';
-                    elsif unsigned(timer_value) = to_unsigned(match_val - 1, count_bits_count) then
+                elsif unsigned(timer_value) = to_unsigned(match_val - 1, count_bits_count) then
                     done <= '1';
                     timer_value <= (others => '0');
                 else

@@ -23,6 +23,21 @@ architecture tb of tb_main is
          );
     end component;
 
+    component seven_segments_driver is
+        generic (
+        switch_freq : integer
+    );
+    Port (
+             clk_50Mhz           : in  STD_LOGIC;
+             ss_1                : in  STD_LOGIC_VECTOR (3 downto 0);
+             ss_2                : in  STD_LOGIC_VECTOR (3 downto 0);
+             ss_3                : in  STD_LOGIC_VECTOR (3 downto 0);
+             ss_4                : in  STD_LOGIC_VECTOR (3 downto 0);
+             seven_seg_kath      : out  STD_LOGIC_VECTOR (7 downto 0);
+             seven_seg_an        : out  STD_LOGIC_VECTOR (3 downto 0)
+         );
+    end component;
+
 signal led              : STD_LOGIC_VECTOR (7 DOWNTO 0);
 signal slide_switch     : STD_LOGIC_VECTOR(7 DOWNTO 0);
 signal clk              : STD_LOGIC := '0';
