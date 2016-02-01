@@ -7,7 +7,7 @@ TESTBENCHFILE := tb_main.vhd
 TESTBENCH := tb_main
 SRC += main_file.vhd $(TESTBENCHFILE)
 WORKFILE = $(WORKDIR)$(WORKNAMEPREFIX)-$(WORKNAMESUFFIX)
-TARGET = $(WORKDIR)$(TESTBENCH).vcd
+TARGET = $(WORKDIR)$(TESTBENCH).ghw
 
 TOP := ./
 DIRS := $(shell ls -d */)
@@ -31,7 +31,7 @@ $(WORKFILE) : $(SRC)
 	$(GHDL) $(BUILDFLAGS) $(TESTBENCH)
 
 $(TARGET) : $(WORKFILE)
-	$(GHDL) $(RUNFLAGS) $(TESTBENCH) --vcd=$@
+	$(GHDL) $(RUNFLAGS) $(TESTBENCH) --wave=$@ --stop-time=2000us
 
 simulate: run
 	$(VIEUWER) $(TARGET)

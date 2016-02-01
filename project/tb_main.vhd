@@ -28,6 +28,7 @@ signal slide_switch     : STD_LOGIC_VECTOR(7 DOWNTO 0);
 signal clk              : STD_LOGIC := '0';
 signal counter_rst      : STD_LOGIC := '1';
 signal counter_done     : STD_LOGIC;
+signal counter_cur_val  : STD_LOGIC_VECTOR(6 DOWNTO 0);
 begin
     main : main_file
     port map (
@@ -43,7 +44,7 @@ begin
         rst => counter_rst,
         done => counter_done
     );
-    clk <= not clk after 20 ns;
+    clk <= not clk after 10 ns;
     process
     begin
         for I in 0 to 255 loop
@@ -56,8 +57,9 @@ begin
     end process;
    process
    begin
-       counter_rst <= '0';
+        counter_rst <= '0';
         wait until counter_done = '1';
+        counter_rst <= '1';
         assert false report "counter test done" severity note;
         wait;
    end process;

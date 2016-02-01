@@ -11,15 +11,14 @@ entity counter is
         clk_50Mhz   : in STD_LOGIC;
         rst         : in STD_LOGIC;
         done        : out STD_LOGIC
-
      );
 end counter;
 
 architecture behavioral of counter is
 
-    --constant count_bits_count : integer := (integer(ceil(log2(real(match_val)))));
-    constant count_bits_count : integer := 12;
-    signal timer_value : STD_LOGIC_VECTOR(count_bits_count DOWNTO 0);
+    constant count_bits_count : integer := (integer(ceil(log2(real(match_val)))));
+    --constant count_bits_count : integer := 12;
+    signal timer_value : STD_LOGIC_VECTOR(count_bits_count DOWNTO 0) := (others => '0');
     begin
         process (clk_50MHZ)
         begin
@@ -27,8 +26,7 @@ architecture behavioral of counter is
                 if (rst = '1') then
                     timer_value <= (others => '0');
                     done <= '0';
-                elsif timer_value = std_logic_vector(to_unsigned(match_val, count_bits_count)) then
-                    assert false report "dingen" severity note;
+                    elsif unsigned(timer_value) = to_unsigned(match_val - 1, count_bits_count) then
                     done <= '1';
                     timer_value <= (others => '0');
                 else
