@@ -1,35 +1,53 @@
 library IEEE;
 use IEEE.STD_LOGIC_1164.ALL;
 
--- Uncomment the following library declaration if using
--- arithmetic functions with Signed or Unsigned values
---use IEEE.NUMERIC_STD.ALL;
-
--- Uncomment the following library declaration if instantiating
--- any Xilinx primitives in this code.
---library UNISIM;
---use UNISIM.VComponents.all;
+-- A note about parity:
+-- 0: odd parity
+-- 1: even parity
+-- 2: always 0 parity
+-- 3: always 1 parity
+-- if parity_bit is false, this parameter is ignored
 
 entity uart_main is
-    generic (
-    CLOCKSPEED : natural;
-    BAUDRATE : natural
-);
-Port (
-         rst : in STD_LOGIC;
-         clk : in STD_LOGIC;
-         uart_rx : in STD_LOGIC;
-         uart_tx : out STD_LOGIC;
-         data_ready: out STD_LOGIC;
-         send_start: in STD_LOGIC;
-         receved_data : out STD_LOGIC_VECTOR(7 DOWNTO 0);
-         send_data : in STD_LOGIC_VECTOR(7 DOWNTO 0)
-     );
+    generic ( baudrate_in   : integer;
+    pary_bit_in             : boolean;
+    parity_bit_in_type      : integer range 0 to 3;
+    bit_count_in            : integer range 5 to 9;
+    stop_bits_in            : integer range 1 to 2;
+    baudrate_out            : integer;
+    pary_bit_out            : boolean;
+    parity_bit_out_type     : integer range 0 to 3;
+    bit_count_out           : integer range 5 to 9;
+    stop_bits_out           : integer range 1 to 2 );
+    Port (
+        rst             : in STD_LOGIC;
+        clk             : in STD_LOGIC;
+        uart_rx         : in STD_LOGIC;
+        uart_tx         : out STD_LOGIC;
+        send_start      : in STD_LOGIC;
+        send_done       : out STD_LOGIC;
+        send_data       : in STD_LOGIC_VECTOR(8 DOWNTO 0);
+        receved_data    : out STD_LOGIC_VECTOR(8 DOWNTO 0);
+        data_ready      : out STD_LOGIC;
+        data_error      : out STD_LOGIC
+    );
 end uart_main;
 
 architecture Behavioral of uart_main is
+    component simple_multishot_timer is
+        generic ( match_val : integer );
+        port (
+            clk_50Mhz   : in STD_LOGIC;
+            rst         : in STD_LOGIC;
+            done        : out STD_LOGIC
+        );
+    end component;
+
+    constant clockspeed     : integer := 5E7;
+    constant oversampling   : integer := 8;
 
 begin
+    -- Create two clocks. The first one is for receiving and is oversampling * baudrate.
+    -- The second is for sending and is baudrate.
 
 end Behavioral;
-
