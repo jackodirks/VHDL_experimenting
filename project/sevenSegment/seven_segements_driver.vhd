@@ -2,35 +2,31 @@ library IEEE;
 use IEEE.STD_LOGIC_1164.ALL;
 
 entity seven_segments_driver is
-    generic (
-        switch_freq : integer
-            );
+    generic ( switch_freq : integer );
     Port (
-            clk_50Mhz           : in  STD_LOGIC;
-            ss_1                : in  STD_LOGIC_VECTOR (3 downto 0);
-            ss_2                : in  STD_LOGIC_VECTOR (3 downto 0);
-            ss_3                : in  STD_LOGIC_VECTOR (3 downto 0);
-            ss_4                : in  STD_LOGIC_VECTOR (3 downto 0);
-            seven_seg_kath      : out  STD_LOGIC_VECTOR (7 downto 0);
-            seven_seg_an        : out  STD_LOGIC_VECTOR (3 downto 0)
-       );
+        clk_50Mhz           : in  STD_LOGIC;
+        ss_1                : in  STD_LOGIC_VECTOR (3 downto 0);
+        ss_2                : in  STD_LOGIC_VECTOR (3 downto 0);
+        ss_3                : in  STD_LOGIC_VECTOR (3 downto 0);
+        ss_4                : in  STD_LOGIC_VECTOR (3 downto 0);
+        seven_seg_kath      : out  STD_LOGIC_VECTOR (7 downto 0);
+        seven_seg_an        : out  STD_LOGIC_VECTOR (3 downto 0)
+    );
 end seven_segments_driver;
 
 architecture Behavioral of seven_segments_driver is
     component bits_to_seven_segement_translation
         Port (
-                bit_input : in  STD_LOGIC_VECTOR (3 downto 0);
-                ss_out : out  STD_LOGIC_VECTOR (7 downto 0)
-           );
+            bit_input : in  STD_LOGIC_VECTOR (3 downto 0);
+            ss_out : out  STD_LOGIC_VECTOR (7 downto 0)
+        );
     end component;
     component counter is
-        generic (
-        match_val   : integer
-        );
+        generic ( match_val   : integer );
         port (
-             clk_50Mhz   : in STD_LOGIC;
-             rst         : in STD_LOGIC;
-             done        : out STD_LOGIC
+            clk_50Mhz   : in STD_LOGIC;
+            rst         : in STD_LOGIC;
+            done        : out STD_LOGIC
         );
     end component;
     type state_type is (first, second, third, fourth);
@@ -40,6 +36,7 @@ architecture Behavioral of seven_segments_driver is
     signal ss_curVal_out : STD_LOGIC_VECTOR(3 DOWNTO 0);
 
 begin
+
     counter_wait_time : counter
     generic map (
         match_val => 50000000 / switch_freq
@@ -49,6 +46,7 @@ begin
         rst => counter_rst,
         done => counter_done
     );
+
     translator : bits_to_seven_segement_translation
     port map (
         bit_input => ss_curVal_out,
@@ -86,4 +84,3 @@ begin
         end if;
     end process;
 end Behavioral;
-

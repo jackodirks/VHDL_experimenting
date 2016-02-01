@@ -16,6 +16,13 @@ end counter;
 
 architecture behavioral of counter is
 
+    function check_timer_match(X : STD_LOGIC_VECTOR; Y: integer) return boolean is
+    begin
+        return to_integer(unsigned(X)) = Y;
+    end check_timer_match;
+
+    type wait_type is (first, second);
+    signal state : wait_type := first;
     constant count_bits_count : integer := (integer(ceil(log2(real(match_val)))));
     signal timer_value : STD_LOGIC_VECTOR(count_bits_count DOWNTO 0) := (others => '0');
     begin
@@ -25,9 +32,13 @@ architecture behavioral of counter is
                 if (rst = '1') then
                     timer_value <= (others => '0');
                     done <= '0';
-                elsif unsigned(timer_value) = to_unsigned(match_val - 1, count_bits_count) then
+                elsif check_timer_match(timer_value, match_val - 1) and state = first then
                     done <= '1';
-                    timer_value <= (others => '0');
+                    state <= second;
+                elsif check_timer_match(timer_value, match_val - 1) and state = second then
+                    timer_value <= std_logic_vector(to_unsigned(1, timer_value'length));
+                    done <= '1';
+                    state <= first;
                 else
                     timer_value <= std_logic_vector(unsigned(timer_value) + 1);
                     done <= '0';
