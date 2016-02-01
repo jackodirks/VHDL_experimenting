@@ -31,7 +31,6 @@ architecture Behavioral of seven_segments_driver is
     end component;
     type state_type is (first, second, third, fourth);
     signal state : state_type := first;
-    signal counter_rst : STD_LOGIC := '0';
     signal counter_done : STD_LOGIC;
     signal ss_curVal_out : STD_LOGIC_VECTOR(3 DOWNTO 0);
 
@@ -43,7 +42,7 @@ begin
     )
     port map (
         clk_50MHZ => clk_50Mhz,
-        rst => counter_rst,
+        rst => '0',
         done => counter_done
     );
 
@@ -61,25 +60,25 @@ begin
                         state <= second;
                     end if;
                     ss_curVal_out <= ss_1;
-                    seven_seg_an <= "0001";
+                    seven_seg_an <= "1110";
                 when second =>
                     if counter_done = '1' then
                         state <= third;
                     end if;
                     ss_curVal_out <= ss_2;
-                    seven_seg_an <= "0010";
+                    seven_seg_an <= "1101";
                 when third =>
                     if counter_done = '1' then
                         state <= fourth;
                     end if;
                     ss_curVal_out <= ss_3;
-                    seven_seg_an <= "0100";
+                    seven_seg_an <= "1011";
                 when fourth =>
                     if counter_done = '1' then
                         state <= first;
                     end if;
                     ss_curVal_out <= ss_4;
-                    seven_seg_an <= "1000";
+                    seven_seg_an <= "0111";
             end case;
         end if;
     end process;

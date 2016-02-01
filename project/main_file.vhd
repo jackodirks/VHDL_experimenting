@@ -35,7 +35,7 @@ begin
 
     ss_driver : seven_segments_driver
     generic map (
-        switch_freq => 200
+        switch_freq => 400
     )
     port map (
         clk_50Mhz => clk,
