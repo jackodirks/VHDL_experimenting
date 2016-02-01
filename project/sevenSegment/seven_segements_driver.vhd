@@ -21,7 +21,7 @@ architecture Behavioral of seven_segments_driver is
             ss_out : out  STD_LOGIC_VECTOR (7 downto 0)
         );
     end component;
-    component counter is
+    component simple_multishot_timer is
         generic ( match_val   : integer );
         port (
             clk_50Mhz   : in STD_LOGIC;
@@ -31,19 +31,19 @@ architecture Behavioral of seven_segments_driver is
     end component;
     type state_type is (first, second, third, fourth);
     signal state : state_type := first;
-    signal counter_done : STD_LOGIC;
+    signal simple_multishot_timer_done : STD_LOGIC;
     signal ss_curVal_out : STD_LOGIC_VECTOR(3 DOWNTO 0);
 
 begin
 
-    counter_wait_time : counter
+    simple_multishot_timer_wait_time : simple_multishot_timer
     generic map (
         match_val => 50000000 / switch_freq
     )
     port map (
         clk_50MHZ => clk_50Mhz,
         rst => '0',
-        done => counter_done
+        done => simple_multishot_timer_done
     );
 
     translator : bits_to_seven_segement_translation
@@ -56,25 +56,25 @@ begin
         if rising_edge(clk_50MHZ) then
             case state is
                 when first =>
-                    if counter_done = '1' then
+                    if simple_multishot_timer_done = '1' then
                         state <= second;
                     end if;
                     ss_curVal_out <= ss_1;
                     seven_seg_an <= "1110";
                 when second =>
-                    if counter_done = '1' then
+                    if simple_multishot_timer_done = '1' then
                         state <= third;
                     end if;
                     ss_curVal_out <= ss_2;
                     seven_seg_an <= "1101";
                 when third =>
-                    if counter_done = '1' then
+                    if simple_multishot_timer_done = '1' then
                         state <= fourth;
                     end if;
                     ss_curVal_out <= ss_3;
                     seven_seg_an <= "1011";
                 when fourth =>
-                    if counter_done = '1' then
+                    if simple_multishot_timer_done = '1' then
                         state <= first;
                     end if;
                     ss_curVal_out <= ss_4;

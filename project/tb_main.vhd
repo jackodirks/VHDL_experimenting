@@ -7,7 +7,7 @@ entity tb_main is
 
 architecture tb of tb_main is
     -- Component declaration --
-    component counter is
+    component simple_multishot_timer is
         generic ( match_val   : integer );
         port (
             clk_50Mhz   : in STD_LOGIC;
@@ -32,20 +32,20 @@ architecture tb of tb_main is
     signal clk              : STD_LOGIC := '1';
     signal led              : STD_LOGIC_VECTOR (7 DOWNTO 0);
     signal slide_switch     : STD_LOGIC_VECTOR(7 DOWNTO 0);
-    signal counter_rst      : STD_LOGIC := '1';
-    signal counter_done     : STD_LOGIC;
-    signal counter_cur_val  : STD_LOGIC_VECTOR(6 DOWNTO 0);
+    signal simple_multishot_timer_rst      : STD_LOGIC := '1';
+    signal simple_multishot_timer_done     : STD_LOGIC;
+    signal simple_multishot_timer_cur_val  : STD_LOGIC_VECTOR(6 DOWNTO 0);
     signal ss_kathode       : STD_LOGIC_VECTOR(7 DOWNTO 0);
     signal ss_anode         : STD_LOGIC_VECTOR(3 DOWNTO 0);
 begin
-    counter_50 : counter
+    simple_multishot_timer_50 : simple_multishot_timer
     generic map (
         match_val => 50
     )
     port map (
         clk_50MHZ => clk,
-        rst => counter_rst,
-        done => counter_done
+        rst => simple_multishot_timer_rst,
+        done => simple_multishot_timer_done
     );
 
     ss_driver : seven_segments_driver
@@ -65,10 +65,10 @@ begin
     clk <= not clk after 10 ns;
     process
     begin
-        counter_rst <= '0';
-        wait until counter_done = '1';
-        counter_rst <= '1';
-        assert false report "counter test done" severity note;
+        simple_multishot_timer_rst <= '0';
+        wait until simple_multishot_timer_done = '1';
+        simple_multishot_timer_rst <= '1';
+        assert false report "simple_multishot_timer test done" severity note;
         wait;
     end process;
 end tb;
