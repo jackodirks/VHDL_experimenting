@@ -4,7 +4,9 @@ use IEEE.math_real.ALL;
 use IEEE.NUMERIC_STD.ALL;
 
 entity simple_multishot_timer is
-    generic ( match_val : integer );
+    generic (
+        match_val : integer
+    );
     port (
         clk_50Mhz   : in STD_LOGIC;
         rst         : in STD_LOGIC;
@@ -14,13 +16,13 @@ end simple_multishot_timer;
 
 architecture behavioral of simple_multishot_timer is
 
-    function check_timer_match(X : STD_LOGIC_VECTOR; Y: integer) return boolean is
+    function check_timer_match(X : UNSIGNED; Y: integer) return boolean is
     begin
-        return to_integer(unsigned(X)) = Y;
+        return to_integer(X) = Y;
     end check_timer_match;
 
     constant count_bits_count : integer := (integer(ceil(log2(real(match_val)))));
-    signal timer_value : STD_LOGIC_VECTOR(count_bits_count DOWNTO 0) := (others => '0');
+    signal timer_value : UNSIGNED(count_bits_count DOWNTO 0) := (others => '0');
 begin
     process (clk_50MHZ, rst)
     begin
@@ -32,7 +34,7 @@ begin
                 done <= '1';
                 timer_value <= (others => '0');
             else
-                timer_value <= std_logic_vector(unsigned(timer_value) + 1);
+                timer_value <= timer_value + 1;
                 done <= '0';
             end if;
         end if;
