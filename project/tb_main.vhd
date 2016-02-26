@@ -8,7 +8,9 @@ entity tb_main is
 architecture tb of tb_main is
     -- Component declaration --
     component simple_multishot_timer is
-        generic ( match_val   : integer );
+        generic (
+            match_val   : integer
+        );
         port (
             clk_50Mhz   : in STD_LOGIC;
             rst         : in STD_LOGIC;
