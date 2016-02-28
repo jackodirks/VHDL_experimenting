@@ -42,11 +42,16 @@ architecture Behavioral of uart_receiv is
         );
     end component;
 
+    type state_type is (rst, wait_start, start_start, start_bit_one, start_bit_two, start_end,
+    bit_start, bit_read_one, bit_read_two, bit_end, parity_start, parity_read_one, parity_read_two, parity_end, stop_start, stop_read_one, stop_read_two, stop_end);
+
     constant oversampling   : Natural := 4;
     constant receiveSpeed   : integer := integer(clockspeed/(baudrate*oversampling));
 
     signal recv_ticker_rst  : STD_LOGIC := 1;
     signal recv_ticker_done : STD_LOGIC;
+    signal state            : state_type := rst;
+
 begin
 
     receive_ticker : simple_multishot_timer
@@ -58,5 +63,68 @@ begin
         rst         => recv_ticker_rst,
         done        => recv_ticker_done
     );
-end Behavioral;
+
+    -- State transitions
+    process(clk, rst, uart_rx)
+        -- State transition control variables
+        variable ticks_passed   : natural := 0;
+        variable bits_processed : natural := 0;
+    begin
+        if rst = '1' then
+            state <= rst;
+        elsif rising_edge(clk) then
+            case state is
+                when rst =>
+                    ticks_passed := 0;
+                    state <= wait_start;
+                when wait_start =>
+                    ticks_passed := 0;
+                    if uart_rx = '0' then
+                        state <= process_start;
+                    else
+                        state <= wait_start;
+                    end if;
+                when process_start =>
+                    if recv_ticker_done = '1' then
+                        ticks_passed := ticks_passed + 1;
+                        if ticks_passed = oversampling then
+                            state <= bit_start;
+                        else
+                            state <= process_start;
+                        end if;
+                    else
+                        state <= process_start;
+                    end if;
+                when bit_start =>
+                    ticks_passed := 0;
+                    if recv_ticker_done = '1' then
+                        state <= bit_read_one;
+                    else
+                        state <= bit_start;
+                    end if;
+                when bit_read_one =>
+                    if recv_ticker_done = '1' then
+                        state <= bit_read_two;
+                    else
+                        state <= bit_read_one;
+                    end if;
+                when bit_read_two =>
+                    if recv_ticker_done = '1' then
+                        state <= bit_end;
+                    else
+                        state <= bit_read_two;
+                    end if;
+                when bit_end =>
+                    bits_processed := bits_processed + 1;
+                    if bits_processed = bit_count_in then
+                        if parity_bit_in then
+                            state <= parity
+                                     end case;
+                        end if;
+                    end process;
+
+                    process(state, uart_rx)
+                    begin
+                    end process;
+                end Behavioral;
 
