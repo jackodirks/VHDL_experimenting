@@ -85,6 +85,7 @@ begin
                         state <= wait_start;
                     end if;
                 when process_start =>
+                    bits_processed := 0;
                     if recv_ticker_done = '1' then
                         ticks_passed := ticks_passed + 1;
                         if ticks_passed = oversampling then
@@ -115,16 +116,26 @@ begin
                         state <= bit_read_two;
                     end if;
                 when bit_end =>
-                    bits_processed := bits_processed + 1;
-                    if bits_processed = bit_count_in then
-                        if parity_bit_in then
-                            state <= parity
-                                     end case;
+                    if recv_ticker_done = '1' then
+                        bits_processed := bits_processed + 1;
+                        if bits_processed = bit_count_in then
+                            if parity_bit_in then
+                                state <= parity_start;
+                            else
+                                state <= stop_start;
+                            end if;
+                        else
+                            state <= bit_start;
                         end if;
-                    end process;
+                    else
+                        state <= bit_end;
+                    end if;
+            end case;
+        end if;
+    end process;
 
-                    process(state, uart_rx)
-                    begin
-                    end process;
-                end Behavioral;
+    process(state, uart_rx)
+    begin
+    end process;
+end Behavioral;
 
