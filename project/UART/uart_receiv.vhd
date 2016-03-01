@@ -93,8 +93,8 @@ begin
                 when wait_start =>
                     bits_processed := 0;
                     state <= simple_state_transition(start_start, wait_start, uart_rx);
+                -- start_start, start_bit_one, start_bit_two, start_end,
                 when start_start =>
-                    -- start_start, start_bit_one, start_bit_two, start_end,
                     state <= simple_state_transition(start_start, start_bit_one, recv_ticker_done);
                 when start_bit_one =>
                     state <= simple_state_transition(start_bit_one, start_bit_two, recv_ticker_done);
@@ -213,11 +213,11 @@ begin
                     when 0 =>
                         parity_error <= even xor bit_two;
                     when 1 =>
-                        parity_error <= not (even xor bit_two);
+                        parity_error <= even xnor bit_two;
                     when 2 =>
-                        parity_error <= not bit_two;
-                    when 3 =>
                         parity_error <= bit_two;
+                    when 3 =>
+                        parity_error <= not bit_two;
                 end case;
         end case;
     end process;
