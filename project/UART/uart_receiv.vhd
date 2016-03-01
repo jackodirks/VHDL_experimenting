@@ -86,7 +86,7 @@ begin
             state <= rst;
         elsif rising_edge(clk) then
             case state is
--- rst, wait_start,
+                -- rst, wait_start,
                 when rst =>
                     bits_processed := 0;
                     state <= wait_start;
@@ -94,7 +94,7 @@ begin
                     bits_processed := 0;
                     state <= simple_state_transition(start_start, wait_start, uart_rx);
                 when start_start =>
--- start_start, start_bit_one, start_bit_two, start_end,
+                    -- start_start, start_bit_one, start_bit_two, start_end,
                     state <= simple_state_transition(start_start, start_bit_one, recv_ticker_done);
                 when start_bit_one =>
                     state <= simple_state_transition(start_bit_one, start_bit_two, recv_ticker_done);
@@ -102,7 +102,7 @@ begin
                     state <= simple_state_transition(start_bit_two, start_end, recv_ticker_done);
                 when start_end =>
                     state <= simple_state_transition(start_end, bit_start, recv_ticker_done);
---bit_start, bit_read_one, bit_read_two, bit_end,
+                --bit_start, bit_read_one, bit_read_two, bit_end,
                 when bit_start =>
                     state <= simple_state_transition(bit_start, bit_read_one, recv_ticker_done);
                 when bit_read_one =>
@@ -124,7 +124,7 @@ begin
                     else
                         state <= bit_end;
                     end if;
--- parity_start, parity_read_one, parity_read_two, parity_end,
+                -- parity_start, parity_read_one, parity_read_two, parity_end,
                 when parity_start =>
                     state <= simple_state_transition(parity_start, parity_read_one, recv_ticker_done);
                 when parity_read_one =>
@@ -133,7 +133,7 @@ begin
                     state <= simple_state_transition(parity_read_two, parity_end, recv_ticker_done);
                 when parity_end =>
                     state <= simple_state_transition(parity_end, stop_start, recv_ticker_done);
--- stop_start, stop_read_one, stop_read_two, stop_end);
+                -- stop_start, stop_read_one, stop_read_two, stop_end);
                 when stop_start =>
                     state <= simple_state_transition(stop_start, stop_bit_one, recv_ticker_done);
                 when stop_bit_one =>
@@ -156,7 +156,70 @@ begin
     end process;
 
     process(state)
+        variable data_buffer    : STD_LOGIC_VECTOR(bit_count_in DOWNTO 0) := (others => '0');
+        variable bit_one        : STD_LOGIC := '0';
+        variable bit_two        : STD_LOGIC := '0';
+        variable even           : STD_LOGIC := '1';
     begin
+        case state is
+            when rst|wait_start =>
+                received_data <= (others => '0');
+                data_ready <= '0';
+                parity_error <= '0';
+                data_error <= '0';
+                recv_ticker_rst <= '1';
+            when start_start|start_end|bit_start|bit_end|parity_start|parity_end =>
+                received_data <= (others => '0');
+                data_ready <= '0';
+                parity_error <= '0';
+                recv_ticker_rst <= '0';
+            when start_bit_one|bit_one|parity_read_one =>
+                bit_one := uart_rx;
+                received_data <= (others => '0');
+                data_ready <= '0';
+                parity_error <= '0';
+                recv_ticker_rst <= '0';
+            when start_bit_two =>
+                received_data <= (others => '0');
+                data_ready <= '0';
+                parity_error <= '0';
+                recv_ticker_rst <= '0';
+                bit_two := uart_rx;
+                if (bit_two /= bit_one or bit_two /= '0') then
+                    data_error <= '1';
+                end if;
+            when bit_two =>
+                received_data <= (others => '0');
+                data_ready <= '0';
+                parity_error <= '0';
+                recv_ticker_rst <= '0';
+                bit_two := uart_rx;
+                if (bit_two /= bit_one) then
+                    data_error <= '1';
+                end if;
+                data_buffer := data_buffer(bit_count_in - 1 DOWNTO 0) & bit_two;
+                if parity_bit_in and (parity_bit_in_type = 0 or parity_bit_in_type = 1) and bit_two = '1' then
+                    even := not even;
+                end if;
+            when parity_read_two =>
+                received_data <= (others => '0');
+                data_ready <= '0';
+                recv_ticker_rst <= '0';
+                bit_two := uart_rx;
+                if (bit_two /= bit_one) then
+                    data_error <= '1';
+                end if;
+                case parity_bit_in_type is
+                    when 0 =>
+                        parity_error <= even xor bit_two;
+                    when 1 =>
+                        parity_error <= not (even xor bit_two);
+                    when 2 =>
+                        parity_error <= not bit_two;
+                    when 3 =>
+                        parity_error <= bit_two;
+                end case;
+        end case;
     end process;
 end Behavioral;
 
