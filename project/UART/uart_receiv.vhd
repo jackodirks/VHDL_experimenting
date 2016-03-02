@@ -14,7 +14,7 @@ entity uart_receiv is
     generic (
         baudrate                : Natural;
         clockspeed              : Natural;
-        pary_bit_in             : boolean;
+        parity_bit_in             : boolean;
         parity_bit_in_type      : Natural range 0 to 3;
         bit_count_in            : Natural range 5 to 9;
         stop_bits_in            : Natural range 1 to 2
@@ -23,7 +23,7 @@ entity uart_receiv is
         rst                     : in    STD_LOGIC;
         clk                     : in    STD_LOGIC;
         uart_rx                 : in    STD_LOGIC;
-        receved_data            : out   STD_LOGIC_VECTOR(8 DOWNTO 0);
+        received_data           : out   STD_LOGIC_VECTOR(8 DOWNTO 0);
         data_ready              : out   STD_LOGIC;                    -- Signals that data has been received.
         parity_error            : out   STD_LOGIC;                    -- Signals that the parity check has failed, is zero if there was none
         data_error              : out   STD_LOGIC                     -- Signals that data receiving has encoutered errors
@@ -55,7 +55,7 @@ architecture Behavioral of uart_receiv is
     signal recv_ticker_done : STD_LOGIC;
     signal state            : state_type := rst;
 
-    function simple_state_transition(if0: state_type, if1 : state_type, var: STD_LOGIC) return state_type is
+    function simple_state_transition(if0: state_type; if1 : state_type; var: STD_LOGIC) return state_type is
     begin
         if var = '1' then
             return if1;
@@ -219,6 +219,10 @@ begin
                     when 3 =>
                         parity_error <= not bit_two;
                 end case;
+            when stop_start|stop_bit_one|stop_bit_two|stop_end =>
+                received_data <= data_buffer;
+                data_ready <= '1';
+                recv_ticker_rst <= '0';
         end case;
     end process;
 end Behavioral;
