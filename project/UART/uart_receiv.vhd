@@ -42,18 +42,18 @@ architecture Behavioral of uart_receiv is
         );
     end component;
 
-    type state_type is (rst, wait_start,
+    type state_type is (rst_state, wait_start,
     start_start, start_bit_one, start_bit_two, start_end,
     bit_start, bit_read_one, bit_read_two, bit_end,
     parity_start, parity_read_one, parity_read_two, parity_end,
-    stop_start, stop_read_one, stop_read_two, stop_end);
+    stop_start, stop_bit_one, stop_bit_two, stop_end);
 
     constant oversampling   : Natural := 4;
     constant receiveSpeed   : integer := integer(clockspeed/(baudrate*oversampling));
 
-    signal recv_ticker_rst  : STD_LOGIC := 1;
+    signal recv_ticker_rst  : STD_LOGIC := '1';
     signal recv_ticker_done : STD_LOGIC;
-    signal state            : state_type := rst;
+    signal state            : state_type := rst_state;
 
     function simple_state_transition(if0: state_type; if1 : state_type; var: STD_LOGIC) return state_type is
     begin
@@ -83,11 +83,11 @@ begin
         variable stop_bits_processed    : natural := 0;
     begin
         if rst = '1' then
-            state <= rst;
+            state <= rst_state;
         elsif rising_edge(clk) then
             case state is
-                -- rst, wait_start,
-                when rst =>
+                -- rst_state, wait_start,
+                when rst_state =>
                     bits_processed := 0;
                     state <= wait_start;
                 when wait_start =>
@@ -150,7 +150,7 @@ begin
                         state <= stop_bit_two;
                     end if;
                 when stop_end =>
-                    simple_state_transition(stop_end, stop_start, recv_ticker_done);
+                    state <= simple_state_transition(stop_end, stop_start, recv_ticker_done);
             end case;
         end if;
     end process;
@@ -162,7 +162,7 @@ begin
         variable even           : STD_LOGIC := '1';
     begin
         case state is
-            when rst|wait_start =>
+            when rst_state|wait_start =>
                 received_data <= (others => '0');
                 data_ready <= '0';
                 parity_error <= '0';
@@ -173,7 +173,7 @@ begin
                 data_ready <= '0';
                 parity_error <= '0';
                 recv_ticker_rst <= '0';
-            when start_bit_one|bit_one|parity_read_one =>
+            when start_bit_one|bit_read_one|parity_read_one =>
                 bit_one := uart_rx;
                 received_data <= (others => '0');
                 data_ready <= '0';
@@ -188,7 +188,7 @@ begin
                 if (bit_two /= bit_one or bit_two /= '0') then
                     data_error <= '1';
                 end if;
-            when bit_two =>
+            when bit_read_two =>
                 received_data <= (others => '0');
                 data_ready <= '0';
                 parity_error <= '0';
