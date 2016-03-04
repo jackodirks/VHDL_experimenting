@@ -21,7 +21,7 @@ architecture behavioral of simple_multishot_timer is
         return to_integer(X) = Y;
     end check_timer_match;
 
-    constant count_bits_count : integer := (integer(ceil(log2(real(match_val)))));
+    constant count_bits_count : integer := (integer(ceil(log2(real(match_val))))) - 1;
     signal timer_value : UNSIGNED(count_bits_count DOWNTO 0) := (others => '0');
 begin
     process (clk_50MHZ, rst)
