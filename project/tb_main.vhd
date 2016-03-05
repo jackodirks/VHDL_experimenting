@@ -110,6 +110,14 @@ architecture tb of tb_main is
     signal uart_data_1_par_err              : STD_LOGIC;
     signal uart_data_1_dat_err              : STD_LOGIC;
 
+    signal uart_data_2_rst                  : STD_LOGIC := '1';
+    signal uart_data_2_rx                   : STD_LOGIC := '1';
+    signal uart_data_2                      : STD_LOGIC_VECTOR(8 DOWNTO 0);
+    signal uart_data_2_ready                : STD_LOGIC;
+    signal uart_data_2_par_err              : STD_LOGIC;
+    signal uart_data_2_dat_err              : STD_LOGIC;
+
+
     signal tests                            : STD_LOGIC_VECTOR(1 DOWNTO 0) := "00";
 begin
     simple_multishot_timer_50 : simple_multishot_timer
@@ -155,6 +163,25 @@ begin
         data_error => uart_data_1_dat_err
     );
 
+    uart_2 : uart_receiv
+    generic map (
+        baudrate => 236400,
+        clockspeed => 50000000,
+        parity_bit_in => true,
+        parity_bit_in_type => 0,
+        bit_count_in => 8,
+        stop_bits_in => 1
+    )
+    port map (
+        rst => uart_data_2_rst,
+        clk => clk,
+        uart_rx => uart_data_2_rx,
+        received_data => uart_data_2,
+        data_ready => uart_data_2_ready,
+        parity_error => uart_data_2_par_err,
+        data_error => uart_data_2_dat_err
+    );
+
     clock_gen : process
     begin
         if tests /= "11" then
@@ -165,7 +192,6 @@ begin
         end if;
     end process;
 
-    --clk <= not clk after 10 ns;
     process
     begin
         simple_multishot_timer_rst <= '0';
