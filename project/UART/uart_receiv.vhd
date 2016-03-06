@@ -178,7 +178,7 @@ begin
                 data_ready <= '0';
                 parity_error <= '0';
                 recv_ticker_rst <= '0';
-            when start_end|bit_start|bit_end|parity_start|parity_end =>
+            when start_end|bit_start|bit_end|parity_start =>
                 received_data <= (others => '0');
                 data_ready <= '0';
                 parity_error <= '0';
@@ -221,14 +221,18 @@ begin
                 end if;
                 case parity_bit_in_type is
                     when 0 =>
-                        parity_error <= even xor bit_two;
-                    when 1 =>
                         parity_error <= even xnor bit_two;
+                    when 1 =>
+                        parity_error <= even xor bit_two;
                     when 2 =>
                         parity_error <= bit_two;
                     when 3 =>
                         parity_error <= not bit_two;
                 end case;
+            when parity_end=>
+                recv_ticker_rst <= '0';
+                data_ready <= '0';
+                received_data <= (others => '0');
             when stop_start|stop_end =>
                 recv_ticker_rst <= '0';
             when stop_bit_one =>

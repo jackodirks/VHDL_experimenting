@@ -31,7 +31,7 @@ $(WORKFILE) : $(SRC)
 	$(GHDL) $(BUILDFLAGS) $(TESTBENCH)
 
 $(TARGET) : $(WORKFILE)
-	$(GHDL) $(RUNFLAGS) $(TESTBENCH) --wave=$@ --stop-time=11000us
+	$(GHDL) $(RUNFLAGS) $(TESTBENCH) --wave=$@
 
 simulate: run
 	$(VIEUWER) $(TARGET)

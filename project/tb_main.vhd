@@ -117,8 +117,7 @@ architecture tb of tb_main is
     signal uart_data_2_par_err              : STD_LOGIC;
     signal uart_data_2_dat_err              : STD_LOGIC;
 
-
-    signal tests                            : STD_LOGIC_VECTOR(1 DOWNTO 0) := "00";
+    signal tests                            : STD_LOGIC_VECTOR(2 DOWNTO 0) := (others => '0');
 begin
     simple_multishot_timer_50 : simple_multishot_timer
     generic map (
@@ -170,7 +169,7 @@ begin
         parity_bit_in => true,
         parity_bit_in_type => 0,
         bit_count_in => 8,
-        stop_bits_in => 1
+        stop_bits_in => 2
     )
     port map (
         rst => uart_data_2_rst,
@@ -184,7 +183,7 @@ begin
 
     clock_gen : process
     begin
-        if tests /= "11" then
+        if tests /= "111" then
             clk <= not clk;
             wait for 10 ns;
         else
@@ -225,6 +224,40 @@ begin
         uart_data_1_rst <= '1';
         assert false report "UART_data_1 test done" severity note;
         tests(1) <= '1';
+        wait;
+    end process;
+
+    process
+        variable data_buffer    : STD_LOGIC_VECTOR(7 DOWNTO 0);
+        variable odd            : STD_LOGIC := '0';
+    begin
+        uart_data_2_rst <= '0';
+        wait for 4230 ns;
+        for D in 0 to 255 loop
+            data_buffer := STD_LOGIC_VECTOR(to_unsigned(D, data_buffer'length));
+            uart_data_2_rx <= '0';
+            for I in 7 DOWNTO 0 loop
+                wait for 4230 ns;
+                uart_data_2_rx <= data_buffer(I);
+                if data_buffer(I) = '1' then
+                    odd := not odd;
+                end if;
+            end loop;
+            wait for 4230 ns;
+            -- Send the parity bit
+            uart_data_2_rx <= odd;
+            wait for 4230 ns;
+            uart_data_2_rx <= '1';
+            wait until uart_data_2_ready = '1';
+            wait for 4230 ns;
+            assert uart_data_2(7 DOWNTO 0) = data_buffer report "uart_data_2 unexpected value" severity error;
+            assert uart_data_2_dat_err = '0' report "uart_data_2_dat_err unexpected value" severity error;
+            assert uart_data_2_par_err = '0' report "uart_data_2_par_err unexpected value" severity error;
+            wait for 2115 ns;
+        end loop;
+        uart_data_2_rst <= '1';
+        assert false report "UART_data_2 test done" severity note;
+        tests(2) <= '1';
         wait;
     end process;
 end tb;
