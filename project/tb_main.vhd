@@ -227,6 +227,7 @@ begin
         wait for 100 ns;
         assert data_safe_8_bit_data_out = test_data report "data_safe_8_bit_data_out has changed unexpected" severity error;
         tests(2) <= '1';
+        assert false report "data_safe_8_bit tests done" severity note;
         wait;
     end process;
 
