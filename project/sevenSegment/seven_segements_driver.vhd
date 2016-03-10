@@ -3,10 +3,11 @@ use IEEE.STD_LOGIC_1164.ALL;
 
 entity seven_segments_driver is
     generic (
-        switch_freq         : integer
+        switch_freq         : natural;
+        clockspeed          : natural
     );
     Port (
-        clk_50Mhz           : in    STD_LOGIC;
+        clk                 : in    STD_LOGIC;
         ss_1                : in    STD_LOGIC_VECTOR (3 downto 0);
         ss_2                : in    STD_LOGIC_VECTOR (3 downto 0);
         ss_3                : in    STD_LOGIC_VECTOR (3 downto 0);
@@ -30,7 +31,7 @@ architecture Behavioral of seven_segments_driver is
             match_val       : integer
         );
         port (
-            clk_50Mhz       : in    STD_LOGIC;
+            clk             : in    STD_LOGIC;
             rst             : in    STD_LOGIC;
             done            : out   STD_LOGIC
         );
@@ -46,10 +47,10 @@ begin
 
     simple_multishot_timer_wait_time : simple_multishot_timer
     generic map (
-        match_val   => 50000000 / switch_freq
+        match_val   => clockspeed / switch_freq
     )
     port map (
-        clk_50MHZ   => clk_50Mhz,
+        clk         => clk,
         rst         => '0',
         done        => simple_multishot_timer_done
     );
@@ -59,9 +60,9 @@ begin
         bit_input   => ss_curVal_out,
         ss_out      => seven_seg_kath
     );
-    process (clk_50Mhz, ss_1, ss_2, ss_3, ss_4)
+    process (clk, ss_1, ss_2, ss_3, ss_4)
     begin
-        if rising_edge(clk_50MHZ) then
+        if rising_edge(clk) then
             case state is
                 when first =>
                     if simple_multishot_timer_done = '1' then

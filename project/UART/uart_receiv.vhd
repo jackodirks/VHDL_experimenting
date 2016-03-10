@@ -14,7 +14,7 @@ entity uart_receiv is
     generic (
         baudrate                : Natural;
         clockspeed              : Natural;
-        parity_bit_in             : boolean;
+        parity_bit_in           : boolean;
         parity_bit_in_type      : Natural range 0 to 3;
         bit_count_in            : Natural range 5 to 9;
         stop_bits_in            : Natural range 1 to 2
@@ -36,7 +36,7 @@ architecture Behavioral of uart_receiv is
             match_val : integer
         );
         port (
-            clk_50Mhz   : in STD_LOGIC;
+            clk   : in STD_LOGIC;
             rst         : in STD_LOGIC;
             done        : out STD_LOGIC
         );
@@ -71,7 +71,7 @@ begin
         match_val   => receiveSpeed
     )
     port map (
-        clk_50Mhz   => clk,
+        clk   => clk,
         rst         => recv_ticker_rst,
         done        => recv_ticker_done
     );
