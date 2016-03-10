@@ -65,7 +65,7 @@ architecture Behavioral of main_file is
         );
     end component;
 
-    signal rst;
+    signal rst			: STD_LOGIC;
     signal safe_data : STD_LOGIC_VECTOR(7 DOWNTO 0);
 
     signal uart_receive_done    : STD_LOGIC;
@@ -100,8 +100,8 @@ begin
         clk => clk,
         ss_1 => slide_switch(7 DOWNTO 4),
         ss_2 => slide_switch(3 DOWNTO 0),
-        ss_3 => "0100",
-        ss_4 => "1000",
+        ss_3 => safe_data(7 DOWNTO 4),
+        ss_4 => safe_data(3 DOWNTO 0),
         seven_seg_kath => seven_seg_kath,
         seven_seg_an => seven_seg_an
     );
@@ -114,6 +114,13 @@ begin
         data_in => uart_received_data( 7 DOWNTO 0),
         data_out => safe_data
     );
-    rst <=  JA_gpio(0) or push_button(0);
+    rst <=  push_button(0) or JA_gpio(0);
+	 led(2) <= rst;
+	 led(3) <= push_button(0);
+	 led(4) <= push_button(1);
+	 led(5) <= push_button(2);
+	 led(6) <= push_button(3);
+	 led(7) <= '0';
+	 JA_gpio(3 DOWNTO 2) <= (others => '0');
 end Behavioral;
 

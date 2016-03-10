@@ -153,11 +153,13 @@ begin
                     end if;
                 when stop_end =>
                     state <= simple_state_transition(stop_end, stop_start, recv_ticker_done);
+					 when others =>
+						  state <= rst_state;
             end case;
         end if;
     end process;
 
-    process(state)
+    process(state, uart_rx)
         variable data_buffer    : STD_LOGIC_VECTOR(bit_count_in DOWNTO 0) := (others => '0');
         variable bit_one        : STD_LOGIC := '0';
         variable bit_two        : STD_LOGIC := '0';
@@ -246,6 +248,9 @@ begin
                 received_data <= data_buffer;
                 data_ready <= '1';
                 recv_ticker_rst <= '0';
+				when others =>
+						data_error <= '1';
+						parity_error <= '1';
         end case;
     end process;
 end Behavioral;
