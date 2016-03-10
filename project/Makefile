@@ -5,7 +5,7 @@ include mk/predefined.mk
 
 TESTBENCHFILE := tb_main.vhd
 TESTBENCH := tb_main
-SRC += main_file.vhd $(TESTBENCHFILE)
+SRC += $(TESTBENCHFILE)
 WORKFILE = $(WORKDIR)$(WORKNAMEPREFIX)-$(WORKNAMESUFFIX)
 TARGET = $(WORKDIR)$(TESTBENCH).ghw
 
