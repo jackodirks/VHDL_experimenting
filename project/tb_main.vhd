@@ -46,22 +46,26 @@ architecture tb of tb_main is
         end loop;
         return hex(1 to hexlen);
     end hstr;
+
     -- Component declaration --
     component simple_multishot_timer is
         generic (
-            match_val   : integer
+            match_val : integer
         );
         port (
-            clk_50Mhz   : in STD_LOGIC;
+            clk         : in STD_LOGIC;
             rst         : in STD_LOGIC;
             done        : out STD_LOGIC
         );
     end component;
 
     component seven_segments_driver is
-        generic ( switch_freq : integer );
+        generic (
+            switch_freq         : natural;
+            clockspeed          : natural
+        );
         Port (
-            clk_50Mhz           : in  STD_LOGIC;
+            clk                 : in  STD_LOGIC;
             ss_1                : in  STD_LOGIC_VECTOR (3 downto 0);
             ss_2                : in  STD_LOGIC_VECTOR (3 downto 0);
             ss_3                : in  STD_LOGIC_VECTOR (3 downto 0);
@@ -70,6 +74,7 @@ architecture tb of tb_main is
             seven_seg_an        : out  STD_LOGIC_VECTOR (3 downto 0)
         );
     end component;
+
     component uart_receiv is
         generic (
             baudrate                : Natural;
@@ -90,8 +95,18 @@ architecture tb of tb_main is
         );
     end component;
 
-    constant baud_118200_ns                 : natural := 4230;          -- 1/118200 seconds
-    constant baud_9600_ns                   : natural := 104167;        -- 1/9600 seconds
+    component data_safe_8_bit is
+        port (
+            clk         : in STD_LOGIC;
+            rst         : in STD_LOGIC;
+            read        : in STD_LOGIC;
+            data_in     : in STD_LOGIC_VECTOR(7 DOWNTO 0);
+            data_out    : out STD_LOGIC_VECTOR(7 DOWNTO 0)
+        );
+    end component;
+
+    -- Constant declaration --
+    constant clock_period_ns                : natural := 40;
 
     -- Signal declaration --
     signal clk                              : STD_LOGIC := '1';
@@ -117,24 +132,31 @@ architecture tb of tb_main is
     signal uart_data_2_par_err              : STD_LOGIC;
     signal uart_data_2_dat_err              : STD_LOGIC;
 
+    signal data_safe_8_bit_rst              : STD_LOGIC := '1';
+    signal data_safe_8_bit_read             : STD_LOGIC := '0';
+    signal data_safe_8_bit_data_in          : STD_LOGIC_VECTOR(7 DOWNTO 0) := (others => '0');
+    signal data_safe_8_bit_data_out         : STD_LOGIC_VECTOR(7 DOWNTO 0);
+
     signal tests                            : STD_LOGIC_VECTOR(2 DOWNTO 0) := (others => '0');
 begin
-    simple_multishot_timer_50 : simple_multishot_timer
+
+    simple_multishot_timer_500 : simple_multishot_timer
     generic map (
-        match_val => 50
+        match_val => 500
     )
     port map (
-        clk_50MHZ => clk,
+        clk => clk,
         rst => simple_multishot_timer_rst,
         done => simple_multishot_timer_done
     );
 
     ss_driver : seven_segments_driver
     generic map (
-        switch_freq => 2000000
+        switch_freq => 2000000,
+        clockspeed => 50000000
     )
     port map (
-        clk_50Mhz => clk,
+        clk => clk,
         ss_1 => "0001",
         ss_2 => "0010",
         ss_3 => "0100",
@@ -180,6 +202,33 @@ begin
         parity_error => uart_data_2_par_err,
         data_error => uart_data_2_dat_err
     );
+
+    data_safe : data_safe_8_bit
+    port map (
+        clk => clk,
+        rst => data_safe_8_bit_rst,
+        read => data_safe_8_bit_read,
+        data_in => data_safe_8_bit_data_in,
+        data_out => data_safe_8_bit_data_out
+    );
+
+    process
+        variable test_data : STD_LOGIC_VECTOR(7 DOWNTO 0 ) := "01100010";
+    begin
+        data_safe_8_bit_data_in <= test_data;
+        data_safe_8_bit_rst <= '0';
+        wait for 100 ns;
+        assert data_safe_8_bit_data_out = "00000000" report "data_safe_8_bit_data_out has changed to early" severity error;
+        data_safe_8_bit_read <= '1';
+        wait for 100 ns;
+        assert data_safe_8_bit_data_out = test_data report "data_safe_8_bit_data_out has not changed while this was expected" severity error;
+        data_safe_8_bit_read <= '0';
+        data_safe_8_bit_data_in <= "01010101";
+        wait for 100 ns;
+        assert data_safe_8_bit_data_out = test_data report "data_safe_8_bit_data_out has changed unexpected" severity error;
+        tests(2) <= '1';
+        wait;
+    end process;
 
     clock_gen : process
     begin
