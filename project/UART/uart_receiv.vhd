@@ -94,7 +94,7 @@ begin
     data_shifter : process(clk, sub_rst, barrel_data_in, barrel_enable)
         variable last_known_enable  : boolean := false;
         variable last_known_data    : STD_LOGIC := '0';
-        variable barrel_data      : STD_LOGIC_VECTOR(bit_count_in DOWNTO 0) := (others => '0');
+        variable barrel_data      : STD_LOGIC_VECTOR(bit_count_in-1 DOWNTO 0) := (others => '0');
     begin
         if sub_rst then
             last_known_enable   := false;
@@ -107,11 +107,13 @@ begin
             else
                 if last_known_enable then
                     last_known_enable := false;
-                    barrel_data := barrel_data(7 DOWNTO 0) & last_known_data;
+                    -- Little endian, transform it on the fly to big endian
+                    barrel_data := last_known_data & barrel_data(bit_count_in-1 DOWNTO 1);
                 end if;
             end if;
         end if;
-        received_data <= barrel_data;
+        received_data( 8 DOWNTO bit_count_in) <= (others => '0');
+        received_data( bit_count_in-1 DOWNTO 0) <= barrel_data;
     end process;
 
     data_error_tester : process(clk, sub_rst, data_error_b1_in, data_error_b1_en, data_error_b2_in, data_error_b2_en, data_error_ref)
@@ -158,18 +160,18 @@ begin
                 end if;
             end if;
             if parity_test then
-                    case parity_bit_in_type is
-                        when 0 =>
-                            parity_error_out := even xnor parity_ref;
-                        when 1 =>
-                            parity_error_out := even xor parity_ref;
-                        when 2 =>
-                            parity_error_out := parity_ref;
-                        when 3 =>
-                            parity_error_out := not parity_ref;
-                        when others =>
-                            parity_error_out := '1';
-                    end case;
+                case parity_bit_in_type is
+                    when 0 =>
+                        parity_error_out := even xnor parity_ref;
+                    when 1 =>
+                        parity_error_out := even xor parity_ref;
+                    when 2 =>
+                        parity_error_out := parity_ref;
+                    when 3 =>
+                        parity_error_out := not parity_ref;
+                    when others =>
+                        parity_error_out := '1';
+                end case;
             end if;
         end if;
         parity_error <= parity_error_out;
@@ -273,146 +275,146 @@ begin
 
     process(state, uart_rx)
     begin
-            case state is
-                when rst_state =>
+        case state is
+            when rst_state =>
                 -- Signal assignments
-                    recv_ticker_rst     <= '1';
-                    barrel_enable       <= false;
-                    barrel_data_in      <= '0';
-                    sub_rst             <= true;
-                    data_error_b1_in    <= '0';
-                    data_error_b1_en    <= false;
-                    data_error_b2_in    <= '0';
-                    data_error_b2_en    <= false;
-                    data_error_ref      <= '0';
-                    parity_test         <= false;
-                    parity_ref          <= '0';
-                    ready_enable        <= false;
-                when wait_start =>
+                recv_ticker_rst     <= '1';
+                barrel_enable       <= false;
+                barrel_data_in      <= '0';
+                sub_rst             <= true;
+                data_error_b1_in    <= '0';
+                data_error_b1_en    <= false;
+                data_error_b2_in    <= '0';
+                data_error_b2_en    <= false;
+                data_error_ref      <= '0';
+                parity_test         <= false;
+                parity_ref          <= '0';
+                ready_enable        <= false;
+            when wait_start =>
                 -- Signal assignments
-                    recv_ticker_rst     <= '1';
-                    barrel_enable       <= false;
-                    barrel_data_in      <= '0';
-                    sub_rst             <= false;
-                    data_error_b1_in    <= '0';
-                    data_error_b1_en    <= false;
-                    data_error_b2_in    <= '0';
-                    data_error_b2_en    <= false;
-                    data_error_ref      <= '0';
-                    parity_test         <= false;
-                    parity_ref          <= '0';
-                    ready_enable        <= false;
-                when start_start =>
+                recv_ticker_rst     <= '1';
+                barrel_enable       <= false;
+                barrel_data_in      <= '0';
+                sub_rst             <= false;
+                data_error_b1_in    <= '0';
+                data_error_b1_en    <= false;
+                data_error_b2_in    <= '0';
+                data_error_b2_en    <= false;
+                data_error_ref      <= '0';
+                parity_test         <= false;
+                parity_ref          <= '0';
+                ready_enable        <= false;
+            when start_start =>
                 -- Signal assignments
-                    recv_ticker_rst     <= '0';
-                    barrel_enable       <= false;
-                    barrel_data_in      <= '0';
-                    sub_rst             <= true;
-                    data_error_b1_in    <= '0';
-                    data_error_b1_en    <= false;
-                    data_error_b2_in    <= '0';
-                    data_error_b2_en    <= false;
-                    data_error_ref      <= '0';
-                    parity_test         <= false;
-                    parity_ref          <= '0';
-                    ready_enable        <= false;
-                when start_end|bit_start|bit_end|parity_start|parity_end|stop_start|stop_end =>
-                    recv_ticker_rst     <= '0';
-                    barrel_enable       <= false;
-                    barrel_data_in      <= '0';
-                    sub_rst             <= false;
-                    data_error_b1_in    <= '0';
-                    data_error_b1_en    <= false;
-                    data_error_b2_in    <= '0';
-                    data_error_b2_en    <= false;
-                    data_error_ref      <= '0';
-                    parity_test         <= false;
-                    parity_ref          <= '0';
-                    ready_enable        <= false;
-                when start_bit_one|bit_read_one|parity_read_one|stop_bit_one =>
+                recv_ticker_rst     <= '0';
+                barrel_enable       <= false;
+                barrel_data_in      <= '0';
+                sub_rst             <= true;
+                data_error_b1_in    <= '0';
+                data_error_b1_en    <= false;
+                data_error_b2_in    <= '0';
+                data_error_b2_en    <= false;
+                data_error_ref      <= '0';
+                parity_test         <= false;
+                parity_ref          <= '0';
+                ready_enable        <= false;
+            when start_end|bit_start|bit_end|parity_start|parity_end|stop_start|stop_end =>
+                recv_ticker_rst     <= '0';
+                barrel_enable       <= false;
+                barrel_data_in      <= '0';
+                sub_rst             <= false;
+                data_error_b1_in    <= '0';
+                data_error_b1_en    <= false;
+                data_error_b2_in    <= '0';
+                data_error_b2_en    <= false;
+                data_error_ref      <= '0';
+                parity_test         <= false;
+                parity_ref          <= '0';
+                ready_enable        <= false;
+            when start_bit_one|bit_read_one|parity_read_one|stop_bit_one =>
                 -- Signal assignments
-                    recv_ticker_rst     <= '0';
-                    barrel_enable       <= false;
-                    barrel_data_in      <= '0';
-                    sub_rst             <= false;
-                    data_error_b1_in    <= uart_rx;
-                    data_error_b1_en    <= true;
-                    data_error_b2_in    <= '0';
-                    data_error_b2_en    <= false;
-                    data_error_ref      <= '0';
-                    parity_test         <= false;
-                    parity_ref          <= '0';
-                    ready_enable        <= false;
-                when start_bit_two =>
+                recv_ticker_rst     <= '0';
+                barrel_enable       <= false;
+                barrel_data_in      <= '0';
+                sub_rst             <= false;
+                data_error_b1_in    <= uart_rx;
+                data_error_b1_en    <= true;
+                data_error_b2_in    <= '0';
+                data_error_b2_en    <= false;
+                data_error_ref      <= '0';
+                parity_test         <= false;
+                parity_ref          <= '0';
+                ready_enable        <= false;
+            when start_bit_two =>
                 -- Signal assignments
-                    recv_ticker_rst     <= '0';
-                    barrel_enable       <= false;
-                    barrel_data_in      <= '0';
-                    sub_rst             <= false;
-                    data_error_b1_in    <= '0';
-                    data_error_b1_en    <= false;
-                    data_error_b2_in    <= uart_rx;
-                    data_error_b2_en    <= true;
-                    data_error_ref      <= '0';
-                    parity_test         <= false;
-                    parity_ref          <= '0';
-                    ready_enable        <= false;
-                when bit_read_two =>
+                recv_ticker_rst     <= '0';
+                barrel_enable       <= false;
+                barrel_data_in      <= '0';
+                sub_rst             <= false;
+                data_error_b1_in    <= '0';
+                data_error_b1_en    <= false;
+                data_error_b2_in    <= uart_rx;
+                data_error_b2_en    <= true;
+                data_error_ref      <= '0';
+                parity_test         <= false;
+                parity_ref          <= '0';
+                ready_enable        <= false;
+            when bit_read_two =>
                 -- Signal assignments
-                    recv_ticker_rst     <= '0';
-                    barrel_enable       <= true;
-                    barrel_data_in      <= uart_rx;
-                    sub_rst             <= false;
-                    data_error_b1_in    <= '0';
-                    data_error_b1_en    <= false;
-                    data_error_b2_in    <= uart_rx;
-                    data_error_b2_en    <= true;
-                    data_error_ref      <= uart_rx;
-                    parity_test         <= false;
-                    parity_ref          <= '0';
-                    ready_enable        <= false;
-                when parity_read_two =>
+                recv_ticker_rst     <= '0';
+                barrel_enable       <= true;
+                barrel_data_in      <= uart_rx;
+                sub_rst             <= false;
+                data_error_b1_in    <= '0';
+                data_error_b1_en    <= false;
+                data_error_b2_in    <= uart_rx;
+                data_error_b2_en    <= true;
+                data_error_ref      <= uart_rx;
+                parity_test         <= false;
+                parity_ref          <= '0';
+                ready_enable        <= false;
+            when parity_read_two =>
                 -- Signal assignments
-                    recv_ticker_rst     <= '0';
-                    barrel_enable       <= false;
-                    barrel_data_in      <= '0';
-                    sub_rst             <= false;
-                    data_error_b1_in    <= '0';
-                    data_error_b1_en    <= false;
-                    data_error_b2_in    <= uart_rx;
-                    data_error_b2_en    <= true;
-                    data_error_ref      <= uart_rx;
-                    parity_test         <= true;
-                    parity_ref          <= uart_rx;
-                    ready_enable        <= false;
-                when stop_bit_two =>
-                    recv_ticker_rst     <= '0';
-                    barrel_enable       <= false;
-                    barrel_data_in      <= '0';
-                    sub_rst             <= false;
-                    data_error_b1_in    <= '0';
-                    data_error_b1_en    <= false;
-                    data_error_b2_in    <=  uart_rx;
-                    data_error_b2_en    <= true;
-                    data_error_ref      <= '1';
-                    parity_test         <= false;
-                    parity_ref          <= '0';
-                    ready_enable        <= true;
-                when others =>
+                recv_ticker_rst     <= '0';
+                barrel_enable       <= false;
+                barrel_data_in      <= '0';
+                sub_rst             <= false;
+                data_error_b1_in    <= '0';
+                data_error_b1_en    <= false;
+                data_error_b2_in    <= uart_rx;
+                data_error_b2_en    <= true;
+                data_error_ref      <= uart_rx;
+                parity_test         <= true;
+                parity_ref          <= uart_rx;
+                ready_enable        <= false;
+            when stop_bit_two =>
+                recv_ticker_rst     <= '0';
+                barrel_enable       <= false;
+                barrel_data_in      <= '0';
+                sub_rst             <= false;
+                data_error_b1_in    <= '0';
+                data_error_b1_en    <= false;
+                data_error_b2_in    <=  uart_rx;
+                data_error_b2_en    <= true;
+                data_error_ref      <= '1';
+                parity_test         <= false;
+                parity_ref          <= '0';
+                ready_enable        <= true;
+            when others =>
                 -- Signal assignments
-                    recv_ticker_rst     <= '0';
-                    barrel_enable       <= false;
-                    barrel_data_in      <= '0';
-                    sub_rst             <= false;
-                    data_error_b1_in    <= '0';
-                    data_error_b1_en    <= false;
-                    data_error_b2_in    <= '0';
-                    data_error_b2_en    <= true;
-                    data_error_ref      <= '0';
-                    parity_test         <= false;
-                    parity_ref          <= '0';
-                    ready_enable        <= false;
-            end case;
+                recv_ticker_rst     <= '0';
+                barrel_enable       <= false;
+                barrel_data_in      <= '0';
+                sub_rst             <= false;
+                data_error_b1_in    <= '0';
+                data_error_b1_en    <= false;
+                data_error_b2_in    <= '0';
+                data_error_b2_en    <= true;
+                data_error_ref      <= '0';
+                parity_test         <= false;
+                parity_ref          <= '0';
+                ready_enable        <= false;
+        end case;
     end process;
 end Behavioral;
 

@@ -73,11 +73,16 @@ architecture Behavioral of main_file is
 
     signal uart_receive_done    : STD_LOGIC;
     signal uart_received_data   : STD_LOGIC_VECTOR(8 DOWNTO 0);
+    signal uart_data_error         :STD_LOGIC;
+    signal uart_parity_error       :STD_LOGIC;
+    signal uart_rx                 : STD_LOGIC;
+
+    signal receiv_data_inv         : STD_LOGIC_VECTOR( 8 DOWNTO 0);
 
 begin
     uart_receiver : uart_receiv
     generic map (
-        baudrate => 9600,
+        baudrate => 115107,
         clockspeed => 50000000,
         parity_bit_in => false,
         parity_bit_in_type => 0,
@@ -87,11 +92,11 @@ begin
     port map (
         rst => rst,
         clk => clk,
-        uart_rx => JA_gpio(1),
+        uart_rx => uart_rx,
         received_data=> uart_received_data,
         data_ready => uart_receive_done,
-        parity_error => led(0),
-        data_error => led(1)
+        parity_error => uart_parity_error,
+        data_error => uart_data_error
     );
 
     ss_driver : seven_segments_driver
@@ -103,8 +108,8 @@ begin
         clk => clk,
         ss_1 => safe_data(3 DOWNTO 0),
         ss_2 => safe_data(7 DOWNTO 4),
-        ss_3 => uart_received_data(7 DOWNTO 4),
-        ss_4 => uart_received_data(3 DOWNTO 0),
+        ss_3 => slide_switch(3 DOWNTO 0),
+        ss_4 => slide_switch(7 DOWNTO 4),
         seven_seg_kath => seven_seg_kath,
         seven_seg_an => seven_seg_an
     );
@@ -118,13 +123,17 @@ begin
         data_out => safe_data
     );
     rst <=  push_button(0) or JA_gpio(0);
-    led(2) <= rst;
-    led(3) <= push_button(0);
-    led(4) <= uart_receive_done;
-    led(5) <= JA_gpio(1);
+    led(0) <= uart_data_error;
+    led(1) <= uart_parity_error;
+    led(2) <= uart_receive_done;
+    led(3) <= uart_rx;
+    led(4) <= '0';
+    led(5) <= '0';
     led(6) <= '0';
-    led(7) <= '0';
-    JA_gpio(3) <= rst;
+    led(7) <= rst;
+    --led(7 DOWNTO 0) <= safe_data(7 DOWNTO 0);
+    JA_gpio(3) <= not push_button(0);
     JA_gpio(2) <= '1';
+    uart_rx <= JA_gpio(1);
 end Behavioral;
 
