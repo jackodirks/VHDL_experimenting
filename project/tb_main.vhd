@@ -191,7 +191,7 @@ begin
         parity_bit_in => true,
         parity_bit_in_type => 0,
         bit_count_in => 8,
-        stop_bits_in => 2
+        stop_bits_in => 1
     )
     port map (
         rst => uart_data_2_rst,
@@ -281,6 +281,7 @@ begin
         variable data_buffer    : STD_LOGIC_VECTOR(7 DOWNTO 0);
         variable odd            : STD_LOGIC := '0';
     begin
+        uart_data_2_rx <= '1';
         uart_data_2_rst <= '0';
         wait for 4230 ns;
         for D in 0 to 255 loop
@@ -299,11 +300,11 @@ begin
             wait for 4230 ns;
             uart_data_2_rx <= '1';
             wait until uart_data_2_ready = '1';
-            wait for 4230 ns;
             assert uart_data_2(7 DOWNTO 0) = data_buffer report "uart_data_2 unexpected value" severity error;
             assert uart_data_2_dat_err = '0' report "uart_data_2_dat_err unexpected value" severity error;
             assert uart_data_2_par_err = '0' report "uart_data_2_par_err unexpected value" severity error;
             wait for 2115 ns;
+            odd := '0';
         end loop;
         uart_data_2_rst <= '1';
         assert false report "UART_data_2 test done" severity note;
