@@ -1,6 +1,9 @@
 library IEEE;
 use IEEE.STD_LOGIC_1164.ALL;
-
+-- JA_gpio(0) general reset
+-- JA_gpio(1) UART_rx
+-- JA_gpio(2) UART_tx
+-- JA_GPIO(3) unassigned
 entity main_file is
     Port (
         --rst : in STD_LOGIC;
@@ -74,7 +77,7 @@ architecture Behavioral of main_file is
 begin
     uart_receiver : uart_receiv
     generic map (
-        baudrate => 118200,
+        baudrate => 9600,
         clockspeed => 50000000,
         parity_bit_in => false,
         parity_bit_in_type => 0,
@@ -98,10 +101,10 @@ begin
     )
     port map (
         clk => clk,
-        ss_1 => slide_switch(7 DOWNTO 4),
-        ss_2 => slide_switch(3 DOWNTO 0),
-        ss_3 => safe_data(7 DOWNTO 4),
-        ss_4 => safe_data(3 DOWNTO 0),
+        ss_1 => safe_data(3 DOWNTO 0),
+        ss_2 => safe_data(7 DOWNTO 4),
+        ss_3 => uart_received_data(7 DOWNTO 4),
+        ss_4 => uart_received_data(3 DOWNTO 0),
         seven_seg_kath => seven_seg_kath,
         seven_seg_an => seven_seg_an
     );
@@ -117,10 +120,11 @@ begin
     rst <=  push_button(0) or JA_gpio(0);
 	 led(2) <= rst;
 	 led(3) <= push_button(0);
-	 led(4) <= push_button(1);
-	 led(5) <= push_button(2);
-	 led(6) <= push_button(3);
+	 led(4) <= uart_receive_done;
+	 led(5) <= JA_gpio(1);
+	 led(6) <= '0';
 	 led(7) <= '0';
-	 JA_gpio(3 DOWNTO 2) <= (others => '0');
+	 JA_gpio(3) <= '0';
+	 JA_gpio(2) <= '1';
 end Behavioral;
 

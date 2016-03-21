@@ -167,8 +167,8 @@ begin
     begin
         case state is
             when rst_state =>
-                received_data <= (others => '0');
-                data_ready <= '0';
+                received_data <= "010101011";
+                data_ready <= '1';
                 parity_error <= '0';
                 data_error <= '0';
                 recv_ticker_rst <= '1';
