@@ -3,7 +3,7 @@ use IEEE.STD_LOGIC_1164.ALL;
 -- JA_gpio(0) general reset
 -- JA_gpio(1) UART_rx
 -- JA_gpio(2) UART_tx
--- JA_GPIO(3) unassigned
+-- JA_GPIO(3) Reset to uC
 entity main_file is
     Port (
         --rst : in STD_LOGIC;
@@ -68,7 +68,7 @@ architecture Behavioral of main_file is
         );
     end component;
 
-    signal rst			: STD_LOGIC;
+    signal rst          : STD_LOGIC;
     signal safe_data : STD_LOGIC_VECTOR(7 DOWNTO 0);
 
     signal uart_receive_done    : STD_LOGIC;
@@ -118,13 +118,13 @@ begin
         data_out => safe_data
     );
     rst <=  push_button(0) or JA_gpio(0);
-	 led(2) <= rst;
-	 led(3) <= push_button(0);
-	 led(4) <= uart_receive_done;
-	 led(5) <= JA_gpio(1);
-	 led(6) <= '0';
-	 led(7) <= '0';
-	 JA_gpio(3) <= '0';
-	 JA_gpio(2) <= '1';
+    led(2) <= rst;
+    led(3) <= push_button(0);
+    led(4) <= uart_receive_done;
+    led(5) <= JA_gpio(1);
+    led(6) <= '0';
+    led(7) <= '0';
+    JA_gpio(3) <= rst;
+    JA_gpio(2) <= '1';
 end Behavioral;
 
