@@ -153,8 +153,8 @@ begin
                     end if;
                 when stop_end =>
                     state <= simple_state_transition(stop_end, stop_start, recv_ticker_done);
-					 when others =>
-						  state <= rst_state;
+                     when others =>
+                          state <= rst_state;
             end case;
         end if;
     end process;
@@ -162,95 +162,128 @@ begin
     process(state, uart_rx)
         variable data_buffer    : STD_LOGIC_VECTOR(bit_count_in DOWNTO 0) := (others => '0');
         variable bit_one        : STD_LOGIC := '0';
-        variable bit_two        : STD_LOGIC := '0';
         variable even           : STD_LOGIC := '1';
+        variable data_err_v     : STD_LOGIC := '0';
+        variable parity_err_v   : STD_LOGIC := '0';
+        variable data_ready_v   : STD_LOGIC := '0';
     begin
         case state is
             when rst_state =>
-                received_data <= "010101011";
-                data_ready <= '1';
-                parity_error <= '0';
-                data_error <= '0';
+                -- Variable assignments
+                data_buffer     := (others => '0');
+                bit_one         := '0';
+                even            := '1';
+                data_err_v      := '0';
+                parity_err_v    := '0';
+                data_ready_v    := '0';
+                -- Signal assignments
+                received_data   <= "010101011";
+                data_ready      <= '1';
+                parity_error    <= '0';
+                data_error      <= '0';
                 recv_ticker_rst <= '1';
             when wait_start =>
+                -- Signal assignments
+                received_data   <= data_buffer;
+                data_ready      <= data_ready_v;
+                parity_error    <= parity_err_v;
+                data_error      <= data_err_v;
                 recv_ticker_rst <= '1';
             when start_start =>
-                data_buffer := (others => '0');
-                received_data <= (others => '0');
-                data_ready <= '0';
-                parity_error <= '0';
+                -- Variable assignments
+                data_buffer     := (others => '0');
+                data_ready_v    := '0';
+                parity_err_v    := '0';
+                data_err_v      := '0';
+                bit_one         := '0';
+                even            := '1';
+                -- Signal assignments
+                received_data   <= data_buffer;
+                data_ready      <= '0';
+                parity_error    <= '0';
+                data_error      <= '0';
                 recv_ticker_rst <= '0';
-            when start_end|bit_start|bit_end|parity_start =>
-                received_data <= (others => '0');
-                data_ready <= '0';
-                parity_error <= '0';
+            when start_end|bit_start|bit_end|parity_start|parity_end|stop_start|stop_end =>
+                received_data   <= data_buffer;
+                data_ready      <= '0';
+                parity_error    <= '0';
+                data_error      <= '0';
                 recv_ticker_rst <= '0';
-            when start_bit_one|bit_read_one|parity_read_one =>
-                bit_one := uart_rx;
-                received_data <= (others => '0');
-                data_ready <= '0';
-                parity_error <= '0';
+            when start_bit_one|bit_read_one|parity_read_one|stop_bit_one =>
+                -- Variable assignments
+                bit_one         := uart_rx;
+                -- Signal assignments
+                received_data   <= data_buffer;
+                data_ready      <= '0';
+                parity_error    <= '0';
+                data_error      <= '0';
                 recv_ticker_rst <= '0';
             when start_bit_two =>
-                received_data <= (others => '0');
-                data_ready <= '0';
-                parity_error <= '0';
-                recv_ticker_rst <= '0';
-                bit_two := uart_rx;
-                if (bit_two /= bit_one or bit_two /= '0') then
-                    data_error <= '1';
+                -- Variable assignments
+                if (uart_rx /= bit_one or uart_rx /= '0') then
+                    data_err_v := '1';
                 end if;
+                -- Signal assignments
+                received_data   <= data_buffer;
+                data_ready      <= '0';
+                parity_error    <= '0';
+                data_error      <= '0';
+                recv_ticker_rst <= '0';
             when bit_read_two =>
-                received_data <= (others => '0');
-                data_ready <= '0';
-                parity_error <= '0';
+                --Variable assignments
+                if (uart_rx /= bit_one) then
+                    data_err_v  := '1';
+                end if;
+                data_buffer     := data_buffer(bit_count_in - 1 DOWNTO 0) & uart_rx;
+                if parity_bit_in and (parity_bit_in_type = 0 or parity_bit_in_type = 1) and bit_one = '1' then
+                    even        := not even;
+                end if;
+                -- Signal assignments
+                received_data   <= data_buffer;
+                data_ready      <= '0';
+                parity_error    <= '0';
+                data_error      <= '0';
                 recv_ticker_rst <= '0';
-                bit_two := uart_rx;
-                if (bit_two /= bit_one) then
-                    data_error <= '1';
-                end if;
-                data_buffer := data_buffer(bit_count_in - 1 DOWNTO 0) & bit_two;
-                if parity_bit_in and (parity_bit_in_type = 0 or parity_bit_in_type = 1) and bit_two = '1' then
-                    even := not even;
-                end if;
             when parity_read_two =>
-                received_data <= (others => '0');
-                data_ready <= '0';
-                recv_ticker_rst <= '0';
-                bit_two := uart_rx;
-                if (bit_two /= bit_one) then
-                    data_error <= '1';
+                -- Variable assignments
+                if (uart_rx /= bit_one) then
+                    data_err_v  := '1';
                 end if;
                 case parity_bit_in_type is
                     when 0 =>
-                        parity_error <= even xnor bit_two;
+                        parity_err_v := even xnor uart_rx;
                     when 1 =>
-                        parity_error <= even xor bit_two;
+                        parity_err_v := even xor uart_rx;
                     when 2 =>
-                        parity_error <= bit_two;
+                        parity_err_v := uart_rx;
                     when 3 =>
-                        parity_error <= not bit_two;
+                        parity_err_v := not uart_rx;
                 end case;
-            when parity_end=>
-                recv_ticker_rst <= '0';
-                data_ready <= '0';
-                received_data <= (others => '0');
-            when stop_start|stop_end =>
-                recv_ticker_rst <= '0';
-            when stop_bit_one =>
-                bit_one := uart_rx;
+                -- Signal assignments
+                received_data   <= data_buffer;
+                data_ready      <= '0';
+                parity_error    <= '0';
+                data_error      <= '0';
                 recv_ticker_rst <= '0';
             when stop_bit_two =>
-                bit_two := uart_rx;
-                if (bit_two /= bit_one) then
-                    data_error <= '1';
+                -- Variable assignments
+                if (uart_rx /= bit_one or uart_rx /= '1') then
+                    data_err_v  := '1';
                 end if;
-                received_data <= data_buffer;
-                data_ready <= '1';
+                data_ready_v    := '1';
+                -- Signal assignments
+                received_data   <= data_buffer;
+                data_ready      <= '0';
+                parity_error    <= '0';
+                data_error      <= '0';
                 recv_ticker_rst <= '0';
-				when others =>
-						data_error <= '1';
-						parity_error <= '1';
+            when others =>
+                -- Signal assignments
+                received_data   <= data_buffer;
+                data_ready      <= '0';
+                parity_error    <= '1';
+                data_error      <= '1';
+                recv_ticker_rst <= '0';
         end case;
     end process;
 end Behavioral;
