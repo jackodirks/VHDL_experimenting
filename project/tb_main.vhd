@@ -259,7 +259,7 @@ begin
         for D in 0 to 255 loop
             data_buffer := STD_LOGIC_VECTOR(to_unsigned(D, data_buffer'length));
             uart_data_1_rx <= '0';
-            for I in 7 DOWNTO 0 loop
+            for I in 0 TO 7 loop
                 wait for 4230 ns;
                 uart_data_1_rx <= data_buffer(I);
             end loop;
@@ -287,7 +287,7 @@ begin
         for D in 0 to 255 loop
             data_buffer := STD_LOGIC_VECTOR(to_unsigned(D, data_buffer'length));
             uart_data_2_rx <= '0';
-            for I in 7 DOWNTO 0 loop
+            for I in 0 to 7 loop
                 wait for 4230 ns;
                 uart_data_2_rx <= data_buffer(I);
                 if data_buffer(I) = '1' then
