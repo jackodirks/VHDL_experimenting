@@ -132,6 +132,13 @@ architecture tb of tb_main is
     signal uart_data_2_par_err              : STD_LOGIC;
     signal uart_data_2_dat_err              : STD_LOGIC;
 
+    signal uart_data_3_rst                  : STD_LOGIC := '1';
+    signal uart_data_3_rx                   : STD_LOGIC := '1';
+    signal uart_data_3                      : STD_LOGIC_VECTOR(8 DOWNTO 0);
+    signal uart_data_3_ready                : STD_LOGIC;
+    signal uart_data_3_par_err              : STD_LOGIC;
+    signal uart_data_3_dat_err              : STD_LOGIC;
+
     signal data_safe_8_bit_rst              : STD_LOGIC := '1';
     signal data_safe_8_bit_read             : STD_LOGIC := '0';
     signal data_safe_8_bit_data_in          : STD_LOGIC_VECTOR(7 DOWNTO 0) := (others => '0');
@@ -190,6 +197,25 @@ begin
         clockspeed => 50000000,
         parity_bit_in => true,
         parity_bit_in_type => 0,
+        bit_count_in => 8,
+        stop_bits_in => 2
+    )
+    port map (
+        rst => uart_data_2_rst,
+        clk => clk,
+        uart_rx => uart_data_2_rx,
+        received_data => uart_data_2,
+        data_ready => uart_data_2_ready,
+        parity_error => uart_data_2_par_err,
+        data_error => uart_data_2_dat_err
+    );
+
+    uart_3 : uart_receiv
+    generic map (
+        baudrate => 236400,
+        clockspeed => 50000000,
+        parity_bit_in => true,
+        parity_bit_in_type => 1,
         bit_count_in => 8,
         stop_bits_in => 1
     )
@@ -284,7 +310,7 @@ begin
         uart_data_2_rx <= '1';
         uart_data_2_rst <= '0';
         wait for 4230 ns;
-        for D in 0 to 255 loop
+        for D in 0 to 128 loop
             data_buffer := STD_LOGIC_VECTOR(to_unsigned(D, data_buffer'length));
             uart_data_2_rx <= '0';
             for I in 0 to 7 loop

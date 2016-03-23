@@ -46,7 +46,7 @@ architecture Behavioral of uart_receiv is
     start_start, start_bit_one, start_bit_two, start_end,
     bit_start, bit_read_one, bit_read_two, bit_end,
     parity_start, parity_read_one, parity_read_two, parity_end,
-    stop_start, stop_bit_one, stop_bit_two, stop_end);
+    stop_start, stop_bit_one, stop_bit_two, stop_bit_two_final, stop_end);
 
     constant oversampling   : Natural := 4;
     constant receiveSpeed   : integer := integer(clockspeed/(baudrate*oversampling));
@@ -137,10 +137,11 @@ begin
     end process;
 
     parity_tester : process(clk, sub_rst, barrel_data_in, barrel_enable, parity_test, parity_ref)
-        variable last_known_enable  : boolean := false;
-        variable last_known_data    : STD_LOGIC := '0';
-        variable parity_error_out   : STD_LOGIC := '0';
-        variable even               : STD_LOGIC := '1';
+        variable last_known_enable      : boolean := false;
+        variable last_known_data        : STD_LOGIC := '0';
+        variable parity_error_out       : STD_LOGIC := '0';
+        variable parity_ref_reg         : STD_LOGIC := '0';
+        variable even                   : STD_LOGIC := '1';
     begin
         if sub_rst then
             last_known_enable   := false;
@@ -159,6 +160,7 @@ begin
                     end if;
                 end if;
             end if;
+
             if parity_test then
                 case parity_bit_in_type is
                     when 0 =>
@@ -253,18 +255,20 @@ begin
                 when stop_start =>
                     state <= simple_state_transition(stop_start, stop_bit_one, recv_ticker_done);
                 when stop_bit_one =>
-                    state <= simple_state_transition(stop_bit_one, stop_bit_two, recv_ticker_done);
+                    if stop_bits_processed = stop_bits_in - 1 then
+                        state <= simple_state_transition(stop_bit_one, stop_bit_two_final, recv_ticker_done);
+                    else
+                        state <= simple_state_transition(stop_bit_one, stop_bit_two, recv_ticker_done);
+                    end if;
                 when stop_bit_two =>
                     if recv_ticker_done = '1' then
                         stop_bits_processed := stop_bits_processed + 1;
-                        if stop_bits_processed = stop_bits_in then
-                            state <= wait_start;
-                        else
-                            state <= stop_end;
-                        end if;
+                        state <= stop_end;
                     else
                         state <= stop_bit_two;
                     end if;
+                when stop_bit_two_final =>
+                    state <= simple_state_transition(stop_bit_two_final, wait_start, recv_ticker_done);
                 when stop_end =>
                     state <= simple_state_transition(stop_end, stop_start, recv_ticker_done);
                 when others =>
@@ -384,10 +388,28 @@ begin
                 data_error_b2_in    <= uart_rx;
                 data_error_b2_en    <= true;
                 data_error_ref      <= uart_rx;
-                parity_test         <= true;
-                parity_ref          <= uart_rx;
+                if parity_bit_in then
+                    parity_test         <= true;
+                    parity_ref          <= uart_rx;
+                else
+                    parity_test         <= false;
+                    parity_ref          <= '0';
+                end if;
                 ready_enable        <= false;
             when stop_bit_two =>
+                recv_ticker_rst     <= '0';
+                barrel_enable       <= false;
+                barrel_data_in      <= '0';
+                sub_rst             <= false;
+                data_error_b1_in    <= '0';
+                data_error_b1_en    <= false;
+                data_error_b2_in    <=  uart_rx;
+                data_error_b2_en    <= true;
+                data_error_ref      <= '1';
+                parity_test         <= false;
+                parity_ref          <= '0';
+                ready_enable        <= false;
+            when stop_bit_two_final =>
                 recv_ticker_rst     <= '0';
                 barrel_enable       <= false;
                 barrel_data_in      <= '0';
