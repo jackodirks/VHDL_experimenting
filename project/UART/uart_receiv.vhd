@@ -389,11 +389,11 @@ begin
                 data_error_b2_en    <= true;
                 data_error_ref      <= uart_rx;
                 if parity_bit_in then
-                    parity_test         <= true;
-                    parity_ref          <= uart_rx;
+                    parity_test     <= true;
+                    parity_ref      <= uart_rx;
                 else
-                    parity_test         <= false;
-                    parity_ref          <= '0';
+                    parity_test     <= false;
+                    parity_ref      <= '0';
                 end if;
                 ready_enable        <= false;
             when stop_bit_two =>
