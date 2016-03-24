@@ -73,9 +73,10 @@ architecture Behavioral of main_file is
 
     signal uart_receive_done    : STD_LOGIC;
     signal uart_received_data   : STD_LOGIC_VECTOR(8 DOWNTO 0);
-    signal uart_data_error         :STD_LOGIC;
-    signal uart_parity_error       :STD_LOGIC;
-    signal uart_rx                 : STD_LOGIC;
+    signal uart_data_error      : STD_LOGIC;
+    signal uart_parity_error    : STD_LOGIC;
+    signal uart_rx              : STD_LOGIC;
+    signal uart_data_ready      : STD_LOGIC;
 
 begin
     uart_receiver : uart_receiv
@@ -116,7 +117,7 @@ begin
     port map (
         clk => clk,
         rst => rst,
-        read => uart_receive_done,
+        read => uart_data_ready,
         data_in => uart_received_data( 7 DOWNTO 0),
         data_out => safe_data
     );
@@ -124,14 +125,15 @@ begin
     led(0) <= uart_data_error;
     led(1) <= uart_parity_error;
     led(2) <= uart_receive_done;
-    led(3) <= uart_rx;
-    led(4) <= '0';
-    led(5) <= '0';
-    led(6) <= '0';
+    led(3) <= '0';
+    led(4) <= push_button(1);
+    led(5) <= push_button(2);
+    led(6) <= push_button(3);
     led(7) <= rst;
     --led(7 DOWNTO 0) <= safe_data(7 DOWNTO 0);
     JA_gpio(3) <= not push_button(0);
     JA_gpio(2) <= '1';
     uart_rx <= JA_gpio(1);
+    uart_data_ready <= uart_receive_done and not uart_data_error;
 end Behavioral;
 
