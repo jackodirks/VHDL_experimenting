@@ -107,7 +107,6 @@ begin
             else
                 if last_known_enable then
                     last_known_enable := false;
-                    -- Little endian, transform it on the fly to big endian
                     barrel_data := last_known_data & barrel_data(bit_count_in-1 DOWNTO 1);
                 end if;
             end if;

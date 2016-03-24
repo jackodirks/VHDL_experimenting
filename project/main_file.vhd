@@ -77,15 +77,13 @@ architecture Behavioral of main_file is
     signal uart_parity_error       :STD_LOGIC;
     signal uart_rx                 : STD_LOGIC;
 
-    signal receiv_data_inv         : STD_LOGIC_VECTOR( 8 DOWNTO 0);
-
 begin
     uart_receiver : uart_receiv
     generic map (
         baudrate => 115107,
         clockspeed => 50000000,
-        parity_bit_in => false,
-        parity_bit_in_type => 0,
+        parity_bit_in => true,
+        parity_bit_in_type => 1,
         bit_count_in => 8,
         stop_bits_in => 1
     )
