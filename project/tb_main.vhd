@@ -169,7 +169,7 @@ architecture tb of tb_main is
     signal data_safe_8_bit_data_in          : STD_LOGIC_VECTOR(7 DOWNTO 0) := (others => '0');
     signal data_safe_8_bit_data_out         : STD_LOGIC_VECTOR(7 DOWNTO 0);
 
-    signal tests                            : STD_LOGIC_VECTOR(2 DOWNTO 0) := (others => '0');
+    signal tests                            : STD_LOGIC_VECTOR(3 DOWNTO 0) := (others => '0');
 begin
 
     simple_multishot_timer_500 : simple_multishot_timer
@@ -250,7 +250,8 @@ begin
         uart_rx => uart_receiv_3_rx,
         received_data => uart_receiv_3,
         data_ready => uart_receiv_3_ready,
-        parity_error => uart_receiv_3_par_err
+        parity_error => uart_receiv_3_par_err,
+        data_error => uart_receiv_3_dat_err
     );
 
     uart_send_1 : uart_transmit
@@ -280,9 +281,40 @@ begin
         data_out => data_safe_8_bit_data_out
     );
 
+    uart_send_1_test : process
+        variable data_buffer   : STD_LOGIC_VECTOR(7 DOWNTO 0) := (others => '0');
+    begin
+        uart_send_1_rst <= '0';
+        wait for 100 ns;
+        assert uart_send_1_tx = '1' report "uart_send_1_rx does not default to 1" severity error;
+        assert uart_send_1_ready = '1' report "uart_send_1_ready does not default to 1" severity error;
+        for D in 0 to 1 loop
+            data_buffer := STD_LOGIC_VECTOR(to_unsigned(D, data_buffer'length));
+            uart_send_1_in(7 DOWNTO 0) <= STD_LOGIC_VECTOR(to_unsigned(D, data_buffer'length));
+            uart_send_1_start <= '1';
+            wait for 2115 ns;
+            uart_send_1_start <= '0';
+            assert uart_send_1_tx = '0' report "uart_send_1_tx start bit incorrect" severity error;
+            assert uart_send_1_ready = '0' report "uart_send_1_ready is one where it should have been zero" severity error;
+            for I in 0 to 7 loop
+                wait for 4230 ns;
+                assert data_buffer(I) = uart_send_1_tx report "UART 1 tx unexpected value" severity error;
+            end loop;
+            wait for 4230 ns;
+            assert uart_send_1_tx = '1' report "uart_send_1_tx stop bit incorrect" severity error;
+            assert uart_send_1_ready = '0' report "uart_send_1_ready is one where it should have been zero" severity error;
+            wait for 4230 ns;
+            assert uart_send_1_tx = '1' report "uart_send_1_tx stop bit incorrect" severity error;
+            assert uart_send_1_ready = '1' report "uart_send_1_ready is not one in time" severity error;
+        end loop;
+        wait for 4230 ns;
+        tests(3) <= '1';
+        wait;
+    end process;
+
     clock_gen : process
     begin
-        if tests /= "111" then
+        if tests /= "1111" then
             clk <= not clk;
             wait for 10 ns;
         else
