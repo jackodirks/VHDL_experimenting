@@ -244,14 +244,14 @@ begin
                 ticker_rst  <= '0';
                 cur_output  <= start;
                 lock_data   <= true;
-                next_bit    <= true;
-            when bit_one|bit_end =>
+                next_bit    <= false;
+            when bit_one =>
                 ready       <= '0';
                 ticker_rst  <= '0';
                 cur_output  <= bits;
                 lock_data   <= true;
                 next_bit    <= false;
-            when bit_two =>
+            when bit_two|bit_end =>
                 ready       <= '0';
                 ticker_rst  <= '0';
                 cur_output  <= bits;

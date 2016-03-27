@@ -126,6 +126,7 @@ architecture tb of tb_main is
 
     -- Constant declaration --
     constant clock_period_ns                : natural := 40;
+    constant test_count                     : natural := 5;
 
     -- Signal declaration --
     signal clk                              : STD_LOGIC := '0';
@@ -163,6 +164,12 @@ architecture tb of tb_main is
     signal uart_send_1_start                : STD_LOGIC := '0';
     signal uart_send_1_tx                   : STD_LOGIC;
     signal uart_send_1_ready                : STD_LOGIC;
+
+    signal uart_send_2_rst                  : STD_LOGIC := '1';
+    signal uart_send_2_in                   : STD_LOGIC_VECTOR(8 DOWNTO 0) := (others => '0');
+    signal uart_send_2_start                : STD_LOGIC := '0';
+    signal uart_send_2_tx                   : STD_LOGIC;
+    signal uart_send_2_ready                : STD_LOGIC;
 
     signal data_safe_8_bit_rst              : STD_LOGIC := '1';
     signal data_safe_8_bit_read             : STD_LOGIC := '0';
@@ -272,6 +279,24 @@ begin
         ready               => uart_send_1_ready
     );
 
+    uart_send_2 : uart_transmit
+    generic map (
+        baudrate            => 236400,
+        clockspeed          => 50000000,
+        parity_bit_en       => true,
+        parity_bit_type     => 1,
+        bit_count           => 8,
+        stop_bits           => 2
+    )
+    port map (
+        rst                 => uart_send_2_rst,
+        clk                 => clk,
+        uart_tx             => uart_send_2_tx,
+        data_in             => uart_send_2_in,
+        data_send_start     => uart_send_2_start,
+        ready               => uart_send_2_ready
+    );
+
     data_safe : data_safe_8_bit
     port map (
         clk => clk,
@@ -280,37 +305,6 @@ begin
         data_in => data_safe_8_bit_data_in,
         data_out => data_safe_8_bit_data_out
     );
-
-    uart_send_1_test : process
-        variable data_buffer   : STD_LOGIC_VECTOR(7 DOWNTO 0) := (others => '0');
-    begin
-        uart_send_1_rst <= '0';
-        wait for 100 ns;
-        assert uart_send_1_tx = '1' report "uart_send_1_rx does not default to 1" severity error;
-        assert uart_send_1_ready = '1' report "uart_send_1_ready does not default to 1" severity error;
-        for D in 0 to 1 loop
-            data_buffer := STD_LOGIC_VECTOR(to_unsigned(D, data_buffer'length));
-            uart_send_1_in(7 DOWNTO 0) <= STD_LOGIC_VECTOR(to_unsigned(D, data_buffer'length));
-            uart_send_1_start <= '1';
-            wait for 2115 ns;
-            uart_send_1_start <= '0';
-            assert uart_send_1_tx = '0' report "uart_send_1_tx start bit incorrect" severity error;
-            assert uart_send_1_ready = '0' report "uart_send_1_ready is one where it should have been zero" severity error;
-            for I in 0 to 7 loop
-                wait for 4230 ns;
-                assert data_buffer(I) = uart_send_1_tx report "UART 1 tx unexpected value" severity error;
-            end loop;
-            wait for 4230 ns;
-            assert uart_send_1_tx = '1' report "uart_send_1_tx stop bit incorrect" severity error;
-            assert uart_send_1_ready = '0' report "uart_send_1_ready is one where it should have been zero" severity error;
-            wait for 4230 ns;
-            assert uart_send_1_tx = '1' report "uart_send_1_tx stop bit incorrect" severity error;
-            assert uart_send_1_ready = '1' report "uart_send_1_ready is not one in time" severity error;
-        end loop;
-        wait for 4230 ns;
-        tests(3) <= '1';
-        wait;
-    end process;
 
     clock_gen : process
     begin
@@ -409,6 +403,86 @@ begin
         uart_receiv_2_rst <= '1';
         assert false report "UART_receiv_2 test done" severity note;
         tests(2) <= '1';
+        wait;
+    end process;
+
+    uart_send_1_test : process
+        variable data_buffer   : STD_LOGIC_VECTOR(7 DOWNTO 0) := (others => '0');
+    begin
+        uart_send_1_rst <= '0';
+        wait for 100 ns;
+        assert uart_send_1_tx = '1' report "uart_send_1_rx does not default to 1" severity error;
+        assert uart_send_1_ready = '1' report "uart_send_1_ready does not default to 1" severity error;
+        for D in 0 to 255 loop
+            data_buffer := STD_LOGIC_VECTOR(to_unsigned(D, data_buffer'length));
+            uart_send_1_in(7 DOWNTO 0) <= STD_LOGIC_VECTOR(to_unsigned(D, data_buffer'length));
+            uart_send_1_start <= '1';
+            wait for 2115 ns;
+            uart_send_1_start <= '0';
+            assert uart_send_1_tx = '0' report "uart_send_1_tx start bit incorrect" severity error;
+            assert uart_send_1_ready = '0' report "uart_send_1_ready is one where it should have been zero" severity error;
+            for I in 0 to 7 loop
+                wait for 4230 ns;
+                assert data_buffer(I) = uart_send_1_tx report "UART 1 tx unexpected value" severity error;
+            end loop;
+            wait for 4230 ns;
+            assert uart_send_1_tx = '1' report "uart_send_1_tx stop bit incorrect" severity error;
+            assert uart_send_1_ready = '0' report "uart_send_1_ready is one where it should have been zero" severity error;
+            wait for 4230 ns;
+            assert uart_send_1_tx = '1' report "uart_send_1_tx stop bit incorrect" severity error;
+            assert uart_send_1_ready = '1' report "uart_send_1_ready is not one in time" severity error;
+        end loop;
+        wait for 4230 ns;
+        assert false report "data_send_1 tests done" severity note;
+        tests(3) <= '1';
+        wait;
+    end process;
+
+    uart_send_2_test : process
+        variable data_buffer    : STD_LOGIC_VECTOR(7 DOWNTO 0) := (others => '0');
+        variable even           : STD_LOGIC := '1';
+    begin
+        uart_send_2_rst <= '0';
+        wait for 100 ns;
+        for D in 0 to 255 loop
+            even := '1';
+            -- Test the start situation
+            assert uart_send_2_tx = '1' report "uart_send_2_rx does not default to 1" severity error;
+            assert uart_send_2_ready = '1' report "uart_send_2_ready does not default to 1" severity error;
+            data_buffer := STD_LOGIC_VECTOR(to_unsigned(D, data_buffer'length));
+            uart_send_2_in(7 DOWNTO 0) <= STD_LOGIC_VECTOR(to_unsigned(D, data_buffer'length));
+            uart_send_2_start <= '1';
+            -- Jump to halfway trough start bit
+            wait for 2115 ns;
+            uart_send_2_start <= '0';
+            assert uart_send_2_tx = '0' report "uart_send_2_tx start bit incorrect" severity error;
+            assert uart_send_2_ready = '0' report "uart_send_2_ready is one where it should have been zero" severity error;
+            for I in 0 to 7 loop
+                -- Jump to halfway trough the Ith bit
+                wait for 4230 ns;
+                assert data_buffer(I) = uart_send_2_tx report "UART 1 tx unexpected value" severity error;
+                if data_buffer(I) = '1' then
+                    even := not even;
+                end if;
+            end loop;
+            -- Parity bit
+            wait for 4230 ns;
+            assert uart_send_2_tx = even report "uart_send_2_tx parity bit incorrect, even = " & std_logic'image(even) & " uart_send_2_tx = " & std_logic'image(uart_send_2_tx) & " D = " & integer'image(D) severity error;
+            assert uart_send_2_ready = '0' report "uart_send_2_ready is one where it should have been zero" severity error;
+            -- stop bit 1
+            wait for 4230 ns;
+            assert uart_send_2_tx = '1' report "uart_send_2_tx stop bit incorrect" severity error;
+            assert uart_send_2_ready = '0' report "uart_send_2_ready is one where it should have been zero" severity error;
+            -- stop bit 2
+            wait for 4230 ns;
+            assert uart_send_2_tx = '1' report "uart_send_2_tx stop bit incorrect" severity error;
+            assert uart_send_2_ready = '0' report "uart_send_2_ready is one where it should have been zero" severity error;
+            -- Back to start situation
+            wait for 4230 ns;
+        end loop;
+        wait for 4230 ns;
+        assert false report "data_send_2 tests done" severity note;
+        tests(3) <= '1';
         wait;
     end process;
 
