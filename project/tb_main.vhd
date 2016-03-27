@@ -220,13 +220,12 @@ begin
         stop_bits_in => 1
     )
     port map (
-        rst => uart_data_2_rst,
+        rst => uart_data_3_rst,
         clk => clk,
-        uart_rx => uart_data_2_rx,
-        received_data => uart_data_2,
-        data_ready => uart_data_2_ready,
-        parity_error => uart_data_2_par_err,
-        data_error => uart_data_2_dat_err
+        uart_rx => uart_data_3_rx,
+        received_data => uart_data_3,
+        data_ready => uart_data_3_ready,
+        parity_error => uart_data_3_par_err
     );
 
     data_safe : data_safe_8_bit
