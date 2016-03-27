@@ -95,6 +95,25 @@ architecture tb of tb_main is
         );
     end component;
 
+    component uart_transmit is
+        generic (
+            baudrate                : Natural;
+            clockspeed              : Natural;
+            parity_bit_en           : boolean;
+            parity_bit_type         : Natural range 0 to 3;
+            bit_count               : Natural range 5 to 9;
+            stop_bits               : Natural range 1 to 2
+        );
+        port (
+            rst                     : in    STD_LOGIC;
+            clk                     : in    STD_LOGIC;
+            uart_tx                 : out   STD_LOGIC;
+            data_in                 : in    STD_LOGIC_VECTOR(8 DOWNTO 0);
+            data_send_start         : in    STD_LOGIC;                    -- Signals that the data can now be send
+            ready                   : out   STD_LOGIC
+    );
+    end component;
+
     component data_safe_8_bit is
         port (
             clk         : in STD_LOGIC;
@@ -118,26 +137,32 @@ architecture tb of tb_main is
     signal ss_kathode                       : STD_LOGIC_VECTOR(7 DOWNTO 0);
     signal ss_anode                         : STD_LOGIC_VECTOR(3 DOWNTO 0);
 
-    signal uart_data_1_rst                  : STD_LOGIC := '1';
-    signal uart_data_1_rx                   : STD_LOGIC := '1';
-    signal uart_data_1                      : STD_LOGIC_VECTOR(8 DOWNTO 0);
-    signal uart_data_1_ready                : STD_LOGIC;
-    signal uart_data_1_par_err              : STD_LOGIC;
-    signal uart_data_1_dat_err              : STD_LOGIC;
+    signal uart_receiv_1_rst                : STD_LOGIC := '1';
+    signal uart_receiv_1_rx                 : STD_LOGIC := '1';
+    signal uart_receiv_1                    : STD_LOGIC_VECTOR(8 DOWNTO 0);
+    signal uart_receiv_1_ready              : STD_LOGIC;
+    signal uart_receiv_1_par_err            : STD_LOGIC;
+    signal uart_receiv_1_dat_err            : STD_LOGIC;
 
-    signal uart_data_2_rst                  : STD_LOGIC := '1';
-    signal uart_data_2_rx                   : STD_LOGIC := '1';
-    signal uart_data_2                      : STD_LOGIC_VECTOR(8 DOWNTO 0);
-    signal uart_data_2_ready                : STD_LOGIC;
-    signal uart_data_2_par_err              : STD_LOGIC;
-    signal uart_data_2_dat_err              : STD_LOGIC;
+    signal uart_receiv_2_rst                : STD_LOGIC := '1';
+    signal uart_receiv_2_rx                 : STD_LOGIC := '1';
+    signal uart_receiv_2                    : STD_LOGIC_VECTOR(8 DOWNTO 0);
+    signal uart_receiv_2_ready              : STD_LOGIC;
+    signal uart_receiv_2_par_err            : STD_LOGIC;
+    signal uart_receiv_2_dat_err            : STD_LOGIC;
 
-    signal uart_data_3_rst                  : STD_LOGIC := '1';
-    signal uart_data_3_rx                   : STD_LOGIC := '1';
-    signal uart_data_3                      : STD_LOGIC_VECTOR(8 DOWNTO 0);
-    signal uart_data_3_ready                : STD_LOGIC;
-    signal uart_data_3_par_err              : STD_LOGIC;
-    signal uart_data_3_dat_err              : STD_LOGIC;
+    signal uart_receiv_3_rst                : STD_LOGIC := '1';
+    signal uart_receiv_3_rx                 : STD_LOGIC := '1';
+    signal uart_receiv_3                    : STD_LOGIC_VECTOR(8 DOWNTO 0);
+    signal uart_receiv_3_ready              : STD_LOGIC;
+    signal uart_receiv_3_par_err            : STD_LOGIC;
+    signal uart_receiv_3_dat_err            : STD_LOGIC;
+
+    signal uart_send_1_rst                  : STD_LOGIC := '1';
+    signal uart_send_1_in                   : STD_LOGIC_VECTOR(8 DOWNTO 0) := (others => '0');
+    signal uart_send_1_start                : STD_LOGIC := '0';
+    signal uart_send_1_tx                   : STD_LOGIC;
+    signal uart_send_1_ready                : STD_LOGIC;
 
     signal data_safe_8_bit_rst              : STD_LOGIC := '1';
     signal data_safe_8_bit_read             : STD_LOGIC := '0';
@@ -172,7 +197,7 @@ begin
         seven_seg_an => ss_anode
     );
 
-    uart_1 : uart_receiv
+    uart_receiver_1 : uart_receiv
     generic map (
         baudrate => 236400,
         clockspeed => 50000000,
@@ -182,16 +207,16 @@ begin
         stop_bits_in => 1
     )
     port map (
-        rst => uart_data_1_rst,
+        rst => uart_receiv_1_rst,
         clk => clk,
-        uart_rx => uart_data_1_rx,
-        received_data => uart_data_1,
-        data_ready => uart_data_1_ready,
-        parity_error => uart_data_1_par_err,
-        data_error => uart_data_1_dat_err
+        uart_rx => uart_receiv_1_rx,
+        received_data => uart_receiv_1,
+        data_ready => uart_receiv_1_ready,
+        parity_error => uart_receiv_1_par_err,
+        data_error => uart_receiv_1_dat_err
     );
 
-    uart_2 : uart_receiv
+    uart_receiver_2 : uart_receiv
     generic map (
         baudrate => 236400,
         clockspeed => 50000000,
@@ -201,16 +226,16 @@ begin
         stop_bits_in => 2
     )
     port map (
-        rst => uart_data_2_rst,
+        rst => uart_receiv_2_rst,
         clk => clk,
-        uart_rx => uart_data_2_rx,
-        received_data => uart_data_2,
-        data_ready => uart_data_2_ready,
-        parity_error => uart_data_2_par_err,
-        data_error => uart_data_2_dat_err
+        uart_rx => uart_receiv_2_rx,
+        received_data => uart_receiv_2,
+        data_ready => uart_receiv_2_ready,
+        parity_error => uart_receiv_2_par_err,
+        data_error => uart_receiv_2_dat_err
     );
 
-    uart_3 : uart_receiv
+    uart_receiver_3 : uart_receiv
     generic map (
         baudrate => 236400,
         clockspeed => 50000000,
@@ -220,12 +245,30 @@ begin
         stop_bits_in => 1
     )
     port map (
-        rst => uart_data_3_rst,
+        rst => uart_receiv_3_rst,
         clk => clk,
-        uart_rx => uart_data_3_rx,
-        received_data => uart_data_3,
-        data_ready => uart_data_3_ready,
-        parity_error => uart_data_3_par_err
+        uart_rx => uart_receiv_3_rx,
+        received_data => uart_receiv_3,
+        data_ready => uart_receiv_3_ready,
+        parity_error => uart_receiv_3_par_err
+    );
+
+    uart_send_1 : uart_transmit
+    generic map (
+        baudrate            => 236400,
+        clockspeed          => 50000000,
+        parity_bit_en       => false,
+        parity_bit_type     => 0,
+        bit_count           => 8,
+        stop_bits           => 1
+    )
+    port map (
+        rst                 => uart_send_1_rst,
+        clk                 => clk,
+        uart_tx             => uart_send_1_tx,
+        data_in             => uart_send_1_in,
+        data_send_start     => uart_send_1_start,
+        ready               => uart_send_1_ready
     );
 
     data_safe : data_safe_8_bit
@@ -236,6 +279,16 @@ begin
         data_in => data_safe_8_bit_data_in,
         data_out => data_safe_8_bit_data_out
     );
+
+    clock_gen : process
+    begin
+        if tests /= "111" then
+            clk <= not clk;
+            wait for 10 ns;
+        else
+            wait;
+        end if;
+    end process;
 
     process
         variable test_data : STD_LOGIC_VECTOR(7 DOWNTO 0 ) := "01100010";
@@ -256,16 +309,6 @@ begin
         wait;
     end process;
 
-    clock_gen : process
-    begin
-        if tests /= "111" then
-            clk <= not clk;
-            wait for 10 ns;
-        else
-            wait;
-        end if;
-    end process;
-
     process
     begin
         simple_multishot_timer_rst <= '0';
@@ -279,25 +322,25 @@ begin
     process
         variable data_buffer : STD_LOGIC_VECTOR(7 DOWNTO 0);
     begin
-        uart_data_1_rst <= '0';
+        uart_receiv_1_rst <= '0';
         wait for 4230 ns;
         for D in 0 to 255 loop
             data_buffer := STD_LOGIC_VECTOR(to_unsigned(D, data_buffer'length));
-            uart_data_1_rx <= '0';
+            uart_receiv_1_rx <= '0';
             for I in 0 TO 7 loop
                 wait for 4230 ns;
-                uart_data_1_rx <= data_buffer(I);
+                uart_receiv_1_rx <= data_buffer(I);
             end loop;
             wait for 4230 ns;
-            uart_data_1_rx <= '1';
-            wait until uart_data_1_ready = '1';
-            assert uart_data_1(7 DOWNTO 0) = data_buffer report "uart_data_1 unexpected value" severity error;
-            assert uart_data_1_dat_err = '0' report "uart_data_1_dat_err unexpected value" severity error;
-            assert uart_data_1_par_err = '0' report "uart_data_1_par_err unexpected value" severity error;
+            uart_receiv_1_rx <= '1';
+            wait until uart_receiv_1_ready = '1';
+            assert uart_receiv_1(7 DOWNTO 0) = data_buffer report "uart_receiv_1 unexpected value" severity error;
+            assert uart_receiv_1_dat_err = '0' report "uart_receiv_1_dat_err unexpected value" severity error;
+            assert uart_receiv_1_par_err = '0' report "uart_receiv_1_par_err unexpected value" severity error;
             wait for 2115 ns;
         end loop;
-        uart_data_1_rst <= '1';
-        assert false report "UART_data_1 test done" severity note;
+        uart_receiv_1_rst <= '1';
+        assert false report "UART_receiv_1 test done" severity note;
         tests(1) <= '1';
         wait;
     end process;
@@ -306,34 +349,35 @@ begin
         variable data_buffer    : STD_LOGIC_VECTOR(7 DOWNTO 0);
         variable odd            : STD_LOGIC := '0';
     begin
-        uart_data_2_rx <= '1';
-        uart_data_2_rst <= '0';
+        uart_receiv_2_rx <= '1';
+        uart_receiv_2_rst <= '0';
         wait for 4230 ns;
         for D in 0 to 128 loop
             data_buffer := STD_LOGIC_VECTOR(to_unsigned(D, data_buffer'length));
-            uart_data_2_rx <= '0';
+            uart_receiv_2_rx <= '0';
             for I in 0 to 7 loop
                 wait for 4230 ns;
-                uart_data_2_rx <= data_buffer(I);
+                uart_receiv_2_rx <= data_buffer(I);
                 if data_buffer(I) = '1' then
                     odd := not odd;
                 end if;
             end loop;
             wait for 4230 ns;
             -- Send the parity bit
-            uart_data_2_rx <= odd;
+            uart_receiv_2_rx <= odd;
             wait for 4230 ns;
-            uart_data_2_rx <= '1';
-            wait until uart_data_2_ready = '1';
-            assert uart_data_2(7 DOWNTO 0) = data_buffer report "uart_data_2 unexpected value" severity error;
-            assert uart_data_2_dat_err = '0' report "uart_data_2_dat_err unexpected value" severity error;
-            assert uart_data_2_par_err = '0' report "uart_data_2_par_err unexpected value" severity error;
+            uart_receiv_2_rx <= '1';
+            wait until uart_receiv_2_ready = '1';
+            assert uart_receiv_2(7 DOWNTO 0) = data_buffer report "uart_receiv_2 unexpected value" severity error;
+            assert uart_receiv_2_dat_err = '0' report "uart_receiv_2_dat_err unexpected value" severity error;
+            assert uart_receiv_2_par_err = '0' report "uart_receiv_2_par_err unexpected value" severity error;
             wait for 2115 ns;
             odd := '0';
         end loop;
-        uart_data_2_rst <= '1';
-        assert false report "UART_data_2 test done" severity note;
+        uart_receiv_2_rst <= '1';
+        assert false report "UART_receiv_2 test done" severity note;
         tests(2) <= '1';
         wait;
     end process;
+
 end tb;

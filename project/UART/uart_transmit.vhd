@@ -19,10 +19,10 @@ entity uart_transmit is
     generic (
         baudrate                : Natural;
         clockspeed              : Natural;
-        parity_bit_out          : boolean;
+        parity_bit_en           : boolean;
         parity_bit_type         : Natural range 0 to 3;
-        bit_count_out           : Natural range 5 to 9;
-        stop_bits_out           : Natural range 1 to 2
+        bit_count               : Natural range 5 to 9;
+        stop_bits               : Natural range 1 to 2
     );
     port (
         rst                     : in    STD_LOGIC;
@@ -30,7 +30,7 @@ entity uart_transmit is
         uart_tx                 : out   STD_LOGIC;
         data_in                 : in    STD_LOGIC_VECTOR(8 DOWNTO 0);
         data_send_start         : in    STD_LOGIC;                    -- Signals that the data can now be send
-        ready                   : out   STD_LOGIC;
+        ready                   : out   STD_LOGIC
     );
 end uart_transmit;
 
@@ -106,7 +106,7 @@ begin
     begin
         if rising_edge(clk) then
             if not lock_data then
-                even := '1'
+                even := '1';
             elsif next_bit then
                 last_next_bit := true;
             elsif last_next_bit then
@@ -126,48 +126,48 @@ begin
             when 3 =>
                 parity_output <= '1';
         end case;
-    end process
+    end process;
     -- The data storage facility
     bit_selector : process(clk, lock_data, next_bit)
-        variable cur_data       : STD_LOGIC_VECTOR(bit_count_out - 1 DOWNTO 0) := (others => '0');
+        variable cur_data       : STD_LOGIC_VECTOR(bit_count - 1 DOWNTO 0) := (others => '0');
         variable last_next_bit  : boolean := false;
     begin
         if rising_edge(clk) then
             if not lock_data then
-                cur_data <= data_in(bit_count_out-1 DOWNTO 0);
+                cur_data := data_in(bit_count-1 DOWNTO 0);
             elsif next_bit then
                 last_next_bit := true;
             elsif last_next_bit then
                 last_next_bit := false;
-                cur_data := 0 & cur_data(bit_count_out - 1 DOWNTO 1);
+                cur_data := '0' & cur_data(bit_count - 1 DOWNTO 1);
             end if;
         end if;
         output_bit <= cur_data(0);
     end process;
 
     state_selector : process(clk, rst, ticker_done, data_send_start)
-        variable bits_send          : integer := 0;
-        variable stop_bits_send     : integer := 0;
+        variable bits_send          : natural := 0;
+        variable stop_bits_send     : natural := 0;
     begin
         if rst = '1' then
             bits_send := 0;
             stop_bits_send := 0;
             state <= reset;
-        elsif rising_edge(clk) = '1' then
+        elsif rising_edge(clk) then
             case state is
                 when reset =>
                     state <= wait_send;
                 when wait_send =>
                     bits_send := 0;
                     stop_bits_send := 0;
-                    simple_state_transition(wait_send, start_one, data_send_start);
+                    state <= simple_state_transition(wait_send, start_one, data_send_start);
                 when start_one =>
-                    simple_state_transition(start_one, start_two, ticker_done);
+                    state <= simple_state_transition(start_one, start_two, ticker_done);
                 when start_two =>
-                    simple_state_transition(start_two, bit_one, ticker_done);
+                    state <= simple_state_transition(start_two, bit_one, ticker_done);
                 when bit_one =>
                     if ticker_done = '1' then
-                        if bits_send = bit_count_out - 1 then
+                        if bits_send = bit_count - 1 then
                             state <= bit_end;
                         else
                             state <= bit_two;
@@ -184,25 +184,25 @@ begin
                     end if;
                 when bit_end =>
                     if ticker_done = '1' then
-                        if parity_bit_out then
+                        if parity_bit_en then
                             state <= parity_one;
                         else
                             state <= stop_one;
                         end if;
                     else
-                        state <= bit_end
+                        state <= bit_end;
                     end if;
                 when parity_one =>
-                    simple_state_transition(parity_one, parity_two, ticker_done);
+                    state <= simple_state_transition(parity_one, parity_two, ticker_done);
                 when parity_two =>
-                    simple_state_transition(parity_two, stop_one, ticker_done);
+                    state <= simple_state_transition(parity_two, stop_one, ticker_done);
                 when stop_one =>
-                    simple_state_transition(stop_one, stop_two, ticker_done);
+                    state <= simple_state_transition(stop_one, stop_two, ticker_done);
                 when stop_two =>
                     if ticker_done = '1' then
-                        if stop_bits_out = 2 then
+                        if stop_bits = 2 then
                             stop_bits_send := stop_bits_send + 1;
-                            if stop_bits_send = stop_bits_out then
+                            if stop_bits_send = stop_bits then
                                 state <= wait_send;
                             else
                                 state <= stop_one;
@@ -225,49 +225,49 @@ begin
                 ready       <= '0';
                 ticker_rst  <= '1';
                 cur_output  <= stop;
-`               lock_data   <= false;
+                lock_data   <= false;
                 next_bit    <= false;
             when wait_send =>
                 ready       <= '1';
                 ticker_rst  <= '1';
                 cur_output  <= stop;
-`               lock_data   <= false;
+                lock_data   <= false;
                 next_bit    <= false;
             when start_one =>
                 ready       <= '0';
                 ticker_rst  <= '0';
                 cur_output  <= start;
-`               lock_data   <= true;
+                lock_data   <= true;
                 next_bit    <= false;
             when start_two =>
                 ready       <= '0';
                 ticker_rst  <= '0';
                 cur_output  <= start;
-`               lock_data   <= true;
+                lock_data   <= true;
                 next_bit    <= true;
             when bit_one|bit_end =>
                 ready       <= '0';
                 ticker_rst  <= '0';
                 cur_output  <= bits;
-`               lock_data   <= true;
+                lock_data   <= true;
                 next_bit    <= false;
             when bit_two =>
                 ready       <= '0';
                 ticker_rst  <= '0';
                 cur_output  <= bits;
-`               lock_data   <= true;
+                lock_data   <= true;
                 next_bit    <= true;
             when parity_one|parity_two =>
                 ready       <= '0';
                 ticker_rst  <= '0';
                 cur_output  <= parity;
-`               lock_data   <= true;
+                lock_data   <= true;
                 next_bit    <= false;
             when stop_one|stop_two =>
                 ready       <= '0';
                 ticker_rst  <= '0';
                 cur_output  <= stop;
-`               lock_data   <= true;
+                lock_data   <= true;
                 next_bit    <= false;
         end case;
     end process;
