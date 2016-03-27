@@ -128,7 +128,7 @@ architecture tb of tb_main is
     constant clock_period_ns                : natural := 40;
 
     -- Signal declaration --
-    signal clk                              : STD_LOGIC := '1';
+    signal clk                              : STD_LOGIC := '0';
     signal led                              : STD_LOGIC_VECTOR (7 DOWNTO 0);
     signal slide_switch                     : STD_LOGIC_VECTOR(7 DOWNTO 0);
     signal simple_multishot_timer_rst       : STD_LOGIC := '1';
