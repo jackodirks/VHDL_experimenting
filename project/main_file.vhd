@@ -125,10 +125,10 @@ begin
     generic map (
         baudrate => 115107,
         clockspeed => 50000000,
-        parity_bit_in => true,
-        parity_bit_in_type => 1,
-        bit_count_in => 8,
-        stop_bits_in => 1
+        parity_bit_en => true,
+        parity_bit_type => 1,
+        bit_count => 8,
+        stop_bits => 1
     )
     port map (
         rst                 => rst,
@@ -174,7 +174,7 @@ begin
     led(7) <= rst;
     JA_gpio(3) <= not push_button(0);
     uart_rx <= JA_gpio(1);
-    uart_tx <= JA_gpio(2);
+    JA_gpio(2) <= uart_tx;
     uart_send_data ( 7 DOWNTO 0) <= slide_switch;
     uart_start_send <= push_button(1);
     uart_data_ready <= uart_receive_done and not uart_data_error;
