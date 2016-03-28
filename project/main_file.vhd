@@ -6,7 +6,6 @@ use IEEE.STD_LOGIC_1164.ALL;
 -- JA_GPIO(3) Reset to uC
 entity main_file is
     Port (
-        --rst : in STD_LOGIC;
         JA_gpio : inout  STD_LOGIC_VECTOR (3 downto 0);
         --JB_gpio : inout  STD_LOGIC_VECTOR (3 downto 0);
         --JC_gpio : inout  STD_LOGIC_VECTOR (3 downto 0);
@@ -58,6 +57,25 @@ architecture Behavioral of main_file is
         );
     end component;
 
+    component uart_transmit is
+        generic (
+            baudrate                : Natural;
+            clockspeed              : Natural;
+            parity_bit_en           : boolean;
+            parity_bit_type         : Natural range 0 to 3;
+            bit_count               : Natural range 5 to 9;
+            stop_bits               : Natural range 1 to 2
+        );
+        port (
+            rst                     : in    STD_LOGIC;
+            clk                     : in    STD_LOGIC;
+            uart_tx                 : out   STD_LOGIC;
+            data_in                 : in    STD_LOGIC_VECTOR(8 DOWNTO 0);
+            data_send_start         : in    STD_LOGIC;                    -- Signals that the data can now be send
+            ready                   : out   STD_LOGIC
+        );
+    end component;
+
     component data_safe_8_bit is
         port (
             clk         : in STD_LOGIC;
@@ -78,6 +96,11 @@ architecture Behavioral of main_file is
     signal uart_rx              : STD_LOGIC;
     signal uart_data_ready      : STD_LOGIC;
 
+    signal uart_tx              : STD_LOGIC;
+    signal uart_send_data       : STD_LOGIC_VECTOR(8 DOWNTO 0) := (others => '0');
+    signal uart_start_send      : STD_LOGIC := '0';
+    signal uart_send_ready      : STD_LOGIC;
+
 begin
     uart_receiver : uart_receiv
     generic map (
@@ -96,6 +119,24 @@ begin
         data_ready => uart_receive_done,
         parity_error => uart_parity_error,
         data_error => uart_data_error
+    );
+
+    uart_transmitter : uart_transmit
+    generic map (
+        baudrate => 115107,
+        clockspeed => 50000000,
+        parity_bit_in => true,
+        parity_bit_in_type => 1,
+        bit_count_in => 8,
+        stop_bits_in => 1
+    )
+    port map (
+        rst                 => rst,
+        clk                 => clk,
+        uart_tx             => uart_tx,
+        data_in             => uart_send_data,
+        data_send_start     => uart_start_send,
+        ready               => uart_send_ready
     );
 
     ss_driver : seven_segments_driver
@@ -121,19 +162,21 @@ begin
         data_in => uart_received_data( 7 DOWNTO 0),
         data_out => safe_data
     );
+
     rst <=  push_button(0) or JA_gpio(0);
     led(0) <= uart_data_error;
     led(1) <= uart_parity_error;
     led(2) <= uart_receive_done;
-    led(3) <= '0';
-    led(4) <= push_button(1);
+    led(3) <= uart_send_ready;
+    led(4) <= '0';
     led(5) <= push_button(2);
     led(6) <= push_button(3);
     led(7) <= rst;
-    --led(7 DOWNTO 0) <= safe_data(7 DOWNTO 0);
     JA_gpio(3) <= not push_button(0);
-    JA_gpio(2) <= '1';
     uart_rx <= JA_gpio(1);
+    uart_tx <= JA_gpio(2);
+    uart_send_data ( 7 DOWNTO 0) <= slide_switch;
+    uart_start_send <= push_button(1);
     uart_data_ready <= uart_receive_done and not uart_data_error;
 end Behavioral;
 
