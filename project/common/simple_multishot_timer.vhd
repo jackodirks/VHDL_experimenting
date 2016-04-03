@@ -17,7 +17,7 @@ end simple_multishot_timer;
 architecture behavioral of simple_multishot_timer is
     function check_timer_match(X : UNSIGNED; Y: natural) return boolean is
     begin
-        return to_natural(X) = Y;
+        return to_integer(X) = Y;
     end check_timer_match;
 
     constant count_bits_count : integer := (integer(ceil(log2(real(match_val))))) - 1;
