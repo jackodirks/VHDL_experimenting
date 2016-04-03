@@ -124,6 +124,18 @@ architecture tb of tb_main is
         );
     end component;
 
+    component button_to_single_pulse is
+        generic (
+            debounce_ticks      : natural range 2 to natural'high
+        );
+        port (
+            clk                 : in STD_LOGIC;
+            rst                 : in STD_LOGIC;
+            pulse_in            : in STD_LOGIC;
+            pulse_out           : out STD_LOGIC
+        );
+    end component;
+
     -- Constant declaration --
     constant clock_period_ns                : natural := 40;
     constant test_count                     : natural := 5;
@@ -152,13 +164,6 @@ architecture tb of tb_main is
     signal uart_receiv_2_par_err            : STD_LOGIC;
     signal uart_receiv_2_dat_err            : STD_LOGIC;
 
-    signal uart_receiv_3_rst                : STD_LOGIC := '1';
-    signal uart_receiv_3_rx                 : STD_LOGIC := '1';
-    signal uart_receiv_3                    : STD_LOGIC_VECTOR(8 DOWNTO 0);
-    signal uart_receiv_3_ready              : STD_LOGIC;
-    signal uart_receiv_3_par_err            : STD_LOGIC;
-    signal uart_receiv_3_dat_err            : STD_LOGIC;
-
     signal uart_send_1_rst                  : STD_LOGIC := '1';
     signal uart_send_1_in                   : STD_LOGIC_VECTOR(8 DOWNTO 0) := (others => '0');
     signal uart_send_1_start                : STD_LOGIC := '0';
@@ -175,6 +180,10 @@ architecture tb of tb_main is
     signal data_safe_8_bit_read             : STD_LOGIC := '0';
     signal data_safe_8_bit_data_in          : STD_LOGIC_VECTOR(7 DOWNTO 0) := (others => '0');
     signal data_safe_8_bit_data_out         : STD_LOGIC_VECTOR(7 DOWNTO 0);
+
+    signal debouncer_reset                  : STD_LOGIC := '1';
+    signal debouncer_pulse_out              : STD_LOGIC;
+    signal debouncer_pulse_in               : STD_LOGIC := '0';
 
     signal tests                            : STD_LOGIC_VECTOR(3 DOWNTO 0) := (others => '0');
 begin
@@ -202,6 +211,17 @@ begin
         ss_4 => "1000",
         seven_seg_kath => ss_kathode,
         seven_seg_an => ss_anode
+    );
+
+    debounce_tester : button_to_single_pulse
+    generic map (
+        debounce_ticks => 500
+    )
+    port map (
+        clk => clk,
+        rst => debouncer_reset,
+        pulse_in => debouncer_pulse_in,
+        pulse_out => debouncer_pulse_out
     );
 
     uart_receiver_1 : uart_receiv
@@ -240,25 +260,6 @@ begin
         data_ready => uart_receiv_2_ready,
         parity_error => uart_receiv_2_par_err,
         data_error => uart_receiv_2_dat_err
-    );
-
-    uart_receiver_3 : uart_receiv
-    generic map (
-        baudrate => 236400,
-        clockspeed => 50000000,
-        parity_bit_in => true,
-        parity_bit_in_type => 1,
-        bit_count_in => 8,
-        stop_bits_in => 1
-    )
-    port map (
-        rst => uart_receiv_3_rst,
-        clk => clk,
-        uart_rx => uart_receiv_3_rx,
-        received_data => uart_receiv_3,
-        data_ready => uart_receiv_3_ready,
-        parity_error => uart_receiv_3_par_err,
-        data_error => uart_receiv_3_dat_err
     );
 
     uart_send_1 : uart_transmit
@@ -483,6 +484,15 @@ begin
         wait for 4230 ns;
         assert false report "data_send_2 tests done" severity note;
         tests(3) <= '1';
+        wait;
+    end process;
+
+    process
+    begin
+        debouncer_reset <= '0';
+        debouncer_pulse_in <= '1';
+        wait for 10045 ns;
+        assert debouncer_pulse_out = '1' report "Debouncer value is zero where it should be one";
         wait;
     end process;
 
