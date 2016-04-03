@@ -76,6 +76,18 @@ architecture Behavioral of main_file is
         );
     end component;
 
+    component button_to_single_pulse is
+        generic (
+            debounce_ticks      : natural range 2 to natural'high
+        );
+        port (
+            clk                 : in STD_LOGIC;
+            rst                 : in STD_LOGIC;
+            pulse_in            : in STD_LOGIC;
+            pulse_out           : out STD_LOGIC
+        );
+    end component;
+
     component data_safe_8_bit is
         port (
             clk         : in STD_LOGIC;
@@ -100,6 +112,9 @@ architecture Behavioral of main_file is
     signal uart_send_data       : STD_LOGIC_VECTOR(8 DOWNTO 0) := (others => '0');
     signal uart_start_send      : STD_LOGIC := '0';
     signal uart_send_ready      : STD_LOGIC;
+
+    signal debounce_pulse_in    : STD_LOGIC;
+    signal debounce_pulse_out   : STD_LOGIC;
 
 begin
     uart_receiver : uart_receiv
@@ -163,6 +178,17 @@ begin
         data_out => safe_data
     );
 
+    debouncer : button_to_single_pulse
+    generic map (
+        debounce_ticks => 50000
+    )
+    port map (
+        clk => clk,
+        rst => rst,
+        pulse_in => debounce_pulse_in,
+        pulse_out => debounce_pulse_out
+    );
+
     rst <=  push_button(0) or JA_gpio(0);
     led(0) <= uart_data_error;
     led(1) <= uart_parity_error;
@@ -176,7 +202,8 @@ begin
     uart_rx <= JA_gpio(1);
     JA_gpio(2) <= uart_tx;
     uart_send_data ( 7 DOWNTO 0) <= slide_switch;
-    uart_start_send <= push_button(1);
+    debounce_pulse_in <= push_button(1);
+    uart_start_send <= debounce_pulse_out;
     uart_data_ready <= uart_receive_done and not uart_data_error;
 end Behavioral;
 
