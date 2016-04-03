@@ -91,7 +91,7 @@ begin
         done        => recv_ticker_done
     );
 
-    data_shifter : process(clk, sub_rst, barrel_data_in, barrel_enable)
+    data_shifter : process(clk, sub_rst)
         variable last_known_enable  : boolean := false;
         variable last_known_data    : STD_LOGIC := '0';
         variable barrel_data      : STD_LOGIC_VECTOR(bit_count_in-1 DOWNTO 0) := (others => '0');
@@ -115,7 +115,7 @@ begin
         received_data( bit_count_in-1 DOWNTO 0) <= barrel_data;
     end process;
 
-    data_error_tester : process(clk, sub_rst, data_error_b1_in, data_error_b1_en, data_error_b2_in, data_error_b2_en, data_error_ref)
+    data_error_tester : process(clk, sub_rst)
         variable last_known_b1in    : STD_LOGIC := '0';
         variable data_error_out     : STD_LOGIC := '0';
     begin
@@ -135,7 +135,7 @@ begin
         data_error <= data_error_out;
     end process;
 
-    parity_tester : process(clk, sub_rst, barrel_data_in, barrel_enable, parity_test, parity_ref)
+    parity_tester : process(clk, sub_rst)
         variable last_known_enable      : boolean := false;
         variable last_known_data        : STD_LOGIC := '0';
         variable parity_error_out       : STD_LOGIC := '0';
@@ -178,7 +178,7 @@ begin
         parity_error <= parity_error_out;
     end process;
 
-    ready_lock : process (clk, sub_rst, ready_enable)
+    ready_lock : process (clk, sub_rst)
         variable ready_out : STD_LOGIC := '0';
     begin
         if sub_rst then
@@ -192,7 +192,7 @@ begin
     end process;
 
     -- State transitions
-    process(clk, rst, uart_rx)
+    process(clk, rst)
         -- State transition control variables
         variable bits_processed         : natural := 0;
         variable stop_bits_processed    : natural := 0;
@@ -276,7 +276,7 @@ begin
         end if;
     end process;
 
-    process(state, uart_rx)
+    process(state)
     begin
         case state is
             when rst_state =>

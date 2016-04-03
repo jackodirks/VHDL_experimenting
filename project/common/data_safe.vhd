@@ -16,7 +16,7 @@ end data_safe_8_bit;
 
 architecture behavioral of data_safe_8_bit is
 begin
-    process(clk, rst, read)
+    process(clk, rst)
     begin
         if rst = '1' then
             data_out <= (others => '0');

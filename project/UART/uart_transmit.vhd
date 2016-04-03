@@ -100,7 +100,7 @@ begin
         end case;
     end process;
     -- The parity generator
-    parity_gen : process(clk, lock_data, next_bit, output_bit)
+    parity_gen : process(clk)
         variable even           : STD_LOGIC := '1';
         variable last_next_bit  : boolean := false;
     begin
@@ -128,7 +128,7 @@ begin
         end case;
     end process;
     -- The data storage facility
-    bit_selector : process(clk, lock_data, next_bit)
+    bit_selector : process(clk)
         variable cur_data       : STD_LOGIC_VECTOR(bit_count - 1 DOWNTO 0) := (others => '0');
         variable last_next_bit  : boolean := false;
     begin
@@ -145,7 +145,7 @@ begin
         output_bit <= cur_data(0);
     end process;
 
-    state_selector : process(clk, rst, ticker_done, data_send_start)
+    state_selector : process(clk, rst)
         variable bits_send          : natural := 0;
         variable stop_bits_send     : natural := 0;
     begin
