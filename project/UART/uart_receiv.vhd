@@ -276,7 +276,7 @@ begin
         end if;
     end process;
 
-    process(state)
+    process(state, uart_rx)
     begin
         case state is
             when rst_state =>
