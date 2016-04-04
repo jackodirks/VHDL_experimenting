@@ -12,18 +12,17 @@ entity uart_main is
     generic (
         clockspeed              : Natural;
         baudrate                : Natural;
-        pary_bit_en             : boolean;
+        parity_bit_en           : boolean;
         parity_bit_type         : integer range 0 to 3;
         bit_count               : integer range 5 to 9;
-        stop_bits_count         : integer range 1 to 2;
+        stop_bits_count         : integer range 1 to 2
     );
     Port (
         rst                     : in STD_LOGIC;
         clk                     : in STD_LOGIC;
-        uart_rx                 : out STD_LOGIC;
+        uart_rx                 : in STD_LOGIC;
         uart_tx                 : out STD_LOGIC;
         send_start              : in STD_LOGIC;
-        send_done               : out STD_LOGIC;
         data_in                 : in STD_LOGIC_VECTOR(8 DOWNTO 0);
         data_out                : out STD_LOGIC_VECTOR(8 DOWNTO 0);
         data_ready              : out STD_LOGIC;
@@ -89,7 +88,7 @@ begin
         clk                 => clk,
         uart_tx             => uart_tx,
         data_in             => data_in,
-        data_send_start     => data_send_start,
+        data_send_start     => send_start,
         ready               => send_ready
     );
 
