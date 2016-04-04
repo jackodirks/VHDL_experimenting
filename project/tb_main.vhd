@@ -111,7 +111,31 @@ architecture tb of tb_main is
             data_in                 : in    STD_LOGIC_VECTOR(8 DOWNTO 0);
             data_send_start         : in    STD_LOGIC;                    -- Signals that the data can now be send
             ready                   : out   STD_LOGIC
-    );
+        );
+    end component;
+
+    component uart_main is
+        generic (
+            clockspeed              : Natural;
+            baudrate                : Natural;
+            parity_bit_en           : boolean;
+            parity_bit_type         : integer range 0 to 3;
+            bit_count               : integer range 5 to 9;
+            stop_bits_count         : integer range 1 to 2
+        );
+        Port (
+            rst                     : in STD_LOGIC;
+            clk                     : in STD_LOGIC;
+            uart_rx                 : in STD_LOGIC;
+            uart_tx                 : out STD_LOGIC;
+            send_start              : in STD_LOGIC;
+            data_in                 : in STD_LOGIC_VECTOR(8 DOWNTO 0);
+            data_out                : out STD_LOGIC_VECTOR(8 DOWNTO 0);
+            data_ready              : out STD_LOGIC;
+            data_error              : out STD_LOGIC;
+            parity_error            : out STD_LOGIC;
+            send_ready              : out STD_LOGIC
+        );
     end component;
 
     component data_safe_8_bit is
@@ -175,6 +199,17 @@ architecture tb of tb_main is
     signal uart_send_2_start                : STD_LOGIC := '0';
     signal uart_send_2_tx                   : STD_LOGIC;
     signal uart_send_2_ready                : STD_LOGIC;
+
+    signal uart_main_rst                    : STD_LOGIC := '1';
+    signal uart_main_rx                     : STD_LOGIC := '1';
+    signal uart_main_tx                     : STD_LOGIC;
+    signal uart_main_send_start             : STD_LOGIC := '0';
+    signal uart_main_data_in                : STD_LOGIC_VECTOR(8 DOWNTO 0) := (others => '0');
+    signal uart_main_data_out               : STD_LOGIC_VECTOR(8 DOWNTO 0);
+    signal uart_main_data_ready             : STD_LOGIC;
+    signal uart_main_data_error             : STD_LOGIC;
+    signal uart_main_parity_error           : STD_LOGIC;
+    signal uart_main_send_ready             : STD_LOGIC;
 
     signal data_safe_8_bit_rst              : STD_LOGIC := '1';
     signal data_safe_8_bit_read             : STD_LOGIC := '0';
@@ -296,6 +331,29 @@ begin
         data_in             => uart_send_2_in,
         data_send_start     => uart_send_2_start,
         ready               => uart_send_2_ready
+    );
+
+    uart_total : uart_main
+    generic map (
+        clockspeed          => 50000000,
+        baudrate            => 236400,
+        parity_bit_en       => true,
+        parity_bit_type     => 3,
+        bit_count           => 6,
+        stop_bits_count     => 2
+    )
+    port map (
+        rst                 => uart_main_rst,
+        clk                 => clk,
+        uart_rx             => uart_main_rx,
+        uart_tx             => uart_main_tx,
+        send_start          => uart_main_send_start,
+        data_in             => uart_main_data_in,
+        data_out            => uart_main_data_out,
+        data_ready          => uart_main_data_ready,
+        data_error          => uart_main_data_error,
+        parity_error        => uart_main_parity_error,
+        send_ready          => uart_main_send_ready
     );
 
     data_safe : data_safe_8_bit
