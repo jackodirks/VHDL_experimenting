@@ -492,7 +492,8 @@ begin
         debouncer_reset <= '0';
         debouncer_pulse_in <= '1';
         wait for 10045 ns;
-        assert debouncer_pulse_out = '1' report "Debouncer value is zero where it should be one";
+        assert debouncer_pulse_out = '1' report "Debouncer value is zero where it should be one" severity error;
+        assert false report "Debouncer test done" severity note;
         wait;
     end process;
 
