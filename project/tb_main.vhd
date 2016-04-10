@@ -225,7 +225,7 @@ begin
 
     simple_multishot_timer_500 : simple_multishot_timer
     generic map (
-        match_val => 500
+        match_val => 10
     )
     port map (
         clk => clk,
@@ -374,8 +374,29 @@ begin
             wait;
         end if;
     end process;
+    uart_main_rx <= uart_main_tx;
+    uart_main_tester : process
+        variable test_data : STD_LOGIC_VECTOR(5 DOWNTO 0) := "101000";
+    begin
+        uart_main_rst <= '0';
+        wait for 20 ns;
+        for D in 0 to 63 loop
+            uart_main_data_in(5 DOWNTO 0) <= STD_LOGIC_VECTOR(to_unsigned(D, 6));
+            uart_main_send_start <= '1';
+            wait for 20 ns;
+            uart_main_send_start <= '0';
+            wait for 42380 ns;
+            assert uart_main_data_ready = '1' report "uart_main had not received on D = " & integer'image(D) severity error;
+            assert uart_main_send_ready = '1' report "uart main is not ready to send on D = " & integer'image(D) severity error;
+            assert uart_main_data_error = '0' report "UART main reports unexpected data error on D = " & integer'image(D) severity error;
+            assert uart_main_parity_error = '0' report "UART main reports unexpected parity error on D = " & integer'image(D) severity error;
+            assert uart_main_data_out(5 DOWNTO 0) = STD_LOGIC_VECTOR(to_unsigned(D, 6)) report "uart main send/receive error on D = " & integer'image(D) severity error;
+        end loop;
+        assert false report "Uart main test done" severity note;
+        wait;
+    end process;
 
-    process
+    data_safe_tester : process
         variable test_data : STD_LOGIC_VECTOR(7 DOWNTO 0 ) := "01100010";
     begin
         data_safe_8_bit_data_in <= test_data;
@@ -397,6 +418,8 @@ begin
     process
     begin
         simple_multishot_timer_rst <= '0';
+        wait until simple_multishot_timer_done = '1';
+        wait for 20 ns;
         wait until simple_multishot_timer_done = '1';
         simple_multishot_timer_rst <= '1';
         assert false report "simple_multishot_timer test done" severity note;
@@ -549,7 +572,7 @@ begin
     begin
         debouncer_reset <= '0';
         debouncer_pulse_in <= '1';
-        wait for 10045 ns;
+        wait for 10065 ns;
         assert debouncer_pulse_out = '1' report "Debouncer value is zero where it should be one" severity error;
         assert false report "Debouncer test done" severity note;
         wait;
