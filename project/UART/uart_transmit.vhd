@@ -57,12 +57,12 @@ architecture Behavioral of uart_transmit is
         end if;
     end BOOL_TO_INT;
     -- Type defenition
-    type state_type is (reset, wait_send, start_one, start_two, bit_one, bit_two, bit_end, parity_one, parity_two, stop_one, stop_two, restore_time);
+    type state_type is (reset, wait_send, start_one, start_two, bit_one, bit_two, bit_end, parity_one, parity_two, stop_one, stop_two, restore_timing);
     type output_type is (start, bits, parity, stop);
     -- Constant defenition
     constant totalBitsSend      : integer := 1 + bit_count + stop_bits + BOOL_TO_INT(parity_bit_en);
     constant ticksPerHalfSend   : integer := integer(clockspeed/(baudrate*2));
-    constant restorationTicks   : natural := integer(FLOOR(real(clockspeed * totalBitsSend))/real(baudrate) - real(ticksPerHalfSend * totalBitsSend * 2));
+    constant restorationTicks   : natural := integer(real(clockspeed * totalBitsSend)/real(baudrate) - real(ticksPerHalfSend * totalBitsSend * 2)) + 1;
     -- Signals
     -- Related to the timer
     signal ticker_rst           : STD_LOGIC := '1';
@@ -227,21 +227,21 @@ begin
                         if stop_bits = 2 then
                             stop_bits_send := stop_bits_send + 1;
                             if stop_bits_send = stop_bits then
-                                state <= restore_time;
+                                state <= restore_timing;
                             else
                                 state <= stop_one;
                             end if;
                         else
-                            state <= restore_time;
+                            state <= restore_timing;
                         end if;
                     else
                         state <= stop_two;
                     end if;
-                when restore_time =>
-                    if restore_done = '1' then
+                when restore_timing =>
+                    if restore_done = '1' or restorationTicks = 0 then
                         state <= wait_send;
                     else
-                        state <= restore_time;
+                        state <= restore_timing;
                     end if;
             end case;
         end if;
@@ -305,7 +305,8 @@ begin
                 cur_output  <= stop;
                 lock_data   <= true;
                 next_bit    <= false;
-            when restore_time =>
+                restore_rst <= '1';
+            when restore_timing =>
                 ready       <= '0';
                 ticker_rst  <= '1';
                 cur_output  <= stop;
