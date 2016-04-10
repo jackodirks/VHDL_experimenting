@@ -27,11 +27,11 @@ begin
     begin
         if rising_edge(clk) then
             if (rst = '1') then
-                timer_value <= (others => '0');
+                timer_value <= to_unsigned(0, timer_value'length);
                 done <= '0';
-            elsif check_timer_match(timer_value, match_val - 1) then
+            elsif check_timer_match(timer_value, match_val) then
                 done <= '1';
-                timer_value <= (others => '0');
+                timer_value <= to_unsigned(1, timer_value'length);
             else
                 timer_value <= timer_value + 1;
                 done <= '0';
