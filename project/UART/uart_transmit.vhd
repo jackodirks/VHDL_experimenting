@@ -1,5 +1,6 @@
 library IEEE;
 use IEEE.STD_LOGIC_1164.ALL;
+use IEEE.MATH_REAL.ALL;
 
 -- Handles the outgoing data.
 
@@ -46,15 +47,28 @@ architecture Behavioral of uart_transmit is
             done        : out STD_LOGIC
         );
     end component;
+    -- Function defenition
+    function BOOL_TO_INT(X : boolean) return integer is
+    begin
+        if X then
+            return 1;
+        else
+            return 0;
+        end if;
+    end BOOL_TO_INT;
     -- Type defenition
-    type state_type is (reset, wait_send, start_one, start_two, bit_one, bit_two, bit_end, parity_one, parity_two, stop_one, stop_two);
+    type state_type is (reset, wait_send, start_one, start_two, bit_one, bit_two, bit_end, parity_one, parity_two, stop_one, stop_two, restore_time);
     type output_type is (start, bits, parity, stop);
     -- Constant defenition
+    constant totalBitsSend      : integer := 1 + bit_count + stop_bits + BOOL_TO_INT(parity_bit_en);
     constant ticksPerHalfSend   : integer := integer(clockspeed/(baudrate*2));
+    constant restorationTicks   : natural := integer(FLOOR(real(clockspeed * totalBitsSend))/real(baudrate) - real(ticksPerHalfSend * totalBitsSend * 2));
     -- Signals
     -- Related to the timer
     signal ticker_rst           : STD_LOGIC := '1';
     signal ticker_done          : STD_LOGIC;
+    signal restore_rst          : STD_LOGIC := '1';
+    signal restore_done         : STD_LOGIC;
     -- Related to the mux
     signal cur_output           : output_type := stop;
     -- Related to the bit output selector and the parity generator.
@@ -84,6 +98,16 @@ begin
         clk         => clk,
         rst         => ticker_rst,
         done        => ticker_done
+    );
+    -- Restoration ticker
+    rest_ticker : simple_multishot_timer
+    generic map (
+        match_val   => restorationTicks
+    )
+    port map (
+        clk         => clk,
+        rst         => restore_rst,
+        done        => restore_done
     );
     -- The mux
     output_mux : process (cur_output, output_bit, parity_output)
@@ -203,20 +227,25 @@ begin
                         if stop_bits = 2 then
                             stop_bits_send := stop_bits_send + 1;
                             if stop_bits_send = stop_bits then
-                                state <= wait_send;
+                                state <= restore_time;
                             else
                                 state <= stop_one;
                             end if;
                         else
-                            state <= wait_send;
+                            state <= restore_time;
                         end if;
                     else
                         state <= stop_two;
                     end if;
+                when restore_time =>
+                    if restore_done = '1' then
+                        state <= wait_send;
+                    else
+                        state <= restore_time;
+                    end if;
             end case;
         end if;
     end process;
-    --type state_type is (reset, wait_send, start_one, start_two, bit_one, bit_two, bit_end, parity_one, parity_two, stop_one, stop_two);
     -- The state behaviour
     state_output : process (state)
     begin
@@ -227,48 +256,62 @@ begin
                 cur_output  <= stop;
                 lock_data   <= false;
                 next_bit    <= false;
+                restore_rst <= '1';
             when wait_send =>
                 ready       <= '1';
                 ticker_rst  <= '1';
                 cur_output  <= stop;
                 lock_data   <= false;
                 next_bit    <= false;
+                restore_rst <= '1';
             when start_one =>
                 ready       <= '0';
                 ticker_rst  <= '0';
                 cur_output  <= start;
                 lock_data   <= true;
                 next_bit    <= false;
+                restore_rst <= '1';
             when start_two =>
                 ready       <= '0';
                 ticker_rst  <= '0';
                 cur_output  <= start;
                 lock_data   <= true;
                 next_bit    <= false;
+                restore_rst <= '1';
             when bit_one =>
                 ready       <= '0';
                 ticker_rst  <= '0';
                 cur_output  <= bits;
                 lock_data   <= true;
                 next_bit    <= false;
+                restore_rst <= '1';
             when bit_two|bit_end =>
                 ready       <= '0';
                 ticker_rst  <= '0';
                 cur_output  <= bits;
                 lock_data   <= true;
                 next_bit    <= true;
+                restore_rst <= '1';
             when parity_one|parity_two =>
                 ready       <= '0';
                 ticker_rst  <= '0';
                 cur_output  <= parity;
                 lock_data   <= true;
                 next_bit    <= false;
+                restore_rst <= '1';
             when stop_one|stop_two =>
                 ready       <= '0';
                 ticker_rst  <= '0';
                 cur_output  <= stop;
                 lock_data   <= true;
                 next_bit    <= false;
+            when restore_time =>
+                ready       <= '0';
+                ticker_rst  <= '1';
+                cur_output  <= stop;
+                lock_data   <= false;
+                next_bit    <= false;
+                restore_rst <= '0';
         end case;
     end process;
 
