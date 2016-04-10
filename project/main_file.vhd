@@ -59,6 +59,7 @@ architecture Behavioral of main_file is
             parity_error            : out STD_LOGIC;
             send_ready              : out STD_LOGIC
         );
+          end component;
 
         component button_to_single_pulse is
             generic (
@@ -106,7 +107,7 @@ begin
         clockspeed          => 50000000,
         baudrate            => 115107,
         parity_bit_en       => true,
-        parity_bit_in_type  => 1,
+        parity_bit_type     => 1,
         bit_count           => 8,
         stop_bits_count     => 1
     )
@@ -116,8 +117,8 @@ begin
         uart_rx             => uart_rx,
         uart_tx             => uart_tx,
         send_start          => uart_start_send,
-        data_in             => uart_received_data,
-        data_out            => uart_send_data,
+        data_in             => uart_send_data,
+        data_out            => uart_received_data,
         data_ready          => uart_receive_done,
         data_error          => uart_data_error,
         parity_error        => uart_parity_error,
@@ -176,4 +177,3 @@ begin
     uart_start_send <= debounce_pulse_out;
     uart_data_ready <= uart_receive_done and not uart_data_error;
 end Behavioral;
-
