@@ -400,7 +400,7 @@ begin
             uart_main_send_start <= '1';
             wait for 20 ns;
             uart_main_send_start <= '0';
-            wait for 42380 ns;
+            wait for 42400 ns;
             assert uart_main_data_ready = '1' report "uart_main had not received on D = " & integer'image(D) severity error;
             assert uart_main_send_ready = '1' report "uart main is not ready to send on D = " & integer'image(D) severity error;
             assert uart_main_data_error = '0' report "UART main reports unexpected data error on D = " & integer'image(D) severity error;
@@ -430,7 +430,7 @@ begin
         wait;
     end process;
 
-    process
+    smt_simulator : process
     begin
         simple_multishot_timer_rst <= '0';
         wait until simple_multishot_timer_done = '1';
@@ -442,7 +442,7 @@ begin
         wait;
     end process;
 
-    process
+    uart_receiver_one_tester : process
         variable data_buffer : STD_LOGIC_VECTOR(7 DOWNTO 0);
     begin
         uart_receiv_1_rst <= '0';
@@ -468,14 +468,14 @@ begin
         wait;
     end process;
 
-    process
+    uart_receive_2_tester : process
         variable data_buffer    : STD_LOGIC_VECTOR(7 DOWNTO 0);
         variable odd            : STD_LOGIC := '0';
     begin
         uart_receiv_2_rx <= '1';
         uart_receiv_2_rst <= '0';
         wait for 4230 ns;
-        for D in 0 to 128 loop
+        for D in 0 to 255 loop
             data_buffer := STD_LOGIC_VECTOR(to_unsigned(D, data_buffer'length));
             uart_receiv_2_rx <= '0';
             for I in 0 to 7 loop
@@ -490,13 +490,41 @@ begin
             uart_receiv_2_rx <= odd;
             wait for 4230 ns;
             uart_receiv_2_rx <= '1';
-            wait until uart_receiv_2_ready = '1';
+            wait for 8460 ns;
+            assert uart_receiv_2_ready = '1' report "Uart receiv 2 was not ready while it was expected to be ready" severity error;
             assert uart_receiv_2(7 DOWNTO 0) = data_buffer report "uart_receiv_2 unexpected value" severity error;
             assert uart_receiv_2_dat_err = '0' report "uart_receiv_2_dat_err unexpected value" severity error;
             assert uart_receiv_2_par_err = '0' report "uart_receiv_2_par_err unexpected value" severity error;
-            wait for 2115 ns;
             odd := '0';
         end loop;
+        uart_receiv_2_rst <= '1';
+        -- Test if the parity error happens when expected
+        wait for 20 ns;
+        uart_receiv_2_rst <= '0';
+        -- Test for parity error
+        data_buffer := STD_LOGIC_VECTOR(to_unsigned(randVal, data_buffer'length));
+        odd         := '0';
+        -- Start bit
+        uart_receiv_2_rx <= '0';
+        -- Send data
+        for I in 0 to 7 loop
+            wait for 4230 ns;
+            uart_receiv_2_rx <= data_buffer(I);
+            if data_buffer(I) = '1' then
+                odd := not odd;
+            end if;
+        end loop;
+        -- Send the wrong parity bit
+        wait for 4230 ns;
+        uart_receiv_2_rx <= not odd;
+        wait for 4230 ns;
+        -- Double stop bit
+        uart_receiv_2_rx <= '1';
+        wait for 8460 ns;
+        assert uart_receiv_2_ready = '1' report "Uart receiv 2 was not ready while it was expected to be ready" severity error;
+        assert uart_receiv_2(7 DOWNTO 0) = data_buffer report "uart_receiv_2 unexpected value" severity error;
+        assert uart_receiv_2_dat_err = '0' report "uart_receiv_2_dat_err unexpected value" severity error;
+        assert uart_receiv_2_par_err = '1' report "uart_receiv_2_par_err unexpected value, expected to fail, but passed, randval was " & integer'image(randVal) severity error;
         uart_receiv_2_rst <= '1';
         assert false report "UART_receiv_2 test done" severity note;
         tests(2) <= '1';
@@ -578,12 +606,13 @@ begin
             wait for 4230 ns;
         end loop;
         wait for 4230 ns;
+        -- At this point we would test for abnormal situations, but there are none: there is no input for which an error is expected.
         assert false report "data_send_2 tests done" severity note;
         tests(3) <= '1';
         wait;
     end process;
 
-    process
+    debouncer_tester : process
     begin
         debouncer_reset <= '0';
         debouncer_pulse_in <= '1';
