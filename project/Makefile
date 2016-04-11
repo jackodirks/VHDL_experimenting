@@ -31,7 +31,7 @@ $(WORKFILE) : $(SRC)
 	$(GHDL) $(BUILDFLAGS) $(TESTBENCH)
 
 $(TARGET) : $(WORKFILE)
-	$(GHDL) $(RUNFLAGS) $(TESTBENCH) --wave=$@
+	$(GHDL) $(RUNFLAGS) $(TESTBENCH) --wave=$@ -gSEED=$(TIMESEED)
 
 simulate: run
 	$(VIEUWER) $(TARGET)

@@ -2,9 +2,12 @@ library IEEE;
 use IEEE.STD_LOGIC_1164.ALL;
 use IEEE.numeric_std.ALL;
 use std.textio.ALL;
+use IEEE.MATH_REAL.ALL;
+
 
 entity tb_main is
-    end tb_main;
+    generic ( SEED : natural);
+end tb_main;
 
 architecture tb of tb_main is
 
@@ -221,6 +224,8 @@ architecture tb of tb_main is
     signal debouncer_pulse_in               : STD_LOGIC := '0';
 
     signal tests                            : STD_LOGIC_VECTOR(3 DOWNTO 0) := (others => '0');
+
+    signal randVal                          : natural := 0;
 begin
 
     simple_multishot_timer_500 : simple_multishot_timer
@@ -364,6 +369,16 @@ begin
         data_in => data_safe_8_bit_data_in,
         data_out => data_safe_8_bit_data_out
     );
+
+    rand_gen : process
+    begin
+        wait for 20 ns;
+        randVal <= SEED rem 256;
+        wait for 20 ns;
+        report "Seed is " & integer'image(SEED) severity note;
+        report "randVal is " & integer'image(randVal) severity note;
+        wait;
+    end process;
 
     clock_gen : process
     begin
