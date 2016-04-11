@@ -62,7 +62,7 @@ architecture Behavioral of uart_transmit is
     -- Constant defenition
     constant totalBitsSend      : integer := 1 + bit_count + stop_bits + BOOL_TO_INT(parity_bit_en);
     constant ticksPerHalfSend   : integer := integer(clockspeed/(baudrate*2));
-    constant restorationTicks   : natural := integer(real(clockspeed * totalBitsSend)/real(baudrate) - real(ticksPerHalfSend * totalBitsSend * 2)) + 1;
+    constant restorationTicks   : natural := (clockspeed * totalBitsSend)/baudrate - (ticksPerHalfSend * totalBitsSend * 2);
     -- Signals
     -- Related to the timer
     signal ticker_rst           : STD_LOGIC := '1';
