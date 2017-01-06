@@ -3,8 +3,7 @@ use IEEE.STD_LOGIC_1164.ALL;
 
 entity seven_segments_driver is
     generic (
-        switch_freq         : natural;
-        clockspeed          : natural
+        ticks_per_hold         : natural
     );
     Port (
         clk                 : in    STD_LOGIC;
@@ -47,7 +46,7 @@ begin
 
     simple_multishot_timer_wait_time : simple_multishot_timer
     generic map (
-        match_val   => clockspeed / switch_freq
+        match_val   => ticks_per_hold
     )
     port map (
         clk         => clk,
