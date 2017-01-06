@@ -61,8 +61,7 @@ architecture Behavioral of seven_segments_tb is
 
     component seven_segments_driver is
         generic (
-            switch_freq         : natural;
-            clockspeed          : natural
+            ticks_per_hold         : natural
         );
         Port (
             clk                 : in  STD_LOGIC;
@@ -84,13 +83,11 @@ architecture Behavioral of seven_segments_tb is
     signal ss_4                             : STD_LOGIC_VECTOR(3 DOWNTO 0);
     signal test_done                        : boolean := false;
     -- Constants
-    constant switch_freq                    : natural := 1;
-    constant clockspeed                     : natural := 2;
+    constant ticks_per_hold                 : natural := 2;
 begin
     ss_driver : seven_segments_driver
     generic map (
-        switch_freq => switch_freq,
-        clockspeed => clockspeed
+        ticks_per_hold => ticks_per_hold
     )
     port map (
         clk => clk,
@@ -110,6 +107,10 @@ begin
         ss_2 <= "0001";
         ss_3 <= "0010";
         ss_4 <= "0011";
+        -- Wait two more rising edges, because the driver needs two ticks to get started
+        -- Well the multishot timer does not report done on t=0, which is correct but a bit counterintuitive.
+        wait until rising_edge(clk);
+        wait until rising_edge(clk);
         wait until rising_edge(clk);
         wait until rising_edge(clk);
         -- Check if the correct display is chosen
@@ -117,8 +118,16 @@ begin
         checkCorr("11000000", ss_kathode);
         checkCorrOutput("1110", ss_anode);
         wait until rising_edge(clk);
+        wait until rising_edge(clk);
+        checkCorr("11111001", ss_kathode);
+        checkCorrOutput("1101", ss_anode);
+        wait until rising_edge(clk);
+        wait until rising_edge(clk);
+        checkCorr("10100100", ss_kathode);
+        checkCorrOutput("1011", ss_anode);
         test_done <= true;
-        assert false report "Seven segments test done" severity note;
+        report "Seven segments test done" severity note;
+        wait;
     end process;
 end Behavioral;
 

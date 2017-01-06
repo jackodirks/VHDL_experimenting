@@ -11,46 +11,14 @@ end tb_main;
 
 architecture tb of tb_main is
 
-    function hstr(slv: std_logic_vector) return string is
-    variable hexlen: integer;
-    variable longslv : std_logic_vector(67 downto 0) := (others => '0');
-    variable hex : string(1 to 16);
-    variable fourbit : std_logic_vector(3 downto 0);
-    begin
-        hexlen := (slv'left+1)/4;
-        if (slv'left+1) mod 4 /= 0 then
-            hexlen := hexlen + 1;
-        end if;
-        longslv(slv'left downto 0) := slv;
-        for i in (hexlen -1) downto 0 loop
-            fourbit := longslv(((i*4)+3) downto (i*4));
-            case fourbit is
-                when "0000" => hex(hexlen -I) := '0';
-                when "0001" => hex(hexlen -I) := '1';
-                when "0010" => hex(hexlen -I) := '2';
-                when "0011" => hex(hexlen -I) := '3';
-                when "0100" => hex(hexlen -I) := '4';
-                when "0101" => hex(hexlen -I) := '5';
-                when "0110" => hex(hexlen -I) := '6';
-                when "0111" => hex(hexlen -I) := '7';
-                when "1000" => hex(hexlen -I) := '8';
-                when "1001" => hex(hexlen -I) := '9';
-                when "1010" => hex(hexlen -I) := 'A';
-                when "1011" => hex(hexlen -I) := 'B';
-                when "1100" => hex(hexlen -I) := 'C';
-                when "1101" => hex(hexlen -I) := 'D';
-                when "1110" => hex(hexlen -I) := 'E';
-                when "1111" => hex(hexlen -I) := 'F';
-                when "ZZZZ" => hex(hexlen -I) := 'z';
-                when "UUUU" => hex(hexlen -I) := 'u';
-                when "XXXX" => hex(hexlen -I) := 'x';
-                when others => hex(hexlen -I) := '?';
-            end case;
-        end loop;
-        return hex(1 to hexlen);
-    end hstr;
-
     -- Component declaration --
+    component seven_segments_tb is
+        port (
+            clk : in STD_LOGIC;
+            done : out boolean
+        );
+    end component;
+
     component simple_multishot_timer is
         generic (
             match_val : integer
@@ -59,22 +27,6 @@ architecture tb of tb_main is
             clk         : in STD_LOGIC;
             rst         : in STD_LOGIC;
             done        : out STD_LOGIC
-        );
-    end component;
-
-    component seven_segments_driver is
-        generic (
-            switch_freq         : natural;
-            clockspeed          : natural
-        );
-        Port (
-            clk                 : in  STD_LOGIC;
-            ss_1                : in  STD_LOGIC_VECTOR (3 downto 0);
-            ss_2                : in  STD_LOGIC_VECTOR (3 downto 0);
-            ss_3                : in  STD_LOGIC_VECTOR (3 downto 0);
-            ss_4                : in  STD_LOGIC_VECTOR (3 downto 0);
-            seven_seg_kath      : out  STD_LOGIC_VECTOR (7 downto 0);
-            seven_seg_an        : out  STD_LOGIC_VECTOR (3 downto 0)
         );
     end component;
 
@@ -174,8 +126,6 @@ architecture tb of tb_main is
     signal simple_multishot_timer_rst       : STD_LOGIC := '1';
     signal simple_multishot_timer_done      : STD_LOGIC;
     signal simple_multishot_timer_cur_val   : STD_LOGIC_VECTOR(6 DOWNTO 0);
-    signal ss_kathode                       : STD_LOGIC_VECTOR(7 DOWNTO 0);
-    signal ss_anode                         : STD_LOGIC_VECTOR(3 DOWNTO 0);
 
     signal uart_receiv_1_rst                : STD_LOGIC := '1';
     signal uart_receiv_1_rx                 : STD_LOGIC := '1';
@@ -223,6 +173,8 @@ architecture tb of tb_main is
     signal debouncer_pulse_out              : STD_LOGIC;
     signal debouncer_pulse_in               : STD_LOGIC := '0';
 
+    signal seven_segments_done              : boolean;
+
     signal tests                            : STD_LOGIC_VECTOR(3 DOWNTO 0) := (others => '0');
 
     signal randVal                          : natural := 0;
@@ -236,21 +188,6 @@ begin
         clk => clk,
         rst => simple_multishot_timer_rst,
         done => simple_multishot_timer_done
-    );
-
-    ss_driver : seven_segments_driver
-    generic map (
-        switch_freq => 2000000,
-        clockspeed => 50000000
-    )
-    port map (
-        clk => clk,
-        ss_1 => "0001",
-        ss_2 => "0010",
-        ss_3 => "0100",
-        ss_4 => "1000",
-        seven_seg_kath => ss_kathode,
-        seven_seg_an => ss_anode
     );
 
     debounce_tester : button_to_single_pulse
@@ -370,6 +307,12 @@ begin
         data_out => data_safe_8_bit_data_out
     );
 
+    seven_segments_test: seven_segments_tb
+    port map (
+        clk => clk,
+        done => seven_segments_done
+    );
+
     rand_gen : process
     begin
         wait for 20 ns;
@@ -382,14 +325,16 @@ begin
 
     clock_gen : process
     begin
-        if tests /= "1111" then
+        if tests /= "1111" or seven_segments_done = false then
             clk <= not clk;
             wait for 10 ns;
         else
             wait;
         end if;
     end process;
+
     uart_main_rx <= uart_main_tx;
+
     uart_main_tester : process
         variable test_data : STD_LOGIC_VECTOR(5 DOWNTO 0) := "101000";
     begin
