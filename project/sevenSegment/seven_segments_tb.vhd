@@ -11,14 +11,14 @@ end seven_segments_tb;
 
 architecture Behavioral of seven_segments_tb is
 
-    procedure checkCorr(exp, got: STD_LOGIC_VECTOR) is
+    procedure checkCorr(exp, got: STD_LOGIC_VECTOR(7 DOWNTO 0)) is
     begin
-        assert exp = got report "Seven segments misbehaves: data output error. Expected "; --& STD_LOGIC_VECTOR'to_string(exp) & " got " & STD_LOGIC_VECTOR'image(got) severity error;
+        assert exp = got report "Seven segments misbehaves: data output error. Expected " & hstr(exp) & " got " & hstr(got);
     end checkCorr;
 
-    procedure checkCorrOutput(exp, got: STD_LOGIC_VECTOR) is
+    procedure checkCorrOutput(exp, got: STD_LOGIC_VECTOR(3 DOWNTO 0)) is
     begin
-        assert exp = got report "Seven segments misbehaves: display output error. Expected "; --& STD_LOGIC_VECTOR'to_string(exp) & " got " & STD_LOGIC_VECTOR'image(got) severity error;
+        assert exp = got report "Seven segments misbehaves: display output error. Expected " & hstr(exp) & " got " & hstr(got);
     end checkCorrOutput;
 
     component seven_segments_driver is
