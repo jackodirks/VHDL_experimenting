@@ -5,21 +5,32 @@ use work.txt_util.all;
 entity seven_segments_tb is
     port (
         clk : in STD_LOGIC;
-        done : out boolean
+        done : out boolean;
+        success : out boolean
     );
 end seven_segments_tb;
 
 architecture Behavioral of seven_segments_tb is
 
-    procedure checkCorr(exp, got: STD_LOGIC_VECTOR(7 DOWNTO 0)) is
+    function eightBitsIncorrect(exp, got: STD_LOGIC_VECTOR(7 DOWNTO 0)) return boolean is
     begin
-        assert exp = got report "Seven segments misbehaves: data output error. Expected " & hstr(exp) & " got " & hstr(got);
-    end checkCorr;
+        if exp = got then
+            return false;
+        else
+            report "Seven segments misbehaves: data output error. Expected " & hstr(exp) & " got " & hstr(got) severity error;
+            return true;
+        end if;
+    end eightBitsIncorrect;
 
-    procedure checkCorrOutput(exp, got: STD_LOGIC_VECTOR(3 DOWNTO 0)) is
+    function fourBitsIncorrect(exp, got: STD_LOGIC_VECTOR(3 DOWNTO 0)) return boolean is
     begin
-        assert exp = got report "Seven segments misbehaves: display output error. Expected " & hstr(exp) & " got " & hstr(got);
-    end checkCorrOutput;
+        if exp = got then
+            return false;
+        else
+            report "Seven segments misbehaves: display select error. Expected " & hstr(exp) & " got " & hstr(got);
+            return true;
+        end if;
+    end fourBitsIncorrect;
 
     component seven_segments_driver is
         generic (
@@ -64,6 +75,7 @@ begin
     done <= test_done;
 
     test_process : process
+        variable fail : boolean := false;
     begin
         ss_1 <= "0000";
         ss_2 <= "0001";
@@ -77,80 +89,81 @@ begin
         wait until rising_edge(clk);
         -- Check if the correct display is chosen
         -- Check if the output is correct
-        checkCorr("11000000", ss_kathode);
-        checkCorrOutput("1110", ss_anode);
+        fail := fail or eightBitsIncorrect("11000000", ss_kathode);
+        fail := fail or fourBitsIncorrect("1110", ss_anode);
         wait until rising_edge(clk);
         wait until rising_edge(clk);
-        checkCorr("11111001", ss_kathode);
-        checkCorrOutput("1101", ss_anode);
+        fail := fail or eightBitsIncorrect("11111001", ss_kathode);
+        fail := fail or fourBitsIncorrect("1101", ss_anode);
         wait until rising_edge(clk);
         wait until rising_edge(clk);
-        checkCorr("10100100", ss_kathode);
-        checkCorrOutput("1011", ss_anode);
+        fail := fail or eightBitsIncorrect("10100100", ss_kathode);
+        fail := fail or fourBitsIncorrect("1011", ss_anode);
         wait until rising_edge(clk);
         wait until rising_edge(clk);
-        checkCorr("10110000", ss_kathode);
-        checkCorrOutput("0111", ss_anode);
+        fail := fail or eightBitsIncorrect("10110000", ss_kathode);
+        fail := fail or fourBitsIncorrect("0111", ss_anode);
         ss_1 <= "0100";
         ss_2 <= "0101";
         ss_3 <= "0110";
         ss_4 <= "0111";
         wait until rising_edge(clk);
         wait until rising_edge(clk);
-        checkCorr("10011001", ss_kathode);
-        checkCorrOutput("1110", ss_anode);
+        fail := fail or eightBitsIncorrect("10011001", ss_kathode);
+        fail := fail or fourBitsIncorrect("1110", ss_anode);
         wait until rising_edge(clk);
         wait until rising_edge(clk);
-        checkCorr("10010010", ss_kathode);
-        checkCorrOutput("1101", ss_anode);
+        fail := fail or eightBitsIncorrect("10010010", ss_kathode);
+        fail := fail or fourBitsIncorrect("1101", ss_anode);
         wait until rising_edge(clk);
         wait until rising_edge(clk);
-        checkCorr("10000010", ss_kathode);
-        checkCorrOutput("1011", ss_anode);
+        fail := fail or eightBitsIncorrect("10000010", ss_kathode);
+        fail := fail or fourBitsIncorrect("1011", ss_anode);
         wait until rising_edge(clk);
         wait until rising_edge(clk);
-        checkCorr("11111000", ss_kathode);
-        checkCorrOutput("0111", ss_anode);
+        fail := fail or eightBitsIncorrect("11111000", ss_kathode);
+        fail := fail or fourBitsIncorrect("0111", ss_anode);
         ss_1 <= "1000";
         ss_2 <= "1001";
         ss_3 <= "1010";
         ss_4 <= "1011";
         wait until rising_edge(clk);
         wait until rising_edge(clk);
-        checkCorr("10000000", ss_kathode);
-        checkCorrOutput("1110", ss_anode);
+        fail := fail or eightBitsIncorrect("10000000", ss_kathode);
+        fail := fail or fourBitsIncorrect("1110", ss_anode);
         wait until rising_edge(clk);
         wait until rising_edge(clk);
-        checkCorr("10010000", ss_kathode);
-        checkCorrOutput("1101", ss_anode);
+        fail := fail or eightBitsIncorrect("10010000", ss_kathode);
+        fail := fail or fourBitsIncorrect("1101", ss_anode);
         wait until rising_edge(clk);
         wait until rising_edge(clk);
-        checkCorr("10001000", ss_kathode);
-        checkCorrOutput("1011", ss_anode);
+        fail := fail or eightBitsIncorrect("10001000", ss_kathode);
+        fail := fail or fourBitsIncorrect("1011", ss_anode);
         wait until rising_edge(clk);
         wait until rising_edge(clk);
-        checkCorr("10000011", ss_kathode);
-        checkCorrOutput("0111", ss_anode);
+        fail := fail or eightBitsIncorrect("10000011", ss_kathode);
+        fail := fail or fourBitsIncorrect("0111", ss_anode);
         ss_1 <= "1100";
         ss_2 <= "1101";
         ss_3 <= "1110";
         ss_4 <= "1111";
         wait until rising_edge(clk);
         wait until rising_edge(clk);
-        checkCorr("11000110", ss_kathode);
-        checkCorrOutput("1110", ss_anode);
+        fail := fail or eightBitsIncorrect("11000110", ss_kathode);
+        fail := fail or fourBitsIncorrect("1110", ss_anode);
         wait until rising_edge(clk);
         wait until rising_edge(clk);
-        checkCorr("10100001", ss_kathode);
-        checkCorrOutput("1101", ss_anode);
+        fail := fail or eightBitsIncorrect("10100001", ss_kathode);
+        fail := fail or fourBitsIncorrect("1101", ss_anode);
         wait until rising_edge(clk);
         wait until rising_edge(clk);
-        checkCorr("10000110", ss_kathode);
-        checkCorrOutput("1011", ss_anode);
+        fail := fail or eightBitsIncorrect("10000110", ss_kathode);
+        fail := fail or fourBitsIncorrect("1011", ss_anode);
         wait until rising_edge(clk);
         wait until rising_edge(clk);
-        checkCorr("10001110", ss_kathode);
-        checkCorrOutput("0111", ss_anode);
+        fail := fail or eightBitsIncorrect("10001110", ss_kathode);
+        fail := fail or fourBitsIncorrect("0111", ss_anode);
+        success <= not fail;
         test_done <= true;
         report "Seven segments test done" severity note;
         wait;

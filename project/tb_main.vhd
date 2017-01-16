@@ -14,8 +14,9 @@ architecture tb of tb_main is
     -- Component declaration --
     component seven_segments_tb is
         port (
-            clk : in STD_LOGIC;
-            done : out boolean
+            clk         : in STD_LOGIC;
+            done        : out boolean;
+            success     : out boolean
         );
     end component;
 
