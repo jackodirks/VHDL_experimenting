@@ -8,3 +8,5 @@ Sources of information:
 Usage of GHDL:
 http://www.armadeus.com/wiki/index.php?title=How_to_make_a_VHDL_design_in_Ubuntu/Debian#Using_Xilinx_command_line_tools_for_shell_syntesis
 http://ghdl.readthedocs.org/en/latest/index.html
+
+Running happens using the Makefile in the project directory. Type `make` to make GHDL scan and process all VHDL files specified, type `make run` to run the testbench (implies `make`) and type `make simulate` to start gtkwave with the generated output file (implies `make run`).
