@@ -249,6 +249,13 @@ begin
         success => seven_segments_success
     );
 
+    common_test : common_tb
+    port map (
+        clk => clk,
+        done => common_done,
+        success => common_success
+    );
+
     rand_gen : process
     begin
         wait for 20 ns;
