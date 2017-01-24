@@ -268,7 +268,7 @@ begin
 
     clock_gen : process
     begin
-        if not (common_done and seven_segments_done) then
+        if not (common_done and seven_segments_done and tests(1) = '1' and tests(2) = '1' and tests(3) = '1') then
             clk <= not clk;
             wait for 10 ns;
         else
