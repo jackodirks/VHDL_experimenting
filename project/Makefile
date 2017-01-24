@@ -15,13 +15,17 @@ DIRS := $(DIRS:=rules.mk)
 
 -include $(DIRS)
 
-.PHONY: all clean run simulate pre-build distclean
+.PHONY: all clean run simulate pre-build distclean timedRun
 
 all: pre-build
 all: $(WORKFILE)
 
 run: pre-build
 run: $(TARGET)
+
+timedRun: pre-build
+timedRun: BENCHFLAGS += --stop-time=$(MAXRUNTIME)
+timedRun: $(TARGET)
 
 pre-build:
 	@mkdir -p $(WORKDIR)
