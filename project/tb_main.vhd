@@ -20,14 +20,11 @@ architecture tb of tb_main is
         );
     end component;
 
-    component simple_multishot_timer is
-        generic (
-            match_val : integer
-        );
+    component common_tb is
         port (
-            clk         : in STD_LOGIC;
-            rst         : in STD_LOGIC;
-            done        : out STD_LOGIC
+            clk : in STD_LOGIC;
+            done : out boolean;
+            success : out boolean
         );
     end component;
 
@@ -94,39 +91,12 @@ architecture tb of tb_main is
         );
     end component;
 
-    component data_safe_8_bit is
-        port (
-            clk         : in STD_LOGIC;
-            rst         : in STD_LOGIC;
-            read        : in STD_LOGIC;
-            data_in     : in STD_LOGIC_VECTOR(7 DOWNTO 0);
-            data_out    : out STD_LOGIC_VECTOR(7 DOWNTO 0)
-        );
-    end component;
-
-    component button_to_single_pulse is
-        generic (
-            debounce_ticks      : natural range 2 to natural'high
-        );
-        port (
-            clk                 : in STD_LOGIC;
-            rst                 : in STD_LOGIC;
-            pulse_in            : in STD_LOGIC;
-            pulse_out           : out STD_LOGIC
-        );
-    end component;
-
     -- Constant declaration --
     constant clock_period_ns                : natural := 40;
     constant test_count                     : natural := 5;
 
     -- Signal declaration --
     signal clk                              : STD_LOGIC := '0';
-    signal led                              : STD_LOGIC_VECTOR (7 DOWNTO 0);
-    signal slide_switch                     : STD_LOGIC_VECTOR(7 DOWNTO 0);
-    signal simple_multishot_timer_rst       : STD_LOGIC := '1';
-    signal simple_multishot_timer_done      : STD_LOGIC;
-    signal simple_multishot_timer_cur_val   : STD_LOGIC_VECTOR(6 DOWNTO 0);
 
     signal uart_receiv_1_rst                : STD_LOGIC := '1';
     signal uart_receiv_1_rx                 : STD_LOGIC := '1';
@@ -165,42 +135,15 @@ architecture tb of tb_main is
     signal uart_main_parity_error           : STD_LOGIC;
     signal uart_main_send_ready             : STD_LOGIC;
 
-    signal data_safe_8_bit_rst              : STD_LOGIC := '1';
-    signal data_safe_8_bit_read             : STD_LOGIC := '0';
-    signal data_safe_8_bit_data_in          : STD_LOGIC_VECTOR(7 DOWNTO 0) := (others => '0');
-    signal data_safe_8_bit_data_out         : STD_LOGIC_VECTOR(7 DOWNTO 0);
-
-    signal debouncer_reset                  : STD_LOGIC := '1';
-    signal debouncer_pulse_out              : STD_LOGIC;
-    signal debouncer_pulse_in               : STD_LOGIC := '0';
-
     signal seven_segments_done              : boolean;
+    signal common_done                      : boolean;
+
+    signal seven_segments_success           : boolean;
+    signal common_success                   : boolean;
 
     signal tests                            : STD_LOGIC_VECTOR(3 DOWNTO 0) := (others => '0');
-
     signal randVal                          : natural := 0;
 begin
-
-    simple_multishot_timer_500 : simple_multishot_timer
-    generic map (
-        match_val => 10
-    )
-    port map (
-        clk => clk,
-        rst => simple_multishot_timer_rst,
-        done => simple_multishot_timer_done
-    );
-
-    debounce_tester : button_to_single_pulse
-    generic map (
-        debounce_ticks => 500
-    )
-    port map (
-        clk => clk,
-        rst => debouncer_reset,
-        pulse_in => debouncer_pulse_in,
-        pulse_out => debouncer_pulse_out
-    );
 
     uart_receiver_1 : uart_receiv
     generic map (
@@ -299,19 +242,11 @@ begin
         send_ready          => uart_main_send_ready
     );
 
-    data_safe : data_safe_8_bit
-    port map (
-        clk => clk,
-        rst => data_safe_8_bit_rst,
-        read => data_safe_8_bit_read,
-        data_in => data_safe_8_bit_data_in,
-        data_out => data_safe_8_bit_data_out
-    );
-
     seven_segments_test: seven_segments_tb
     port map (
         clk => clk,
-        done => seven_segments_done
+        done => seven_segments_done,
+        success => seven_segments_success
     );
 
     rand_gen : process
@@ -326,7 +261,7 @@ begin
 
     clock_gen : process
     begin
-        if tests /= "1111" or seven_segments_done = false then
+        if not (common_done and seven_segments_done) then
             clk <= not clk;
             wait for 10 ns;
         else
@@ -354,37 +289,6 @@ begin
             assert uart_main_data_out(5 DOWNTO 0) = STD_LOGIC_VECTOR(to_unsigned(D, 6)) report "uart main send/receive error on D = " & integer'image(D) severity error;
         end loop;
         assert false report "Uart main test done" severity note;
-        wait;
-    end process;
-
-    data_safe_tester : process
-        variable test_data : STD_LOGIC_VECTOR(7 DOWNTO 0 ) := "01100010";
-    begin
-        data_safe_8_bit_data_in <= test_data;
-        data_safe_8_bit_rst <= '0';
-        wait for 100 ns;
-        assert data_safe_8_bit_data_out = "00000000" report "data_safe_8_bit_data_out has changed to early" severity error;
-        data_safe_8_bit_read <= '1';
-        wait for 100 ns;
-        assert data_safe_8_bit_data_out = test_data report "data_safe_8_bit_data_out has not changed while this was expected" severity error;
-        data_safe_8_bit_read <= '0';
-        data_safe_8_bit_data_in <= "01010101";
-        wait for 100 ns;
-        assert data_safe_8_bit_data_out = test_data report "data_safe_8_bit_data_out has changed unexpected" severity error;
-        tests(2) <= '1';
-        assert false report "data_safe_8_bit tests done" severity note;
-        wait;
-    end process;
-
-    smt_simulator : process
-    begin
-        simple_multishot_timer_rst <= '0';
-        wait until simple_multishot_timer_done = '1';
-        wait for 20 ns;
-        wait until simple_multishot_timer_done = '1';
-        simple_multishot_timer_rst <= '1';
-        assert false report "simple_multishot_timer test done" severity note;
-        tests(0) <= '1';
         wait;
     end process;
 
@@ -555,16 +459,6 @@ begin
         -- At this point we would test for abnormal situations, but there are none: there is no input for which an error is expected.
         assert false report "data_send_2 tests done" severity note;
         tests(3) <= '1';
-        wait;
-    end process;
-
-    debouncer_tester : process
-    begin
-        debouncer_reset <= '0';
-        debouncer_pulse_in <= '1';
-        wait for 10065 ns;
-        assert debouncer_pulse_out = '1' report "Debouncer value is zero where it should be one" severity error;
-        assert false report "Debouncer test done" severity note;
         wait;
     end process;
 
