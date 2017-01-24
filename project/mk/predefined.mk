@@ -1,4 +1,4 @@
-WORKDIR := work/
-WORKNAMEPREFIX := work
-WORKNAMESUFFIX := obj93.cf
-STD=93c
+WORKDIR ?= work/
+WORKNAMEPREFIX ?= work
+WORKNAMESUFFIX ?= obj93.cf
+STD ?= 93c
