@@ -15,7 +15,7 @@ DIRS := $(DIRS:=rules.mk)
 
 -include $(DIRS)
 
-.PHONY: all clean run simulate pre-build
+.PHONY: all clean run simulate pre-build distclean
 
 all: pre-build
 all: $(WORKFILE)
@@ -36,5 +36,8 @@ $(TARGET) : $(WORKFILE)
 simulate: run
 	$(VIEUWER) $(TARGET)
 
-clean :
+clean:
 	$(GHDL) $(CLEANFLAGS)
+
+distclean :
+	rm -rf $(WORKDIR)
