@@ -2,3 +2,4 @@ simu_workdir/
 *.swp
 work/
 tb_main
+*.o
