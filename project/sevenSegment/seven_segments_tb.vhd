@@ -3,6 +3,9 @@ use IEEE.STD_LOGIC_1164.ALL;
 use work.txt_util.all;
 
 entity seven_segments_tb is
+    generic (
+        clock_period : time
+    );
     port (
         clk : in STD_LOGIC;
         done : out boolean;

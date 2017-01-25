@@ -3,6 +3,9 @@ use IEEE.STD_LOGIC_1164.ALL;
 use work.txt_util.all;
 
 entity common_tb is
+    generic (
+        clock_period : time
+    );
     port (
         clk : in STD_LOGIC;
         done : out boolean;
@@ -111,7 +114,7 @@ begin
             for I in 0 to (simple_multishot_maxval-1) loop
                 wait until rising_edge(clk);
             end loop;
-            wait for 10 ns;
+            wait for clock_period/2;
             if simple_multishot_timer_done /= '1' then
                 report "Simple multishot timer was expected to be one, but was zero" severity error;
                 suc := false;
@@ -122,14 +125,14 @@ begin
             wait until rising_edge(clk);
         end loop;
         simple_multishot_timer_rst <= '1';
-        wait for 10 ns;
+        wait for clock_period/2;
         simple_multishot_timer_rst <= '0';
         wait until rising_edge(clk);
         for J in 0 to 5 loop
             for I in 0 to (simple_multishot_maxval-1) loop
                 wait until rising_edge(clk);
             end loop;
-            wait for 10 ns;
+            wait for clock_period/2;
             if simple_multishot_timer_done /= '1' then
                 report "Simple multishot timer was expected to be one, but was zero (after reset test)" severity error;
                 suc := false;
@@ -163,20 +166,26 @@ begin
     begin
         data_safe_8_bit_data_in <= test_data;
         data_safe_8_bit_rst <= '0';
-        wait for 100 ns;
+        for I in 0 to 5 loop
+            wait until rising_edge(clk);
+        end loop;
         if data_safe_8_bit_data_out /= "00000000" then
             report "data_safe_8_bit_data_out has changed to early" severity error;
             suc := false;
         end if;
         data_safe_8_bit_read <= '1';
-        wait for 100 ns;
+        for I in 0 to 5 loop
+            wait until rising_edge(clk);
+        end loop;
         if data_safe_8_bit_data_out /= test_data then
             report "data_safe_8_bit_data_out has not changed while this was expected" severity error;
             suc := false;
         end if;
         data_safe_8_bit_read <= '0';
         data_safe_8_bit_data_in <= "01010101";
-        wait for 100 ns;
+        for I in 0 to 5 loop
+            wait until rising_edge(clk);
+        end loop;
         if data_safe_8_bit_data_out /= test_data then
             report "data_safe_8_bit_data_out has changed unexpected" severity error;
             suc := false;

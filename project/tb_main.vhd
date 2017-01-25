@@ -13,6 +13,9 @@ architecture tb of tb_main is
 
     -- Component declaration --
     component seven_segments_tb is
+        generic (
+            clock_period : time
+        );
         port (
             clk         : in STD_LOGIC;
             done        : out boolean;
@@ -21,6 +24,9 @@ architecture tb of tb_main is
     end component;
 
     component common_tb is
+        generic (
+            clock_period : time
+        );
         port (
             clk : in STD_LOGIC;
             done : out boolean;
@@ -92,7 +98,7 @@ architecture tb of tb_main is
     end component;
 
     -- Constant declaration --
-    constant clock_period_ns                : natural := 40;
+    constant clock_period                   : time := 20 ns;    -- Please make sure this number is divisible by 2.
     constant test_count                     : natural := 5;
 
     -- Signal declaration --
@@ -243,6 +249,9 @@ begin
     );
 
     seven_segments_test: seven_segments_tb
+    generic map (
+        clock_period => clock_period
+    )
     port map (
         clk => clk,
         done => seven_segments_done,
@@ -250,6 +259,9 @@ begin
     );
 
     common_test : common_tb
+    generic map (
+        clock_period => clock_period
+    )
     port map (
         clk => clk,
         done => common_done,
@@ -269,8 +281,9 @@ begin
     clock_gen : process
     begin
         if not (common_done and seven_segments_done and tests(1) = '1' and tests(2) = '1' and tests(3) = '1') then
+            -- 1/2 duty cycle
             clk <= not clk;
-            wait for 10 ns;
+            wait for clock_period/2;
         else
             wait;
         end if;
