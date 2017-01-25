@@ -56,15 +56,16 @@ architecture Behavioral of common_tb is
 
     signal simple_multishot_timer_rst       : STD_LOGIC := '1';
     signal simple_multishot_timer_done      : STD_LOGIC;
-    signal simple_multishot_timer_cur_val   : STD_LOGIC_VECTOR(6 DOWNTO 0);
 
-    signal simple_multishot_test_done       : boolean := true;
+    signal simple_multishot_test_done       : boolean := false;
     signal data_safe_test_done              : boolean := false;
     signal debouncer_test_done              : boolean := false;
 
-    signal simple_multishot_test_success    : boolean := true;
+    signal simple_multishot_test_success    : boolean := false;
     signal data_safe_test_success           : boolean := false;
     signal debouncer_test_success           : boolean := false;
+
+    constant simple_multishot_maxval        : natural := 10;
 
 begin
 
@@ -73,7 +74,7 @@ begin
 
     simple_multishot_timer_500 : simple_multishot_timer
     generic map (
-        match_val => 10
+        match_val => simple_multishot_maxval
     )
     port map (
         clk => clk,
@@ -100,6 +101,45 @@ begin
         data_in => data_safe_8_bit_data_in,
         data_out => data_safe_8_bit_data_out
     );
+
+    simple_multishot_tester : process
+        variable suc : boolean := true;
+    begin
+        simple_multishot_timer_rst <= '0';
+        wait until rising_edge(clk);
+        for J in 0 to 5 loop
+            for I in 0 to (simple_multishot_maxval-1) loop
+                wait until rising_edge(clk);
+            end loop;
+            wait for 10 ns;
+            if simple_multishot_timer_done /= '1' then
+                report "Simple multishot timer was expected to be one, but was zero" severity error;
+                suc := false;
+            end if;
+        end loop;
+        -- Check the workings of the reset
+        for I in 0 to (simple_multishot_maxval/2) loop
+            wait until rising_edge(clk);
+        end loop;
+        simple_multishot_timer_rst <= '1';
+        wait for 10 ns;
+        simple_multishot_timer_rst <= '0';
+        wait until rising_edge(clk);
+        for J in 0 to 5 loop
+            for I in 0 to (simple_multishot_maxval-1) loop
+                wait until rising_edge(clk);
+            end loop;
+            wait for 10 ns;
+            if simple_multishot_timer_done /= '1' then
+                report "Simple multishot timer was expected to be one, but was zero (after reset test)" severity error;
+                suc := false;
+            end if;
+        end loop;
+        report "Simple multishot timer finished" severity note;
+        simple_multishot_test_done <= true;
+        simple_multishot_test_success <= suc;
+        wait;
+    end process;
 
     debouncer_tester : process
         variable suc : boolean := true;
@@ -147,5 +187,4 @@ begin
         wait;
     end process;
 
--- TODO: testbench for simple_multishot_timer
 end Behavioral;
