@@ -2,6 +2,7 @@ library IEEE;
 use IEEE.STD_LOGIC_1164.ALL;
 use work.txt_util.all;
 use IEEE.numeric_std.ALL;
+use IEEE.math_real.ALL;
 
 entity uart_tb is
     generic (
@@ -130,6 +131,11 @@ architecture Behavioral of uart_tb is
     signal uart_main_success                : boolean := false;
 
     constant clk_freq                       : natural := (1000 ms / clock_period);
+    constant baudrate                       : natural := 236400;
+    constant baud_period                  : time := (1000 ms / baudrate);
+    constant clk_ticks_per_baud             : natural := (natural(ceil(real(clk_freq)/real(baudrate))));
+
+    constant ten_baud_ticks_time            : time := clk_ticks_per_baud * 10 * clock_period;
 
 begin
 
@@ -138,7 +144,7 @@ begin
 
     uart_receiver_1 : uart_receiv
     generic map (
-        baudrate => 236400,
+        baudrate => baudrate,
         clk_freq => clk_freq,
         parity_bit_in => false,
         parity_bit_in_type => 0,
@@ -157,7 +163,7 @@ begin
 
     uart_receiver_2 : uart_receiv
     generic map (
-        baudrate => 236400,
+        baudrate => baudrate,
         clk_freq => clk_freq,
         parity_bit_in => true,
         parity_bit_in_type => 0,
@@ -176,7 +182,7 @@ begin
 
     uart_send_1 : uart_transmit
     generic map (
-        baudrate            => 236400,
+        baudrate            => baudrate,
         clk_freq          => clk_freq,
         parity_bit_en       => false,
         parity_bit_type     => 0,
@@ -194,7 +200,7 @@ begin
 
     uart_send_2 : uart_transmit
     generic map (
-        baudrate            => 236400,
+        baudrate            => baudrate,
         clk_freq            => clk_freq,
         parity_bit_en       => true,
         parity_bit_type     => 1,
@@ -212,8 +218,8 @@ begin
 
     uart_total : uart_main
     generic map (
-        baudrate            => 236400,
         clk_freq            => clk_freq,
+        baudrate            => baudrate,
         parity_bit_en       => true,
         parity_bit_type     => 3,
         bit_count           => 6,
@@ -240,13 +246,14 @@ begin
         variable test_data : STD_LOGIC_VECTOR(5 DOWNTO 0) := "101000";
     begin
         uart_main_rst <= '0';
-        wait for 20 ns;
+        wait for clock_period;
+        report "clk_period " & time'image(clock_period) & " clk_ticks_per_baud " & natural'image(clk_ticks_per_baud) & " ten_baud_ticks_time " & time'image(ten_baud_ticks_time) severity note;
         for D in 0 to 63 loop
             uart_main_data_in(5 DOWNTO 0) <= STD_LOGIC_VECTOR(to_unsigned(D, 6));
             uart_main_send_start <= '1';
-            wait for 20 ns;
+            wait for clock_period;
             uart_main_send_start <= '0';
-            wait for 42400 ns;
+            wait for ten_baud_ticks_time; -- Wait for 10 baud ticks, which is about 2120 cycles on a 50 MHz clock
             if uart_main_data_ready /= '1' then
                 report "uart_main had not received on D = " & integer'image(D) severity error;
                 suc := false;
@@ -279,17 +286,21 @@ begin
         variable suc            : boolean := true;
     begin
         uart_receiv_1_rst <= '0';
-        wait for 4230 ns;
+        wait for baud_period;
         for D in 0 to 255 loop
             data_buffer := STD_LOGIC_VECTOR(to_unsigned(D, data_buffer'length));
             uart_receiv_1_rx <= '0';
             for I in 0 TO 7 loop
-                wait for 4230 ns;
+                wait for baud_period;
                 uart_receiv_1_rx <= data_buffer(I);
             end loop;
-            wait for 4230 ns;
+            wait for baud_period;
             uart_receiv_1_rx <= '1';
-            wait until uart_receiv_1_ready = '1';
+            wait for baud_period;
+            if uart_receiv_1_ready /= '1' then
+                suc := false;
+                report "Uart_receiv_1 was not ready, while it was expected to be" severity error;
+            end if;
             if uart_receiv_1(7 DOWNTO 0) /= data_buffer then
                 report "uart_receiv_1 unexpected value" severity error;
                 suc := false;
@@ -302,7 +313,6 @@ begin
                 report "uart_receiv_1_par_err unexpected value" severity error;
                 suc := false;
             end if;
-            wait for 2115 ns;
         end loop;
         uart_receiv_1_rst <= '1';
         report "UART_receiv_1 test done" severity note;
