@@ -20,7 +20,7 @@ architecture Behavioral of uart_tb is
     component uart_receiv is
         generic (
             baudrate                : Natural;
-            clockspeed              : Natural;
+            clk_freq              : Natural;
             parity_bit_in           : boolean;
             parity_bit_in_type      : Natural range 0 to 3;
             bit_count_in            : Natural range 5 to 9;
@@ -40,7 +40,7 @@ architecture Behavioral of uart_tb is
     component uart_transmit is
         generic (
             baudrate                : Natural;
-            clockspeed              : Natural;
+            clk_freq              : Natural;
             parity_bit_en           : boolean;
             parity_bit_type         : Natural range 0 to 3;
             bit_count               : Natural range 5 to 9;
@@ -58,7 +58,7 @@ architecture Behavioral of uart_tb is
 
     component uart_main is
         generic (
-            clockspeed              : Natural;
+            clk_freq              : Natural;
             baudrate                : Natural;
             parity_bit_en           : boolean;
             parity_bit_type         : integer range 0 to 3;
@@ -129,7 +129,7 @@ architecture Behavioral of uart_tb is
     signal uart_send_2_success              : boolean := false;
     signal uart_main_success                : boolean := false;
 
-    constant clockspeed                     : natural := (1000 ms / clock_period);
+    constant clk_freq                       : natural := (1000 ms / clock_period);
 
 begin
 
@@ -139,7 +139,7 @@ begin
     uart_receiver_1 : uart_receiv
     generic map (
         baudrate => 236400,
-        clockspeed => clockspeed,
+        clk_freq => clk_freq,
         parity_bit_in => false,
         parity_bit_in_type => 0,
         bit_count_in => 8,
@@ -158,7 +158,7 @@ begin
     uart_receiver_2 : uart_receiv
     generic map (
         baudrate => 236400,
-        clockspeed => clockspeed,
+        clk_freq => clk_freq,
         parity_bit_in => true,
         parity_bit_in_type => 0,
         bit_count_in => 8,
@@ -177,7 +177,7 @@ begin
     uart_send_1 : uart_transmit
     generic map (
         baudrate            => 236400,
-        clockspeed          => clockspeed,
+        clk_freq          => clk_freq,
         parity_bit_en       => false,
         parity_bit_type     => 0,
         bit_count           => 8,
@@ -195,7 +195,7 @@ begin
     uart_send_2 : uart_transmit
     generic map (
         baudrate            => 236400,
-        clockspeed          => clockspeed,
+        clk_freq            => clk_freq,
         parity_bit_en       => true,
         parity_bit_type     => 1,
         bit_count           => 8,
@@ -212,8 +212,8 @@ begin
 
     uart_total : uart_main
     generic map (
-        clockspeed          => clockspeed,
         baudrate            => 236400,
+        clk_freq            => clk_freq,
         parity_bit_en       => true,
         parity_bit_type     => 3,
         bit_count           => 6,

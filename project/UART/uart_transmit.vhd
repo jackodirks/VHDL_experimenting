@@ -19,7 +19,7 @@ use IEEE.MATH_REAL.ALL;
 entity uart_transmit is
     generic (
         baudrate                : Natural;
-        clockspeed              : Natural;
+        clk_freq                : Natural;
         parity_bit_en           : boolean;
         parity_bit_type         : Natural range 0 to 3;
         bit_count               : Natural range 5 to 9;
@@ -61,8 +61,8 @@ architecture Behavioral of uart_transmit is
     type output_type is (start, bits, parity, stop);
     -- Constant defenition
     constant totalBitsSend      : integer := 1 + bit_count + stop_bits + BOOL_TO_INT(parity_bit_en);
-    constant ticksPerHalfSend   : integer := integer(clockspeed/(baudrate*2));
-    constant restorationTicks   : natural := (clockspeed * totalBitsSend)/baudrate - (ticksPerHalfSend * totalBitsSend * 2);
+    constant ticksPerHalfSend   : integer := integer(clk_freq/(baudrate*2));
+    constant restorationTicks   : natural := (clk_freq * totalBitsSend)/baudrate - (ticksPerHalfSend * totalBitsSend * 2);
     -- Signals
     -- Related to the timer
     signal ticker_rst           : STD_LOGIC := '1';

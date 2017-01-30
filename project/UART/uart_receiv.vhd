@@ -13,7 +13,7 @@ use IEEE.STD_LOGIC_1164.ALL;
 entity uart_receiv is
     generic (
         baudrate                : Natural;
-        clockspeed              : Natural;
+        clk_freq                : Natural;
         parity_bit_in           : boolean;
         parity_bit_in_type      : Natural range 0 to 3;
         bit_count_in            : Natural range 5 to 9;
@@ -49,7 +49,7 @@ architecture Behavioral of uart_receiv is
     stop_start, stop_bit_one, stop_bit_two, stop_bit_two_final, stop_end);
 
     constant oversampling   : Natural := 4;
-    constant receiveSpeed   : integer := integer(clockspeed/(baudrate*oversampling));
+    constant receiveSpeed   : integer := integer(clk_freq/(baudrate*oversampling));
 
     signal recv_ticker_rst  : STD_LOGIC := '1';
     signal recv_ticker_done : STD_LOGIC;
