@@ -17,6 +17,8 @@ DIRS := $(DIRS:=rules.mk)
 
 .PHONY: all clean run simulate pre-build distclean timedRun
 
+.DELETE_ON_ERROR:
+
 all: pre-build
 all: $(WORKFILE)
 
