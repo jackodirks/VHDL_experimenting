@@ -132,10 +132,8 @@ architecture Behavioral of uart_tb is
 
     constant clk_freq                       : natural := (1000 ms / clock_period);
     constant baudrate                       : natural := 236400;
-    constant baud_period                  : time := (1000 ms / baudrate);
+    constant baud_period                    : time := (1000 ms / baudrate);
     constant clk_ticks_per_baud             : natural := (natural(ceil(real(clk_freq)/real(baudrate))));
-
-    constant ten_baud_ticks_time            : time := clk_ticks_per_baud * 10 * clock_period;
 
 begin
 
@@ -247,13 +245,14 @@ begin
     begin
         uart_main_rst <= '0';
         wait for clock_period;
-        report "clk_period " & time'image(clock_period) & " clk_ticks_per_baud " & natural'image(clk_ticks_per_baud) & " ten_baud_ticks_time " & time'image(ten_baud_ticks_time) severity note;
+        report "clk_period " & time'image(clock_period) & " clk_ticks_per_baud " & natural'image(clk_ticks_per_baud) & " baud_period " & time'image(baud_period) severity note;
         for D in 0 to 63 loop
             uart_main_data_in(5 DOWNTO 0) <= STD_LOGIC_VECTOR(to_unsigned(D, 6));
             uart_main_send_start <= '1';
             wait for clock_period;
             uart_main_send_start <= '0';
-            wait for ten_baud_ticks_time; -- Wait for 10 baud ticks, which is about 2120 cycles on a 50 MHz clock
+            wait for 10 * baud_period; -- Wait for 10 baud ticks, which is about 2120 cycles on a 50 MHz clock
+            wait for 5 * clock_period;
             if uart_main_data_ready /= '1' then
                 report "uart_main had not received on D = " & integer'image(D) severity error;
                 suc := false;
@@ -328,23 +327,24 @@ begin
     begin
         uart_receiv_2_rx <= '1';
         uart_receiv_2_rst <= '0';
-        wait for 4230 ns;
+        wait for baud_period;
         for D in 0 to 255 loop
             data_buffer := STD_LOGIC_VECTOR(to_unsigned(D, data_buffer'length));
             uart_receiv_2_rx <= '0';
             for I in 0 to 7 loop
-                wait for 4230 ns;
+                wait for baud_period;
                 uart_receiv_2_rx <= data_buffer(I);
                 if data_buffer(I) = '1' then
                     odd := not odd;
                 end if;
             end loop;
-            wait for 4230 ns;
+            wait for baud_period;
             -- Send the parity bit
             uart_receiv_2_rx <= odd;
-            wait for 4230 ns;
+            wait for baud_period;
             uart_receiv_2_rx <= '1';
-            wait for 8460 ns;
+            wait for baud_period;
+            wait for baud_period;
             if uart_receiv_2_ready /= '1' then
                 suc := false;
                 report "Uart receiv 2 was not ready while it was expected to be ready" severity error;
@@ -365,7 +365,7 @@ begin
         end loop;
         uart_receiv_2_rst <= '1';
         -- Test if the parity error happens when expected
-        wait for 20 ns;
+        wait for clock_period;
         uart_receiv_2_rst <= '0';
         -- Test for parity error
         data_buffer := STD_LOGIC_VECTOR(to_unsigned(randVal, data_buffer'length));
@@ -374,19 +374,20 @@ begin
         uart_receiv_2_rx <= '0';
         -- Send data
         for I in 0 to 7 loop
-            wait for 4230 ns;
+            wait for baud_period;
             uart_receiv_2_rx <= data_buffer(I);
             if data_buffer(I) = '1' then
                 odd := not odd;
             end if;
         end loop;
         -- Send the wrong parity bit
-        wait for 4230 ns;
+        wait for baud_period;
         uart_receiv_2_rx <= not odd;
-        wait for 4230 ns;
+        wait for baud_period;
         -- Double stop bit
         uart_receiv_2_rx <= '1';
-        wait for 8460 ns;
+        wait for baud_period;
+        wait for baud_period;
         if uart_receiv_2_ready /= '1' then
             suc := false;
             report "Uart receiv 2 was not ready while it was expected to be ready" severity error;
@@ -415,7 +416,7 @@ begin
         variable suc            : boolean := true;
     begin
         uart_send_1_rst <= '0';
-        wait for 100 ns;
+        wait for clock_period;
         if uart_send_1_tx /= '1' then
             suc := false;
             report "uart_send_1_rx does not default to 1" severity error;
@@ -428,7 +429,7 @@ begin
             data_buffer := STD_LOGIC_VECTOR(to_unsigned(D, data_buffer'length));
             uart_send_1_in(7 DOWNTO 0) <= STD_LOGIC_VECTOR(to_unsigned(D, data_buffer'length));
             uart_send_1_start <= '1';
-            wait for 2115 ns;
+            wait for baud_period/2; -- We want to poll halfway trough
             uart_send_1_start <= '0';
             if uart_send_1_tx /= '0' then
                 report "uart_send_1_tx start bit incorrect" severity error;
@@ -439,14 +440,14 @@ begin
                suc := false;
            end if;
             for I in 0 to 7 loop
-                wait for 4230 ns;
+                wait for baud_period;
                 if data_buffer(I) /= uart_send_1_tx then
                    report "UART 1 tx unexpected value" severity error;
                    suc := false;
                end if;
             end loop;
 
-            wait for 4230 ns;
+            wait for baud_period;
             if uart_send_1_tx /= '1' then
                 report "uart_send_1_tx stop bit incorrect" severity error;
                 suc := false;
@@ -455,7 +456,7 @@ begin
                 report "uart_send_1_ready is one where it should have been zero" severity error;
                 suc := false;
             end if;
-            wait for 4230 ns;
+            wait for baud_period;
             if uart_send_1_tx /= '1' then
                 report "uart_send_1_tx stop bit incorrect" severity error;
                 suc := false;
@@ -465,7 +466,6 @@ begin
                 suc := false;
             end if;
         end loop;
-        wait for 4230 ns;
         report "data_send_1 tests done" severity note;
         uart_send_1_done <= true;
         uart_send_1_success <= suc;
@@ -487,14 +487,14 @@ begin
             report "uart_send_2_ready does not default to 1" severity error;
             suc := false;
         end if;
-        wait for 100 ns;
+        wait for clock_period;
         for D in 0 to 255 loop
             even := '1';
             data_buffer := STD_LOGIC_VECTOR(to_unsigned(D, data_buffer'length));
             uart_send_2_in(7 DOWNTO 0) <= STD_LOGIC_VECTOR(to_unsigned(D, data_buffer'length));
             uart_send_2_start <= '1';
             -- Jump to halfway trough start bit
-            wait for 2115 ns;
+            wait for baud_period/2;
             uart_send_2_start <= '0';
             if uart_send_2_tx /= '0' then
                 report "uart_send_2_tx start bit incorrect" severity error;
@@ -506,7 +506,7 @@ begin
             end if;
             for I in 0 to 7 loop
                 -- Jump to halfway trough the Ith bit
-                wait for 4230 ns;
+                wait for baud_period;
                 if data_buffer(I) /= uart_send_2_tx then
                     report "UART_2_send_tx unexpected value" severity error;
                     suc := false;
@@ -516,7 +516,7 @@ begin
                 end if;
             end loop;
             -- Parity bit
-            wait for 4230 ns;
+            wait for baud_period;
             if uart_send_2_tx /= even then
                 report "uart_send_2_tx parity bit incorrect, even = " & std_logic'image(even) & " uart_send_2_tx = " & std_logic'image(uart_send_2_tx) & " D = " & integer'image(D) severity error;
                 suc := false;
@@ -526,7 +526,7 @@ begin
                 suc := false;
             end if;
             -- stop bit 1
-            wait for 4230 ns;
+            wait for baud_period;
             if uart_send_2_tx /= '1' then
                 report "uart_send_2_tx stop bit incorrect" severity error;
                 suc := false;
@@ -536,7 +536,7 @@ begin
                 suc := false;
             end if;
             -- stop bit 2
-            wait for 4230 ns;
+            wait for baud_period;
             if uart_send_2_tx /= '1' then
                 report "uart_send_2_tx stop bit incorrect" severity error;
                 suc := false;
@@ -546,9 +546,9 @@ begin
                 suc := false;
             end if;
             -- Back to start situation
-            wait for 4230 ns;
+            wait for baud_period;
         end loop;
-        wait for 4230 ns;
+        wait for baud_period;
         -- At this point we would test for abnormal situations, but there are none: there is no input for which an error is expected.
         report "data_send_2 tests done" severity note;
         uart_send_2_done <= true;
