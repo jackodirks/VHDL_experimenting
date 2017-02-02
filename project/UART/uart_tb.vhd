@@ -21,7 +21,7 @@ architecture Behavioral of uart_tb is
     component uart_receiv is
         generic (
             baudrate                : Natural;
-            clk_freq              : Natural;
+            clk_freq                : Natural;
             parity_bit_in           : boolean;
             parity_bit_in_type      : Natural range 0 to 3;
             bit_count_in            : Natural range 5 to 9;
@@ -41,7 +41,7 @@ architecture Behavioral of uart_tb is
     component uart_transmit is
         generic (
             baudrate                : Natural;
-            clk_freq              : Natural;
+            clk_freq                : Natural;
             parity_bit_en           : boolean;
             parity_bit_type         : Natural range 0 to 3;
             bit_count               : Natural range 5 to 9;
@@ -59,7 +59,7 @@ architecture Behavioral of uart_tb is
 
     component uart_main is
         generic (
-            clk_freq              : Natural;
+            clk_freq                : Natural;
             baudrate                : Natural;
             parity_bit_en           : boolean;
             parity_bit_type         : integer range 0 to 3;
@@ -181,7 +181,7 @@ begin
     uart_send_1 : uart_transmit
     generic map (
         baudrate            => baudrate,
-        clk_freq          => clk_freq,
+        clk_freq            => clk_freq,
         parity_bit_en       => false,
         parity_bit_type     => 0,
         bit_count           => 8,
