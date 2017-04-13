@@ -36,7 +36,7 @@ architecture Behavioral of common_tb is
         );
     end component;
 
-    component button_to_single_pulse is
+    component static_debouncer is
         generic (
             debounce_ticks      : natural range 2 to natural'high
         );
@@ -85,7 +85,7 @@ begin
         done => simple_multishot_timer_done
     );
 
-    debounce_tester : button_to_single_pulse
+    debounce_tester : static_debouncer
     generic map (
         debounce_ticks => 500
     )

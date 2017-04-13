@@ -61,7 +61,7 @@ architecture Behavioral of main_file is
         );
           end component;
 
-        component button_to_single_pulse is
+        component static_debouncer is
             generic (
                 debounce_ticks      : natural range 2 to natural'high
             );
@@ -149,7 +149,7 @@ begin
         data_out => safe_data
     );
 
-    debouncer : button_to_single_pulse
+    debouncer : static_debouncer
     generic map (
         debounce_ticks => 50000
     )
