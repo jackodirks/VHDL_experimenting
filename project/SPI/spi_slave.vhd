@@ -3,13 +3,6 @@ use IEEE.STD_LOGIC_1164.ALL;
 
 
 -- A change of polarity, phase and block size will only be accepted in the reset state: changing them during run will not affect anything
-
--- The data on the receive block will be stable for a couple of cycles. All other blocks are not guaranteed to be stable.
--- The receive_block starts at receive_block*block_size.
-
--- Whatch out with the data_in buffer: it is possible that the last bits will never be read because they are not part of a block;
--- For example, the block size 13 will never read the last 10 bits.
-
 -- We do not need to debounce MOSI, but we do need to debounce sclk. MOSI is expected to be set half a period ago when it is read, but sclk might still be bouncing when it is read.
 
 entity spi_slave is
@@ -25,30 +18,28 @@ entity spi_slave is
         mosi                    : in    STD_LOGIC;                          -- Master output slave input
         miso                    : out   STD_LOGIC;                          -- Master input slave output
         ss                      : in    STD_LOGIC;                          -- Slave Select, if zero, this slave is selected.
-        data_in                 : in    STD_LOGIC_VECTOR(127 DOWNTO 0);     -- Data to be transmitted
-        data_out                : out   STD_LOGIC_VECTOR(127 DOWNTO 0);     -- Data that has been received
+        data_in                 : in    STD_LOGIC_VECTOR(32 DOWNTO 0);      -- Data to be transmitted
+        data_out                : out   STD_LOGIC_VECTOR(32 DOWNTO 0);      -- Data that has been received
         block_size              : in    Natural range 1 to 32;              -- Data block size
-        receive_block           : out   Natural range 0 to 127;             -- Last written block
-        transmit_block          : in    Natural range 0 to 127;             -- Block currently being read
-        transmit_done           : out   STD_LOGIC;                          -- Signals that a full block was just transmitted
-        receive_done            : out   STD_LOGIC                           -- Signals that data has been received.
+        transmit_data_copied    : out   boolean;                            -- If this value is false, data is being read and data_in should be left stable. If this value is true, then data_in can be changed
+        receive_done            : out   boolean                             -- Signals that data_out has updated
     );
 end spi_slave;
 
 
 architecture Behavioral of spi_slave is
-    type state_type is (reset, wait_for_slave_select, wait_for_idle, data_get, data_set, block_done);
+    type state_type is (reset, wait_for_slave_select, wait_for_idle, data_get_wait, data_get, data_set_wait, data_set, block_done);
 
     signal sclk_debounced       : STD_LOGIC;
     signal cur_polarity         : STD_LOGIC;
     signal cur_phase            : STD_LOGIC;
     signal cur_block_size       : Natural range 1 to 32;
 
-    signal cur_read_block       : Natural range 0 to 127;
-    signal cur_write_block      : Natural range 0 to 127;
-    signal cur_read_address     : Natural range 0 to 127;
-    signal cur_write_address    : Natural range 0 to 127;
+    signal output_buffer_1      : STD_LOGIC_VECTOR(31 downto 0);
+    signal output_buffer_2      : STD_LOGIC_VECTOR(31 downto 0);
+    signal intput_buffer        : STD_LOGIC_VECTOR(31 downto 0);
 
+    signal switch_buffer        : boolean;
     signal state                : state_type := reset;
 
     component static_debouncer is
@@ -79,11 +70,16 @@ begin
 
     -- State transition
     process(clk, rst, mosi, sclk, ss)
-        variable last_known_sclk : STD_LOGIC;
+        variable prev_sclk  : STD_LOGIC;
+        variable cur_sclk   : STD_LOGIC;
+        variable cur_bit    : STD_LOGIC;
     begin
         if rst = '1' then
             state <= reset;
+            cur_bit := 0;
         elsif rising_edge(clk) then
+            prev_sclk := cur_sclk;
+            cur_sclk := sclk_debounced;
             case state is
                 when reset =>
                     state <= wait_for_slave_select;
@@ -100,20 +96,56 @@ begin
                     -- Polarity = 1, sclk = 1, phase = 0: go to data_set
                     -- Polarity = 1, sclk = 1, phase = 1: go to data_get
                     -- Polarity != sclk: stay in wait_for_idle
-                    if cur_polarity /= sclk then
+                    if cur_polarity /= cur_sclk then
                         state <= wait_for_idle;
                     elsif cur_polarity = '0' then
                         if phase = '0' then
-                            state <= data_get;
+                            state <= data_get_wait;
                         else
-                            state <= data_set;
+                            state <= data_set_wait;
                         end if;
                     else
                         if phase = '1' then
-                            state <= data_get;
+                            state <= data_get_wait;
                         else
-                            state <= data_set;
+                            state <= data_set_wait;
                         end if;
+                    end if;
+                when data_get_wait =>
+                    -- Wait for the next edge
+                    if prev_sclk /= cur_sclk then
+                        state <= data_get;
+                    else
+                        state <= data_get_wait;
+                    end if;
+                when data_get =>
+                    if phase /= polarity then
+                        cur_bit := cur_bit + 1;
+                        if cur_bit = cur_block_size then
+                            state <= block_done;
+                        end if;
+                    end if;
+                    state <= data_set_wait;
+                when data_set_wait =>
+                    if prev_sclk /= cur_sclk then
+                        state <= data_set;
+                    else
+                        state <= data_set_wait;
+                    end if;
+                when data_set =>
+                    if phase = polarity then
+                        cur_bit := cur_bit + 1;
+                        if cur_bit = cur_block_size then
+                            state <= block_done;
+                        end if;
+                    end if;
+                    state <= data_get_wait;
+                when block_done =>
+                    cur_bit := 0;
+                    if phase = polarity then
+                        state <= data_get_wait;
+                    else
+                        state <= data_set_wait;
                     end if;
             end case;
         end if;
