@@ -13,6 +13,9 @@ use IEEE.STD_LOGIC_1164.ALL;
 -- We do not need to debounce MOSI, but we do need to debounce sclk. MOSI is expected to be set half a period ago when it is read, but sclk might still be bouncing when it is read.
 
 entity spi_slave is
+    generic (
+        debounce_ticks          : natural range 2 to natural'high
+    );
     port (
         rst                     : in    STD_LOGIC;
         clk                     : in    STD_LOGIC;
@@ -65,7 +68,7 @@ begin
     -- The debouncer for sclk
     sclk_debouncer : static_debouncer
     generic map (
-        debounce_ticks => 63
+        debounce_ticks => debounce_ticks
     )
     port map (
         clk => clk,
