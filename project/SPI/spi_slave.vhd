@@ -18,8 +18,8 @@ entity spi_slave is
         mosi                    : in    STD_LOGIC;                          -- Master output slave input
         miso                    : out   STD_LOGIC;                          -- Master input slave output
         ss                      : in    STD_LOGIC;                          -- Slave Select, if zero, this slave is selected.
-        data_in                 : in    STD_LOGIC_VECTOR(32 DOWNTO 0);      -- Data to be transmitted
-        data_out                : out   STD_LOGIC_VECTOR(32 DOWNTO 0);      -- Data that has been received
+        data_in                 : in    STD_LOGIC_VECTOR(31 DOWNTO 0);      -- Data to be transmitted
+        data_out                : out   STD_LOGIC_VECTOR(31 DOWNTO 0);      -- Data that has been received
         block_size              : in    Natural range 1 to 32;              -- Data block size
         transmit_data_copied    : out   boolean;                            -- If this value is false, data is being read and data_in should be left stable. If this value is true, then data_in can be changed
         receive_done            : out   boolean                             -- Signals that data_out has updated
@@ -40,6 +40,7 @@ architecture Behavioral of spi_slave is
     signal intput_buffer        : STD_LOGIC_VECTOR(31 downto 0);
 
     signal switch_buffer        : boolean;
+    signal selected_buffer      : Natural range 0 to 1;
     signal state                : state_type := reset;
 
     component static_debouncer is
@@ -152,13 +153,27 @@ begin
     end process;
 
     -- State behaviour
-    process(state, polarity, phase, blocksize)
+    process(state, polarity, phase, blocksize, mosi)
     begin
         case state is
             when reset =>
                 cur_polarity <= polarity;
                 cur_phase <= phase;
                 cur_block_size <= block_size;
+                switch_buffer <= false;
+                selected_buffer <= 0;
+                input_buffer <= data_in;
+            when wait_for_slave_select|wait_for_idle|data_get_wait|data_set_wait =>
+                switch_buffer <= false;
+            when data_get =>
+                if selected_buffer = 0 then
+                    output_buffer_0 = mosi & output_buffer_0(1 to output_buffer_0'size);
+                else
+                    output_buffer_1 = mosi & output_buffer_1(1 to output_buffer_1'size);
+                end if;
+            when data_set =>
+
+
         end case;
     end process;
 end Behavioral;
