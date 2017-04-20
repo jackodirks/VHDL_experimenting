@@ -43,6 +43,9 @@ architecture Behavioral of spi_slave is
     signal selected_buffer      : Natural range 0 to 1;
     signal state                : state_type := reset;
 
+    -- The safe
+    signal lock_safe            : boolean;
+
     component static_debouncer is
         generic (
             debounce_ticks      : natural range 2 to natural'high
@@ -69,8 +72,18 @@ begin
         pulse_out => sclk_debounced
     );
 
+    -- The safe that locks the settings
+    settings_safe : process(clk, lock_safe)
+    begin
+        if rising_edge(clk) and not lock_safe then
+            cur_polarity <= polarity;
+            cur_phase <= phase;
+            cur_block_size <= block_size;
+        end if;
+    end process;
+
     -- State transition
-    process(clk, rst, mosi, sclk, ss)
+    state_transition: process(clk, rst, mosi, sclk, ss)
         variable prev_sclk  : STD_LOGIC;
         variable cur_sclk   : STD_LOGIC;
         variable cur_bit    : STD_LOGIC;
@@ -157,13 +170,10 @@ begin
     begin
         case state is
             when reset =>
-                cur_polarity <= polarity;
-                cur_phase <= phase;
-                cur_block_size <= block_size;
+                lock_safe <= false;
                 switch_buffer <= false;
-                selected_buffer <= 0;
-                input_buffer <= data_in;
             when wait_for_slave_select|wait_for_idle|data_get_wait|data_set_wait =>
+                lock_safe <= true;
                 switch_buffer <= false;
             when data_get =>
                 if selected_buffer = 0 then
