@@ -3,3 +3,4 @@ simu_workdir/
 work/
 tb_main
 *.o
+*.lst
