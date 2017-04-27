@@ -21,8 +21,7 @@ entity spi_slave is
         data_in                 : in    STD_LOGIC_VECTOR(31 DOWNTO 0);      -- Data to be transmitted
         data_out                : out   STD_LOGIC_VECTOR(31 DOWNTO 0);      -- Data that has been received
         block_size              : in    Natural range 1 to 32;              -- Data block size
-        transmit_data_copied    : out   boolean;                            -- If this value is false, data is being read and data_in should be left stable. If this value is true, then data_in can be changed
-        receive_done            : out   boolean                             -- Signals that data_out has updated
+        block_done              : out   boolean                             -- Signals that a data block was processed. This means that in this cycle data_in will be read, and data_out will be updated.
     );
 end spi_slave;
 
@@ -35,16 +34,14 @@ architecture Behavioral of spi_slave is
     signal cur_phase            : STD_LOGIC;
     signal cur_block_size       : Natural range 1 to 32;
 
-    signal output_buffer_1      : STD_LOGIC_VECTOR(31 downto 0);
-    signal output_buffer_2      : STD_LOGIC_VECTOR(31 downto 0);
-    signal intput_buffer        : STD_LOGIC_VECTOR(31 downto 0);
-
-    signal switch_buffer        : boolean;
-    signal selected_buffer      : Natural range 0 to 1;
     signal state                : state_type := reset;
 
     -- The safe
     signal lock_safe            : boolean;
+    -- Input and output buffer control
+    signal switch_buffer        : boolean;
+    signal next_output          : boolean;
+    signal next_input           : boolean;
 
     component static_debouncer is
         generic (
@@ -59,7 +56,7 @@ architecture Behavioral of spi_slave is
     end component;
 
 begin
-
+    block_done <= switch_buffer;
     -- The debouncer for sclk
     sclk_debouncer : static_debouncer
     generic map (
@@ -72,14 +69,90 @@ begin
         pulse_out => sclk_debounced
     );
 
+    -- The input controller, basically handles the MOSI and data_out signals. One buffer is being written, the other one is being forwarded to the rest of the system.
+    input_controller : process(clk, switch_buffer, next_input)
+        variable selected_buffer    : natural range 0 to 1 := 0;
+        variable buffer_0           : STD_LOGIC_VECTOR(31 DOWNTO 0) := (others => '0');
+        variable buffer_1           : STD_LOGIC_VECTOR(31 DOWNTO 0) := (others => '0');
+    begin
+        if rising_edge(clk) then
+            if switch_buffer then
+                selected_buffer := not selected_buffer;
+            elsif next_output then
+                if selected_buffer = 0 then
+                    buffer_0 := buffer_0(30 DOWNTO 0) & mosi;
+                else
+                    buffer_1 := buffer_1(30 DOWNTO 0) & mosi;
+                end if;
+            end if;
+        end if;
+        if selected_buffer = 0 then
+            data_out <= buffer_1;
+        else
+            data_out <= buffer_0;
+        end if;
+    end process;
+
+    -- The output controller, handles the miso and data_in signals
+    output_controller : process(clk, switch_buffer, next_output)
+        variable data_in_buffer : STD_LOGIC_VECTOR(31 DOWNTO 0);
+    begin
+        if rising_edge(clk) then
+            if switch_buffer then
+                data_in_buffer := data_in;
+            elsif next_output then
+                data_in_buffer := 0 & data_in_buffer(31 DOWNTO 1);
+            end if;
+        end if;
+            msio <= data_in_buffer(0);
+    end process;
+
     -- The safe that locks the settings
     settings_safe : process(clk, lock_safe)
+        variable lock_polarity      : STD_LOGIC;
+        variable lock_phase         : STD_LOGIC;
+        variable lock_block_size    : STD_LOGIC;
     begin
         if rising_edge(clk) and not lock_safe then
-            cur_polarity <= polarity;
-            cur_phase <= phase;
-            cur_block_size <= block_size;
+            lock_polarity := polarity;
+            lock_phase := phase;
+            lock_block_size := block_size;
         end if;
+        cur_polarity <= lock_polarity;
+        cur_phase <= lock_phase;
+        cur_block_size <= lock_block_size;
+    end process;
+
+    -- State behaviour
+    state_behaviour: process(state, polarity, phase, blocksize, mosi)
+    begin
+        case state is
+            when reset =>
+                lock_safe       <= false;
+                switch_buffer   <= false;
+                next_output     <= false;
+                next_input      <= false;
+            when wait_for_slave_select|wait_for_idle|data_get_wait|data_set_wait =>
+                lock_safe       <= true;
+                switch_buffer   <= false;
+                next_output     <= false;
+                next_input      <= false;
+            when data_get =>
+                lock_safe       <= true;
+                switch_buffer   <= false;
+                next_output     <= false;
+                next_input      <= true;
+            when data_set =>
+                lock_safe       <= true;
+                switch_buffer   <= false;
+                next_output     <= true;
+                next_input      <= false;
+            when block_done =>
+                lock_safe       <= true;
+                switch_buffer   <= true;
+                next_output     <= false;
+                next_input      <= false;
+        end case;
     end process;
 
     -- State transition
@@ -163,27 +236,5 @@ begin
                     end if;
             end case;
         end if;
-    end process;
-
-    -- State behaviour
-    process(state, polarity, phase, blocksize, mosi)
-    begin
-        case state is
-            when reset =>
-                lock_safe <= false;
-                switch_buffer <= false;
-            when wait_for_slave_select|wait_for_idle|data_get_wait|data_set_wait =>
-                lock_safe <= true;
-                switch_buffer <= false;
-            when data_get =>
-                if selected_buffer = 0 then
-                    output_buffer_0 = mosi & output_buffer_0(1 to output_buffer_0'size);
-                else
-                    output_buffer_1 = mosi & output_buffer_1(1 to output_buffer_1'size);
-                end if;
-            when data_set =>
-
-
-        end case;
     end process;
 end Behavioral;
