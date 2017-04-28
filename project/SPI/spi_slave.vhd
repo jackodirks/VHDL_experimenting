@@ -134,7 +134,13 @@ begin
                 next_output     <= false;
                 next_input      <= false;
                 read_data_in    <= true;
-            when wait_for_slave_select|wait_for_idle|data_get_wait|data_set_wait =>
+            when wait_for_slave_select =>
+                lock_safe       <= true;
+                switch_buffer   <= false;
+                next_output     <= false;
+                next_input      <= false;
+                read_data_in    <= true;
+            when wait_for_idle|data_get_wait|data_set_wait =>
                 lock_safe       <= true;
                 switch_buffer   <= false;
                 next_output     <= false;
