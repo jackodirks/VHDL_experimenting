@@ -75,16 +75,23 @@ begin
         variable selected_buffer    : natural range 0 to 1 := 0;
         variable buffer_0           : STD_LOGIC_VECTOR(31 DOWNTO 0) := (others => '0');
         variable buffer_1           : STD_LOGIC_VECTOR(31 DOWNTO 0) := (others => '0');
+        variable cursor             : natural range 0 to 31;
     begin
         if rising_edge(clk) then
             if switch_buffer then
-                selected_buffer := selected_buffer + 1;
-            elsif next_output then
-                if selected_buffer = 0 then
-                    buffer_0 := buffer_0(30 DOWNTO 0) & mosi;
+                cursor := 0;
+                if selected_buffer = 1 then
+                    selected_buffer := 0;
                 else
-                    buffer_1 := buffer_1(30 DOWNTO 0) & mosi;
+                    selected_buffer := 1;
                 end if;
+            elsif next_input then
+                if selected_buffer = 0 then
+                    buffer_0(cursor) := mosi;
+                else
+                    buffer_1(cursor) := mosi;
+                end if;
+                cursor := cursor + 1;
             end if;
         end if;
         if selected_buffer = 0 then
@@ -134,13 +141,13 @@ begin
                 next_output     <= false;
                 next_input      <= false;
                 read_data_in    <= true;
-            when wait_for_slave_select =>
+            when wait_for_slave_select|wait_for_idle =>
                 lock_safe       <= true;
                 switch_buffer   <= false;
                 next_output     <= false;
                 next_input      <= false;
                 read_data_in    <= true;
-            when wait_for_idle|data_get_wait|data_set_wait =>
+            when data_get_wait|data_set_wait =>
                 lock_safe       <= true;
                 switch_buffer   <= false;
                 next_output     <= false;
@@ -230,11 +237,14 @@ begin
                 when data_set =>
                     if cur_phase = cur_polarity then
                         cur_bit := cur_bit + 1;
-                        if cur_bit = cur_block_size then
+                        if cur_bit >= cur_block_size then
                             state <= block_finished;
+                        else
+                            state <= data_get_wait;
                         end if;
+                    else
+                        state <= data_get_wait;
                     end if;
-                    state <= data_get_wait;
                 when block_finished =>
                     cur_bit := 0;
                     if cur_phase = cur_polarity then
