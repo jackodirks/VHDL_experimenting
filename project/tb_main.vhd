@@ -46,6 +46,18 @@ architecture tb of tb_main is
         );
     end component;
 
+    component spi_tb is
+        generic (
+            clock_period : time;
+            randVal : natural
+        );
+        port (
+            clk : in STD_LOGIC;
+            done : out boolean;
+            success : out boolean
+        );
+    end component;
+
     -- Constant declaration --
     constant clock_period                   : time := 20 ns;    -- Please make sure this number is divisible by 2.
 
@@ -61,6 +73,8 @@ architecture tb of tb_main is
     signal uart_success                     : boolean := true;
     signal uart_done                        : boolean := true;
 
+    signal spi_success                      : boolean := true;
+    signal spi_done                         : boolean := true;
 
     constant run_seven_segments_test        : boolean := false;
     constant run_common_test                : boolean := false;
@@ -109,6 +123,20 @@ begin
         );
     end generate uart_generate;
 
+    spi_generate:
+    if run_spi_test generate
+        spi_test : spi_tb
+        generic map (
+            clock_period => clock_period,
+            randVal => randVal
+        )
+        port map (
+            clk => clk,
+            done => spi_done,
+            success => spi_success
+        );
+    end generate spi_generate;
+
     rand_gen : process
     begin
         wait for 20 ns;
@@ -121,7 +149,7 @@ begin
 
     clock_gen : process
     begin
-        if not (common_done and seven_segments_done and uart_done) then
+        if not (common_done and seven_segments_done and uart_done and spi_done) then
             -- 1/2 duty cycle
             clk <= not clk;
             wait for clock_period/2;
