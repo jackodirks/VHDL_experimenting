@@ -7,7 +7,7 @@ use IEEE.STD_LOGIC_1164.ALL;
 
 entity spi_slave is
     generic (
-        debounce_ticks          : natural range 2 to natural'high
+        debounce_ticks          : natural range 0 to natural'high
     );
     port (
         rst                     : in    STD_LOGIC;
@@ -46,11 +46,10 @@ architecture Behavioral of spi_slave is
 
     component static_debouncer is
         generic (
-            debounce_ticks      : natural range 2 to natural'high
+            debounce_ticks      : natural
         );
         port (
             clk                 : in STD_LOGIC;
-            rst                 : in STD_LOGIC;
             pulse_in            : in STD_LOGIC;
             pulse_out           : out STD_LOGIC
         );
@@ -65,7 +64,6 @@ begin
     )
     port map (
         clk => clk,
-        rst => rst,
         pulse_in => sclk,
         pulse_out => sclk_debounced
     );

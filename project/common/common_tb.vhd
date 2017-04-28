@@ -54,7 +54,6 @@ architecture Behavioral of common_tb is
         );
         port (
             clk                 : in STD_LOGIC;
-            rst                 : in STD_LOGIC;
             pulse_in            : in STD_LOGIC;
             pulse_out           : out STD_LOGIC
         );
@@ -69,7 +68,6 @@ architecture Behavioral of common_tb is
     signal b_to_s_p_pulse_out               : STD_LOGIC;
     signal b_to_s_p_pulse_in                : STD_LOGIC := '0';
 
-    signal debouncer_reset                  : STD_LOGIC := '1';
     signal debouncer_pulse_in               : STD_LOGIC;
     signal debouncer_pulse_out              : STD_LOGIC;
 
@@ -81,10 +79,10 @@ architecture Behavioral of common_tb is
     signal b_to_s_p_test_done               : boolean := false;
     signal debouncer_test_done              : boolean := false;
 
-    signal simple_multishot_test_success    : boolean := false;
-    signal data_safe_test_success           : boolean := false;
-    signal b_to_s_p_test_success            : boolean := false;
-    signal debouncer_test_success            : boolean := false;
+    signal simple_multishot_test_success    : boolean := true;
+    signal data_safe_test_success           : boolean := true;
+    signal b_to_s_p_test_success            : boolean := true;
+    signal debouncer_test_success           : boolean := true;
 
     constant simple_multishot_maxval        : natural := 10;
 
@@ -109,7 +107,6 @@ begin
     )
     port map (
         clk => clk,
-        rst => debouncer_reset,
         pulse_in => debouncer_pulse_in,
         pulse_out => debouncer_pulse_out
     );
@@ -135,43 +132,43 @@ begin
     );
 
     debounce_tester : process
-        variable suc : boolean := true;
     begin
         debouncer_pulse_in <= '0';
-        debouncer_reset <= '0';
+        -- Wait half a clock to get out of sync
+        wait for clock_period / 2;
         -- Let the debouncer relax for a while
-        for I in 0 to 15 loop
-            wait until rising_edge(clk);
+        for I in 0 to 10 loop
+            wait for clock_period;
         end loop;
         if debouncer_pulse_out /= '0' then
-            suc := false;
+            debouncer_test_success <= false;
             report "debouncer failure, expected 0 got 1" severity error;
         end if;
         -- Detect normal edge change behaviour
         debouncer_pulse_in <= '1';
-        for I in 0 to 15 loop
-            wait until rising_edge(clk);
+        -- We give it one cycle to detect the change and then 10 to respond to it
+        for I in 0 to 10 loop
+            wait for clock_period;
         end loop;
         if debouncer_pulse_out /= '1' then
-            suc := false;
+            debouncer_test_success <= false;
             report "debouncer failure, expected 1 got 0" severity error;
         end if;
         -- Weird, halfway change
         debouncer_pulse_in <= '0';
         for I in 0 to 5 loop
-            wait until rising_edge(clk);
+            wait for clock_period;
         end loop;
         debouncer_pulse_in <= '1';
         for I in 0 to 10 loop
-            wait until rising_edge(clk);
+            wait for clock_period;
         end loop;
         if debouncer_pulse_out /= '1' then
-            suc := false;
+            debouncer_test_success <= false;
             report "debouncer failure, expected 1 got 0" severity error;
         end if;
         report "debouncer test done" severity note;
         debouncer_test_done <= true;
-        debouncer_test_success <= suc;
         wait;
     end process;
 
