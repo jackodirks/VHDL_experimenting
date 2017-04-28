@@ -164,18 +164,14 @@ begin
         if rst = '1' then
             state <= reset;
             cur_bit := 0;
+        elsif ss = '1' then
+            state <= wait_for_slave_select;
         elsif rising_edge(clk) then
             prev_sclk := cur_sclk;
             cur_sclk := sclk_debounced;
             case state is
-                when reset =>
-                    state <= wait_for_slave_select;
-                when wait_for_slave_select =>
-                    if ss = '0' then
-                        state <= wait_for_idle;
-                    else
-                        state <= wait_for_slave_select;
-                    end if;
+                when reset|wait_for_slave_select =>
+                    state <= wait_for_idle;
                 when wait_for_idle =>
                     -- possible situations:
                     -- Polarity = 0, sclk = 0, phase = 0: go to data_get
