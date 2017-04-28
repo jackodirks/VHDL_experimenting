@@ -2,7 +2,7 @@ library IEEE;
 use IEEE.STD_LOGIC_1164.ALL;
 use IEEE.NUMERIC_STD.ALL;
 
-entity static_debouncer is
+entity button_to_single_pulse is
     generic (
         debounce_ticks      : natural range 2 to natural'high
     );
@@ -12,9 +12,9 @@ entity static_debouncer is
         pulse_in            : in STD_LOGIC;
         pulse_out           : out STD_LOGIC
     );
-end static_debouncer;
+end button_to_single_pulse;
 
-architecture behavioral of static_debouncer is
+architecture behavioral of button_to_single_pulse is
     component simple_multishot_timer is
         generic (
             match_val   : natural range 1 to natural'high
