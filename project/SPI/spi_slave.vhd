@@ -27,7 +27,7 @@ end spi_slave;
 
 
 architecture Behavioral of spi_slave is
-    type state_type is (reset, wait_for_slave_select, wait_for_idle, data_get_wait, data_get, data_set_wait, data_set, block_done);
+    type state_type is (reset, wait_for_slave_select, wait_for_idle, data_get_wait, data_get, data_set_wait, data_set, block_finished);
 
     signal sclk_debounced       : STD_LOGIC;
     signal cur_polarity         : STD_LOGIC;
@@ -78,7 +78,7 @@ begin
     begin
         if rising_edge(clk) then
             if switch_buffer then
-                selected_buffer := not selected_buffer;
+                selected_buffer := selected_buffer + 1;
             elsif next_output then
                 if selected_buffer = 0 then
                     buffer_0 := buffer_0(30 DOWNTO 0) & mosi;
@@ -102,17 +102,17 @@ begin
             if read_data_in then
                 data_in_buffer := data_in;
             elsif next_output then
-                data_in_buffer := 0 & data_in_buffer(31 DOWNTO 1);
+                data_in_buffer := '0' & data_in_buffer(31 DOWNTO 1);
             end if;
         end if;
-            msio <= data_in_buffer(0);
+            miso <= data_in_buffer(0);
     end process;
 
     -- The safe that locks the settings
     settings_safe : process(clk, lock_safe)
         variable lock_polarity      : STD_LOGIC;
         variable lock_phase         : STD_LOGIC;
-        variable lock_block_size    : STD_LOGIC;
+        variable lock_block_size    : natural range 1 to 32;
     begin
         if rising_edge(clk) and not lock_safe then
             lock_polarity := polarity;
@@ -125,7 +125,7 @@ begin
     end process;
 
     -- State behaviour
-    state_behaviour: process(state, polarity, phase, blocksize, mosi)
+    state_behaviour: process(state)
     begin
         case state is
             when reset =>
@@ -158,7 +158,7 @@ begin
                 next_output     <= true;
                 next_input      <= false;
                 read_data_in    <= false;
-            when block_done =>
+            when block_finished =>
                 lock_safe       <= true;
                 switch_buffer   <= true;
                 next_output     <= false;
@@ -171,7 +171,7 @@ begin
     state_transition: process(clk, rst, mosi, sclk, ss)
         variable prev_sclk  : STD_LOGIC;
         variable cur_sclk   : STD_LOGIC;
-        variable cur_bit    : STD_LOGIC;
+        variable cur_bit    : natural range 0 to 32;
     begin
         if rst = '1' then
             state <= reset;
@@ -217,7 +217,7 @@ begin
                     if cur_phase /= cur_polarity then
                         cur_bit := cur_bit + 1;
                         if cur_bit = cur_block_size then
-                            state <= block_done;
+                            state <= block_finished;
                         end if;
                     end if;
                     state <= data_set_wait;
@@ -231,11 +231,11 @@ begin
                     if cur_phase = cur_polarity then
                         cur_bit := cur_bit + 1;
                         if cur_bit = cur_block_size then
-                            state <= block_done;
+                            state <= block_finished;
                         end if;
                     end if;
                     state <= data_get_wait;
-                when block_done =>
+                when block_finished =>
                     cur_bit := 0;
                     if cur_phase = cur_polarity then
                         state <= data_get_wait;
