@@ -53,27 +53,27 @@ architecture Behavioral of common_tb is
     signal data_safe_8_bit_data_in          : STD_LOGIC_VECTOR(7 DOWNTO 0) := (others => '0');
     signal data_safe_8_bit_data_out         : STD_LOGIC_VECTOR(7 DOWNTO 0);
 
-    signal debouncer_reset                  : STD_LOGIC := '1';
-    signal debouncer_pulse_out              : STD_LOGIC;
-    signal debouncer_pulse_in               : STD_LOGIC := '0';
+    signal b_to_s_p_reset                   : STD_LOGIC := '1';
+    signal b_to_s_p_pulse_out               : STD_LOGIC;
+    signal b_to_s_p_pulse_in                : STD_LOGIC := '0';
 
     signal simple_multishot_timer_rst       : STD_LOGIC := '1';
     signal simple_multishot_timer_done      : STD_LOGIC;
 
     signal simple_multishot_test_done       : boolean := false;
     signal data_safe_test_done              : boolean := false;
-    signal debouncer_test_done              : boolean := false;
+    signal b_to_s_p_test_done               : boolean := false;
 
     signal simple_multishot_test_success    : boolean := false;
     signal data_safe_test_success           : boolean := false;
-    signal debouncer_test_success           : boolean := false;
+    signal b_to_s_p_test_success            : boolean := false;
 
     constant simple_multishot_maxval        : natural := 10;
 
 begin
 
-    done <= simple_multishot_test_done and data_safe_test_done and debouncer_test_done;
-    success <= simple_multishot_test_success and data_safe_test_success and debouncer_test_success;
+    done <= simple_multishot_test_done and data_safe_test_done and b_to_s_p_test_done;
+    success <= simple_multishot_test_success and data_safe_test_success and b_to_s_p_test_success;
 
     simple_multishot_timer_500 : simple_multishot_timer
     generic map (
@@ -85,15 +85,15 @@ begin
         done => simple_multishot_timer_done
     );
 
-    debounce_tester : button_to_single_pulse
+    button_to_single_pulse_500 : button_to_single_pulse
     generic map (
         debounce_ticks => 500
     )
     port map (
         clk => clk,
-        rst => debouncer_reset,
-        pulse_in => debouncer_pulse_in,
-        pulse_out => debouncer_pulse_out
+        rst =>          b_to_s_p_reset,
+        pulse_in =>     b_to_s_p_pulse_in,
+        pulse_out =>    b_to_s_p_pulse_out
     );
 
     data_safe : data_safe_8_bit
@@ -144,19 +144,19 @@ begin
         wait;
     end process;
 
-    debouncer_tester : process
+    button_to_single_pulse_tester : process
         variable suc : boolean := true;
     begin
-        debouncer_reset <= '0';
-        debouncer_pulse_in <= '1';
+        b_to_s_p_reset <= '0';
+        b_to_s_p_pulse_in <= '1';
         wait for 10065 ns;
-        if debouncer_pulse_out /= '1' then
-            report "Debouncer value is zero where it should be one" severity error;
+        if b_to_s_p_pulse_out /= '1' then
+            report "Button to single pulse pulse_out value is zero where it should be one" severity error;
             suc := false;
         end if;
-        report "Debouncer test done" severity note;
-        debouncer_test_done <= true;
-        debouncer_test_success <= suc;
+        report "Button to single pulse test done" severity note;
+        b_to_s_p_test_done <= true;
+        b_to_s_p_test_success <= suc;
         wait;
     end process;
 
