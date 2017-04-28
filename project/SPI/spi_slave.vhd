@@ -40,6 +40,7 @@ architecture Behavioral of spi_slave is
     signal lock_safe            : boolean;
     -- Input and output buffer control
     signal switch_buffer        : boolean;
+    signal read_data_in         : boolean;
     signal next_output          : boolean;
     signal next_input           : boolean;
 
@@ -94,11 +95,11 @@ begin
     end process;
 
     -- The output controller, handles the miso and data_in signals
-    output_controller : process(clk, switch_buffer, next_output)
+    output_controller : process(clk, read_data_in, next_output)
         variable data_in_buffer : STD_LOGIC_VECTOR(31 DOWNTO 0);
     begin
         if rising_edge(clk) then
-            if switch_buffer then
+            if read_data_in then
                 data_in_buffer := data_in;
             elsif next_output then
                 data_in_buffer := 0 & data_in_buffer(31 DOWNTO 1);
@@ -132,26 +133,31 @@ begin
                 switch_buffer   <= false;
                 next_output     <= false;
                 next_input      <= false;
+                read_data_in    <= true;
             when wait_for_slave_select|wait_for_idle|data_get_wait|data_set_wait =>
                 lock_safe       <= true;
                 switch_buffer   <= false;
                 next_output     <= false;
                 next_input      <= false;
+                read_data_in    <= false;
             when data_get =>
                 lock_safe       <= true;
                 switch_buffer   <= false;
                 next_output     <= false;
                 next_input      <= true;
+                read_data_in    <= false;
             when data_set =>
                 lock_safe       <= true;
                 switch_buffer   <= false;
                 next_output     <= true;
                 next_input      <= false;
+                read_data_in    <= false;
             when block_done =>
                 lock_safe       <= true;
                 switch_buffer   <= true;
                 next_output     <= false;
                 next_input      <= false;
+                read_data_in    <= true;
         end case;
     end process;
 
