@@ -182,13 +182,13 @@ begin
                     if cur_polarity /= cur_sclk then
                         state <= wait_for_idle;
                     elsif cur_polarity = '0' then
-                        if phase = '0' then
+                        if cur_phase = '0' then
                             state <= data_get_wait;
                         else
                             state <= data_set_wait;
                         end if;
                     else
-                        if phase = '1' then
+                        if cur_phase = '1' then
                             state <= data_get_wait;
                         else
                             state <= data_set_wait;
@@ -202,7 +202,7 @@ begin
                         state <= data_get_wait;
                     end if;
                 when data_get =>
-                    if phase /= polarity then
+                    if cur_phase /= cur_polarity then
                         cur_bit := cur_bit + 1;
                         if cur_bit = cur_block_size then
                             state <= block_done;
@@ -216,7 +216,7 @@ begin
                         state <= data_set_wait;
                     end if;
                 when data_set =>
-                    if phase = polarity then
+                    if cur_phase = cur_polarity then
                         cur_bit := cur_bit + 1;
                         if cur_bit = cur_block_size then
                             state <= block_done;
@@ -225,7 +225,7 @@ begin
                     state <= data_get_wait;
                 when block_done =>
                     cur_bit := 0;
-                    if phase = polarity then
+                    if cur_phase = cur_polarity then
                         state <= data_get_wait;
                     else
                         state <= data_set_wait;
