@@ -76,9 +76,9 @@ architecture tb of tb_main is
     signal spi_success                      : boolean := true;
     signal spi_done                         : boolean := true;
 
-    constant run_seven_segments_test        : boolean := false;
-    constant run_common_test                : boolean := false;
-    constant run_uart_test                  : boolean := false;
+    constant run_seven_segments_test        : boolean := true;
+    constant run_common_test                : boolean := true;
+    constant run_uart_test                  : boolean := true;
     constant run_spi_test                   : boolean := true;
 
     signal randVal                          : natural := 0;
