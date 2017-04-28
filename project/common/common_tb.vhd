@@ -38,6 +38,18 @@ architecture Behavioral of common_tb is
 
     component button_to_single_pulse is
         generic (
+            debounce_ticks      : natural range 3 to natural'high
+        );
+        port (
+            clk                 : in STD_LOGIC;
+            rst                 : in STD_LOGIC;
+            pulse_in            : in STD_LOGIC;
+            pulse_out           : out STD_LOGIC
+        );
+    end component;
+
+    component static_debouncer is
+        generic (
             debounce_ticks      : natural range 2 to natural'high
         );
         port (
@@ -57,23 +69,29 @@ architecture Behavioral of common_tb is
     signal b_to_s_p_pulse_out               : STD_LOGIC;
     signal b_to_s_p_pulse_in                : STD_LOGIC := '0';
 
+    signal debouncer_reset                  : STD_LOGIC := '1';
+    signal debouncer_pulse_in               : STD_LOGIC;
+    signal debouncer_pulse_out              : STD_LOGIC;
+
     signal simple_multishot_timer_rst       : STD_LOGIC := '1';
     signal simple_multishot_timer_done      : STD_LOGIC;
 
     signal simple_multishot_test_done       : boolean := false;
     signal data_safe_test_done              : boolean := false;
     signal b_to_s_p_test_done               : boolean := false;
+    signal debouncer_test_done              : boolean := false;
 
     signal simple_multishot_test_success    : boolean := false;
     signal data_safe_test_success           : boolean := false;
     signal b_to_s_p_test_success            : boolean := false;
+    signal debouncer_test_success            : boolean := false;
 
     constant simple_multishot_maxval        : natural := 10;
 
 begin
 
-    done <= simple_multishot_test_done and data_safe_test_done and b_to_s_p_test_done;
-    success <= simple_multishot_test_success and data_safe_test_success and b_to_s_p_test_success;
+    done <= simple_multishot_test_done and data_safe_test_done and b_to_s_p_test_done and debouncer_test_done;
+    success <= simple_multishot_test_success and data_safe_test_success and b_to_s_p_test_success and debouncer_test_success;
 
     simple_multishot_timer_500 : simple_multishot_timer
     generic map (
@@ -83,6 +101,17 @@ begin
         clk => clk,
         rst => simple_multishot_timer_rst,
         done => simple_multishot_timer_done
+    );
+
+    debouncer : static_debouncer
+    generic map (
+        debounce_ticks => 10
+    )
+    port map (
+        clk => clk,
+        rst => debouncer_reset,
+        pulse_in => debouncer_pulse_in,
+        pulse_out => debouncer_pulse_out
     );
 
     button_to_single_pulse_500 : button_to_single_pulse
@@ -104,6 +133,47 @@ begin
         data_in => data_safe_8_bit_data_in,
         data_out => data_safe_8_bit_data_out
     );
+
+    debounce_tester : process
+        variable suc : boolean := true;
+    begin
+        debouncer_pulse_in <= '0';
+        debouncer_reset <= '0';
+        -- Let the debouncer relax for a while
+        for I in 0 to 15 loop
+            wait until rising_edge(clk);
+        end loop;
+        if debouncer_pulse_out /= '0' then
+            suc := false;
+            report "debouncer failure, expected 0 got 1" severity error;
+        end if;
+        -- Detect normal edge change behaviour
+        debouncer_pulse_in <= '1';
+        for I in 0 to 15 loop
+            wait until rising_edge(clk);
+        end loop;
+        if debouncer_pulse_out /= '1' then
+            suc := false;
+            report "debouncer failure, expected 1 got 0" severity error;
+        end if;
+        -- Weird, halfway change
+        debouncer_pulse_in <= '0';
+        for I in 0 to 5 loop
+            wait until rising_edge(clk);
+        end loop;
+        debouncer_pulse_in <= '1';
+        for I in 0 to 10 loop
+            wait until rising_edge(clk);
+        end loop;
+        if debouncer_pulse_out /= '1' then
+            suc := false;
+            report "debouncer failure, expected 1 got 0" severity error;
+        end if;
+        report "debouncer test done" severity note;
+        debouncer_test_done <= true;
+        debouncer_test_success <= suc;
+        wait;
+    end process;
 
     simple_multishot_tester : process
         variable suc : boolean := true;
