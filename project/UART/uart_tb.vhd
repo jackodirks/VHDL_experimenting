@@ -275,9 +275,9 @@ begin
             end if;
         end loop;
         report "Uart main test done" severity note;
-        wait;
         uart_main_success <= suc;
         uart_main_done <= true;
+        wait;
     end process;
 
     uart_receiver_1_tester : process
