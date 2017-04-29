@@ -35,21 +35,6 @@ architecture Behavioral of seven_segments_tb is
         end if;
     end fourBitsIncorrect;
 
-    component seven_segments_driver is
-        generic (
-            ticks_per_hold         : natural
-        );
-        Port (
-            clk                 : in  STD_LOGIC;
-            ss_1                : in  STD_LOGIC_VECTOR (3 downto 0);
-            ss_2                : in  STD_LOGIC_VECTOR (3 downto 0);
-            ss_3                : in  STD_LOGIC_VECTOR (3 downto 0);
-            ss_4                : in  STD_LOGIC_VECTOR (3 downto 0);
-            seven_seg_kath      : out  STD_LOGIC_VECTOR (7 downto 0);
-            seven_seg_an        : out  STD_LOGIC_VECTOR (3 downto 0)
-        );
-    end component;
-
     -- Signals
     signal ss_kathode                       : STD_LOGIC_VECTOR(7 DOWNTO 0);
     signal ss_anode                         : STD_LOGIC_VECTOR(3 DOWNTO 0);
@@ -61,7 +46,7 @@ architecture Behavioral of seven_segments_tb is
     -- Constants
     constant ticks_per_hold                 : natural := 2;
 begin
-    ss_driver : seven_segments_driver
+    ss_driver : entity work.seven_segments_driver
     generic map (
         ticks_per_hold => ticks_per_hold
     )

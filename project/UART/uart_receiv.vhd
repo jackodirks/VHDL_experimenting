@@ -31,17 +31,6 @@ entity uart_receiv is
 end uart_receiv;
 
 architecture Behavioral of uart_receiv is
-    component simple_multishot_timer is
-        generic (
-            match_val : integer
-        );
-        port (
-            clk   : in STD_LOGIC;
-            rst         : in STD_LOGIC;
-            done        : out STD_LOGIC
-        );
-    end component;
-
     type state_type is (rst_state, wait_start,
     start_start, start_bit_one, start_bit_two, start_end,
     bit_start, bit_read_one, bit_read_two, bit_end,
@@ -81,7 +70,7 @@ architecture Behavioral of uart_receiv is
     end simple_state_transition;
 
 begin
-    receive_ticker : simple_multishot_timer
+    receive_ticker : entity work.simple_multishot_timer
     generic map (
         match_val   => receiveSpeed
     )

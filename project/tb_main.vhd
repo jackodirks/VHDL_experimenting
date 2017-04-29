@@ -10,54 +10,6 @@ entity tb_main is
 end tb_main;
 
 architecture tb of tb_main is
-
-    -- Component declaration --
-    component seven_segments_tb is
-        generic (
-            clock_period : time
-        );
-        port (
-            clk         : in STD_LOGIC;
-            done        : out boolean;
-            success     : out boolean
-        );
-    end component;
-
-    component common_tb is
-        generic (
-            clock_period : time
-        );
-        port (
-            clk : in STD_LOGIC;
-            done : out boolean;
-            success : out boolean
-        );
-    end component;
-
-    component uart_tb is
-        generic (
-            clock_period : time;
-            randVal : natural
-        );
-        port (
-            clk : in STD_LOGIC;
-            done : out boolean;
-            success : out boolean
-        );
-    end component;
-
-    component spi_tb is
-        generic (
-            clock_period : time;
-            randVal : natural
-        );
-        port (
-            clk : in STD_LOGIC;
-            done : out boolean;
-            success : out boolean
-        );
-    end component;
-
     -- Constant declaration --
     constant clock_period                   : time := 20 ns;    -- Please make sure this number is divisible by 2.
 
@@ -85,7 +37,7 @@ architecture tb of tb_main is
 begin
     seven_segments_generate:
     if run_seven_segments_test generate
-        seven_segments_test: seven_segments_tb
+        seven_segments_test : entity work.seven_segments_tb
         generic map (
             clock_period => clock_period
         )
@@ -98,7 +50,7 @@ begin
 
     common_generate:
     if run_common_test generate
-        common_test : common_tb
+        common_test : entity work.common_tb
         generic map (
             clock_period => clock_period
         )
@@ -111,7 +63,7 @@ begin
 
     uart_generate:
     if run_uart_test generate
-        uart_test : uart_tb
+        uart_test : entity work.uart_tb
         generic map (
             clock_period => clock_period,
             randVal => randVal
@@ -125,7 +77,7 @@ begin
 
     spi_generate:
     if run_spi_test generate
-        spi_test : spi_tb
+        spi_test : entity work.spi_tb
         generic map (
             clock_period => clock_period,
             randVal => randVal

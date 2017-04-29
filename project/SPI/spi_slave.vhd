@@ -44,21 +44,10 @@ architecture Behavioral of spi_slave is
     signal next_output          : boolean;
     signal next_input           : boolean;
 
-    component static_debouncer is
-        generic (
-            debounce_ticks      : natural
-        );
-        port (
-            clk                 : in STD_LOGIC;
-            pulse_in            : in STD_LOGIC;
-            pulse_out           : out STD_LOGIC
-        );
-    end component;
-
 begin
     block_done <= switch_buffer;
     -- The debouncer for sclk
-    sclk_debouncer : static_debouncer
+    sclk_debouncer : entity work.static_debouncer
     generic map (
         debounce_ticks => debounce_ticks
     )

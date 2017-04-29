@@ -15,16 +15,6 @@ entity button_to_single_pulse is
 end button_to_single_pulse;
 
 architecture behavioral of button_to_single_pulse is
-    component simple_multishot_timer is
-        generic (
-            match_val   : natural range 1 to natural'high
-        );
-        port (
-            clk         : in STD_LOGIC;
-            rst         : in STD_LOGIC;
-            done        : out STD_LOGIC
-        );
-    end component;
     type state_type is (reset, wait_for_begin, debounce_begin, output, wait_for_end, debounce_end);
 
     signal debounce_rst         : STD_LOGIC := '1';
@@ -33,7 +23,7 @@ architecture behavioral of button_to_single_pulse is
     signal state                : state_type := reset;
 
 begin
-    debounce_ticker : simple_multishot_timer
+    debounce_ticker : entity work.simple_multishot_timer
     generic map (
         match_val    => debounce_ticks
     )

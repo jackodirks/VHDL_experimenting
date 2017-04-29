@@ -36,18 +36,6 @@ entity uart_transmit is
 end uart_transmit;
 
 architecture Behavioral of uart_transmit is
-    -- Component defenition
-    component simple_multishot_timer is
-        generic (
-            match_val : integer
-        );
-        port (
-            clk   : in STD_LOGIC;
-            rst         : in STD_LOGIC;
-            done        : out STD_LOGIC
-        );
-    end component;
-    -- Function defenition
     function BOOL_TO_INT(X : boolean) return integer is
     begin
         if X then
@@ -56,10 +44,10 @@ architecture Behavioral of uart_transmit is
             return 0;
         end if;
     end BOOL_TO_INT;
-    -- Type defenition
+    -- Type definition
     type state_type is (reset, wait_send, start_one, start_two, bit_one, bit_two, bit_end, parity_one, parity_two, stop_one, stop_two, restore_timing);
     type output_type is (start, bits, parity, stop);
-    -- Constant defenition
+    -- Constant definition
     constant totalBitsSend      : integer := 1 + bit_count + stop_bits + BOOL_TO_INT(parity_bit_en);
     constant ticksPerHalfSend   : integer := integer(clk_freq/(baudrate*2));
     constant restorationTicks   : natural := (clk_freq * totalBitsSend)/baudrate - (ticksPerHalfSend * totalBitsSend * 2);
@@ -90,7 +78,7 @@ architecture Behavioral of uart_transmit is
     end simple_state_transition;
 begin
     -- The ticker
-    ticker : simple_multishot_timer
+    ticker : entity work.simple_multishot_timer
     generic map (
         match_val   => ticksPerHalfSend
     )
@@ -100,7 +88,7 @@ begin
         done        => ticker_done
     );
     -- Restoration ticker
-    rest_ticker : simple_multishot_timer
+    rest_ticker : entity work.simple_multishot_timer
     generic map (
         match_val   => restorationTicks
     )

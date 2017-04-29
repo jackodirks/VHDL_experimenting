@@ -14,51 +14,6 @@ entity common_tb is
 end common_tb;
 
 architecture Behavioral of common_tb is
-
-    component simple_multishot_timer is
-        generic (
-            match_val : integer
-        );
-        port (
-            clk         : in STD_LOGIC;
-            rst         : in STD_LOGIC;
-            done        : out STD_LOGIC
-        );
-    end component;
-
-    component data_safe_8_bit is
-        port (
-            clk         : in STD_LOGIC;
-            rst         : in STD_LOGIC;
-            read        : in STD_LOGIC;
-            data_in     : in STD_LOGIC_VECTOR(7 DOWNTO 0);
-            data_out    : out STD_LOGIC_VECTOR(7 DOWNTO 0)
-        );
-    end component;
-
-    component button_to_single_pulse is
-        generic (
-            debounce_ticks      : natural range 3 to natural'high
-        );
-        port (
-            clk                 : in STD_LOGIC;
-            rst                 : in STD_LOGIC;
-            pulse_in            : in STD_LOGIC;
-            pulse_out           : out STD_LOGIC
-        );
-    end component;
-
-    component static_debouncer is
-        generic (
-            debounce_ticks      : natural range 2 to natural'high
-        );
-        port (
-            clk                 : in STD_LOGIC;
-            pulse_in            : in STD_LOGIC;
-            pulse_out           : out STD_LOGIC
-        );
-    end component;
-
     signal data_safe_8_bit_rst              : STD_LOGIC := '1';
     signal data_safe_8_bit_read             : STD_LOGIC := '0';
     signal data_safe_8_bit_data_in          : STD_LOGIC_VECTOR(7 DOWNTO 0) := (others => '0');
@@ -91,7 +46,7 @@ begin
     done <= simple_multishot_test_done and data_safe_test_done and b_to_s_p_test_done and debouncer_test_done;
     success <= simple_multishot_test_success and data_safe_test_success and b_to_s_p_test_success and debouncer_test_success;
 
-    simple_multishot_timer_500 : simple_multishot_timer
+    simple_multishot_timer_500 : entity work.simple_multishot_timer
     generic map (
         match_val => simple_multishot_maxval
     )
@@ -101,7 +56,7 @@ begin
         done => simple_multishot_timer_done
     );
 
-    debouncer : static_debouncer
+    debouncer : entity work.static_debouncer
     generic map (
         debounce_ticks => 10
     )
@@ -111,7 +66,7 @@ begin
         pulse_out => debouncer_pulse_out
     );
 
-    button_to_single_pulse_500 : button_to_single_pulse
+    button_to_single_pulse_500 : entity work.button_to_single_pulse
     generic map (
         debounce_ticks => 500
     )
@@ -122,7 +77,7 @@ begin
         pulse_out =>    b_to_s_p_pulse_out
     );
 
-    data_safe : data_safe_8_bit
+    data_safe : entity work.data_safe_8_bit
     port map (
         clk => clk,
         rst => data_safe_8_bit_rst,

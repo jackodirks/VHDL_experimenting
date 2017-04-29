@@ -33,48 +33,8 @@ entity uart_main is
 end uart_main;
 
 architecture Behavioral of uart_main is
-
-    component uart_transmit is
-        generic (
-            baudrate                : Natural;
-            clk_freq                : Natural;
-            parity_bit_en           : boolean;
-            parity_bit_type         : Natural range 0 to 3;
-            bit_count               : Natural range 5 to 9;
-            stop_bits               : Natural range 1 to 2
-        );
-        port (
-            rst                     : in    STD_LOGIC;
-            clk                     : in    STD_LOGIC;
-            uart_tx                 : out   STD_LOGIC;
-            data_in                 : in    STD_LOGIC_VECTOR(8 DOWNTO 0);
-            data_send_start         : in    STD_LOGIC;                    -- Signals that the data can now be send
-            ready                   : out   STD_LOGIC
-        );
-    end component;
-
-    component uart_receiv is
-        generic (
-            baudrate                : Natural;
-            clk_freq                : Natural;
-            parity_bit_in           : boolean;
-            parity_bit_in_type      : Natural range 0 to 3;
-            bit_count_in            : Natural range 5 to 9;
-            stop_bits_in            : Natural range 1 to 2
-        );
-        port (
-            rst                     : in    STD_LOGIC;
-            clk                     : in    STD_LOGIC;
-            uart_rx                 : in    STD_LOGIC;
-            received_data           : out   STD_LOGIC_VECTOR(8 DOWNTO 0);
-            data_ready              : out   STD_LOGIC;                    -- Signals that data has been received.
-            parity_error            : out   STD_LOGIC;                    -- Signals that the parity check has failed, is zero if there was none
-            data_error              : out   STD_LOGIC                     -- Signals that data receiving has encoutered errors
-        );
-    end component;
-
 begin
-    transmitter : uart_transmit
+    transmitter : entity work.uart_transmit
     generic map (
         baudrate            => baudrate,
         clk_freq            => clk_freq,
@@ -92,7 +52,7 @@ begin
         ready               => send_ready
     );
 
-    receiver : uart_receiv
+    receiver : entity work.uart_receiv
     generic map (
         baudrate            => baudrate,
         clk_freq            => clk_freq,

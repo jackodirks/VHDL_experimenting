@@ -17,70 +17,6 @@ entity uart_tb is
 end uart_tb;
 
 architecture Behavioral of uart_tb is
-
-    component uart_receiv is
-        generic (
-            baudrate                : Natural;
-            clk_freq                : Natural;
-            parity_bit_in           : boolean;
-            parity_bit_in_type      : Natural range 0 to 3;
-            bit_count_in            : Natural range 5 to 9;
-            stop_bits_in            : Natural range 1 to 2
-        );
-        port (
-            rst                     : in    STD_LOGIC;
-            clk                     : in    STD_LOGIC;
-            uart_rx                 : in    STD_LOGIC;
-            received_data           : out   STD_LOGIC_VECTOR(8 DOWNTO 0);
-            data_ready              : out   STD_LOGIC;                    -- Signals that data has been received.
-            parity_error            : out   STD_LOGIC;                    -- Signals that the parity check has failed, is zero if there was none
-            data_error              : out   STD_LOGIC                     -- Signals that data receiving has encoutered errors
-        );
-    end component;
-
-    component uart_transmit is
-        generic (
-            baudrate                : Natural;
-            clk_freq                : Natural;
-            parity_bit_en           : boolean;
-            parity_bit_type         : Natural range 0 to 3;
-            bit_count               : Natural range 5 to 9;
-            stop_bits               : Natural range 1 to 2
-        );
-        port (
-            rst                     : in    STD_LOGIC;
-            clk                     : in    STD_LOGIC;
-            uart_tx                 : out   STD_LOGIC;
-            data_in                 : in    STD_LOGIC_VECTOR(8 DOWNTO 0);
-            data_send_start         : in    STD_LOGIC;                    -- Signals that the data can now be send
-            ready                   : out   STD_LOGIC
-        );
-    end component;
-
-    component uart_main is
-        generic (
-            clk_freq                : Natural;
-            baudrate                : Natural;
-            parity_bit_en           : boolean;
-            parity_bit_type         : integer range 0 to 3;
-            bit_count               : integer range 5 to 9;
-            stop_bits_count         : integer range 1 to 2
-        );
-        Port (
-            rst                     : in STD_LOGIC;
-            clk                     : in STD_LOGIC;
-            uart_rx                 : in STD_LOGIC;
-            uart_tx                 : out STD_LOGIC;
-            send_start              : in STD_LOGIC;
-            data_in                 : in STD_LOGIC_VECTOR(8 DOWNTO 0);
-            data_out                : out STD_LOGIC_VECTOR(8 DOWNTO 0);
-            data_ready              : out STD_LOGIC;
-            data_error              : out STD_LOGIC;
-            parity_error            : out STD_LOGIC;
-            send_ready              : out STD_LOGIC
-        );
-    end component;
-
     signal uart_receiv_1_rst                : STD_LOGIC := '1';
     signal uart_receiv_1_rx                 : STD_LOGIC := '1';
     signal uart_receiv_1                    : STD_LOGIC_VECTOR(8 DOWNTO 0);
@@ -140,7 +76,7 @@ begin
     done <= uart_receiv_1_done and uart_receiv_2_done and uart_send_1_done and uart_send_2_done;
     success <= uart_receiv_1_success and uart_receiv_2_success and uart_send_1_success and uart_send_2_success;
 
-    uart_receiver_1 : uart_receiv
+    uart_receiver_1 : entity work.uart_receiv
     generic map (
         baudrate => baudrate,
         clk_freq => clk_freq,
@@ -159,7 +95,7 @@ begin
         data_error => uart_receiv_1_dat_err
     );
 
-    uart_receiver_2 : uart_receiv
+    uart_receiver_2 : entity work.uart_receiv
     generic map (
         baudrate => baudrate,
         clk_freq => clk_freq,
@@ -178,7 +114,7 @@ begin
         data_error => uart_receiv_2_dat_err
     );
 
-    uart_send_1 : uart_transmit
+    uart_send_1 : entity work.uart_transmit
     generic map (
         baudrate            => baudrate,
         clk_freq            => clk_freq,
@@ -196,7 +132,7 @@ begin
         ready               => uart_send_1_ready
     );
 
-    uart_send_2 : uart_transmit
+    uart_send_2 : entity work.uart_transmit
     generic map (
         baudrate            => baudrate,
         clk_freq            => clk_freq,
@@ -214,7 +150,7 @@ begin
         ready               => uart_send_2_ready
     );
 
-    uart_total : uart_main
+    uart_total : entity work.uart_main
     generic map (
         clk_freq            => clk_freq,
         baudrate            => baudrate,

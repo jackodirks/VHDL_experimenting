@@ -18,30 +18,9 @@ end spi_tb;
 
 architecture Behavioral of spi_tb is
 
-    component spi_slave is
-        generic (
-            debounce_ticks          : natural range 2 to natural'high
-        );
-        port (
-            rst                     : in    STD_LOGIC;
-            clk                     : in    STD_LOGIC;
-            polarity                : in    STD_LOGIC;                          -- Polarity, CPOL
-            phase                   : in    STD_LOGIC;                          -- Phase, CPHA
-            sclk                    : in    STD_LOGIC;                          -- Serial clock
-            mosi                    : in    STD_LOGIC;                          -- Master output slave input
-            miso                    : out   STD_LOGIC;                          -- Master input slave output
-            ss                      : in    STD_LOGIC;                          -- Slave Select, if zero, this slave is selected.
-            data_in                 : in    STD_LOGIC_VECTOR(31 DOWNTO 0);      -- Data to be transmitted
-            data_out                : out   STD_LOGIC_VECTOR(31 DOWNTO 0);      -- Data that has been received
-            block_size              : in    Natural range 1 to 32;              -- Data block size
-            block_done              : out   boolean                             -- Signals that a data block was processed. This means that in this cycle data_in will be read, and data_out will be updated.
-        );
-    end component;
-
     constant clk_freq                       : natural := (1000 ms / clock_period);
     constant sclk_period                    : time := clock_period * 100;        -- Run ten times slower then the system clock
     constant half_sclk_period               : time := sclk_period / 2;          -- Convinience thing
-
 
     -- inout signals slave 1
     signal slave_1_rst          : STD_LOGIC;
@@ -64,7 +43,7 @@ begin
     success <= spi_slave_1_suc;
     done <= spi_slave_1_done;
 
-    spi_slave_1 : spi_slave
+    spi_slave_1 : entity work.spi_slave
     generic map (
         debounce_ticks => 3
     )
