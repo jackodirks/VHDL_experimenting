@@ -170,14 +170,16 @@ begin
         if rst = '1' then
             state <= reset;
             cur_bit := 0;
-        elsif ss = '1' then
-            state <= wait_for_slave_select;
         elsif rising_edge(clk) then
             prev_sclk := cur_sclk;
             cur_sclk := sclk_debounced;
             case state is
                 when reset|wait_for_slave_select =>
-                    state <= wait_for_idle;
+                    if ss = '1' then 
+                        state <= wait_for_slave_select;
+                    else
+                        state <= wait_for_idle;
+                    end if;
                 when wait_for_idle =>
                     -- possible situations:
                     -- Polarity = 0, sclk = 0, phase = 0: go to data_get
@@ -234,7 +236,9 @@ begin
                     end if;
                 when block_finished =>
                     cur_bit := 0;
-                    if cur_phase = cur_polarity then
+                    if ss = '1' then
+                        state <= wait_for_slave_select;
+                    elsif cur_phase = cur_polarity then
                         state <= data_get_wait;
                     else
                         state <= data_set_wait;
