@@ -46,16 +46,23 @@ architecture Behavioral of spi_slave is
 
 begin
     block_done <= switch_buffer;
+    debouncer:
+    if debounce_ticks > 0 generate
     -- The debouncer for sclk
-    sclk_debouncer : entity work.static_debouncer
-    generic map (
-        debounce_ticks => debounce_ticks
-    )
-    port map (
-        clk => clk,
-        pulse_in => sclk,
-        pulse_out => sclk_debounced
-    );
+        sclk_debouncer : entity work.static_debouncer
+        generic map (
+            debounce_ticks => debounce_ticks
+        )
+        port map (
+            clk => clk,
+            pulse_in => sclk,
+            pulse_out => sclk_debounced
+        );
+    end generate;
+    no_debouncer:
+    if debounce_ticks = 0 generate
+        sclk_debounced <= sclk;
+    end generate;
 
     -- The input controller, basically handles the MOSI and data_out signals. One buffer is being written, the other one is being forwarded to the rest of the system.
     input_controller : process(clk, switch_buffer, next_input)
