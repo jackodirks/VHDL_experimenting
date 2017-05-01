@@ -63,13 +63,13 @@ begin
     );
 
     slave_1_test : process
-        variable cur_data_out : STD_LOGIC_VECTOR(3 DOWNTO 0);
+        variable cur_data_out : STD_LOGIC_VECTOR(4 DOWNTO 0);
     begin
         slave_1_rst <= '1';
         slave_1_ss <= '0';
         slave_1_polarity <= '0';
         slave_1_phase <= '0';
-        slave_1_block_size <= 4;
+        slave_1_block_size <= 5;
         slave_1_sclk <= '1';
         slave_1_data_in <= (others => '0');
         slave_1_mosi <= '0';
@@ -86,11 +86,11 @@ begin
         end loop;
         wait for half_sclk_period;
         slave_1_sclk <= not slave_1_sclk;
-        for D in 0 to 15 loop
+        for D in 0 to 31 loop
             cur_data_out := STD_LOGIC_VECTOR(to_unsigned(D, cur_data_out'length));
             -- The system should be waiting for the first sclk, after which it tries to read data
-            slave_1_data_in(3 DOWNTO 0) <= cur_data_out;
-            for B in 0 to 3 loop
+            slave_1_data_in(4 DOWNTO 0) <= cur_data_out;
+            for B in 4 downto 0 loop
                 -- Set/write
                 slave_1_mosi <= cur_data_out(B);
                 wait for half_sclk_period;
