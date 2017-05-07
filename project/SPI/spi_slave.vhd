@@ -5,6 +5,8 @@ use IEEE.STD_LOGIC_1164.ALL;
 -- A change of polarity, phase and block size will only be accepted in the reset state: changing them during run will not affect anything
 -- We do not need to debounce MOSI, but we do need to debounce sclk. MOSI is expected to be set half a period ago when it is read, but sclk might still be bouncing when it is read.
 
+-- The MSB is transmitted and received first, so if the word is 0101 (5), then we receive or send 0-1-0-1
+
 entity spi_slave is
     generic (
         debounce_ticks          : natural range 0 to natural'high
@@ -27,7 +29,12 @@ end spi_slave;
 
 
 architecture Behavioral of spi_slave is
+    constant max_bus_size       : Natural := 32;
+
     type state_type is (reset, wait_for_slave_select, wait_for_idle, data_get_wait, data_get, data_set_wait, data_set, block_finished);
+
+    subtype CURSOR_RANGE_SUBTYPE is natural range 0 to max_bus_size-1;
+    subtype BIT_RANGE_SUBTYPE is natural range 0 to max_bus_size;
 
     signal sclk_debounced       : STD_LOGIC;
     signal cur_polarity         : STD_LOGIC;
@@ -64,16 +71,16 @@ begin
         sclk_debounced <= sclk;
     end generate;
 
-    -- The input controller, basically handles the MOSI and data_out signals. One buffer is being written, the other one is being forwarded to the rest of the system.
-    input_controller : process(clk, switch_buffer, next_input)
+    -- The mosi (slave input) controller, handles the MOSI and data_out signals. One buffer is being written, the other one is being forwarded to the rest of the system.
+    mosi_controller : process(clk, next_input, switch_buffer)
         variable selected_buffer    : natural range 0 to 1 := 0;
-        variable buffer_0           : STD_LOGIC_VECTOR(31 DOWNTO 0) := (others => '0');
-        variable buffer_1           : STD_LOGIC_VECTOR(31 DOWNTO 0) := (others => '0');
-        variable cursor             : natural range 0 to 31;
+        variable buffer_0           : STD_LOGIC_VECTOR(max_bus_size-1 DOWNTO 0) := (others => '0');
+        variable buffer_1           : STD_LOGIC_VECTOR(max_bus_size-1 DOWNTO 0) := (others => '0');
+        variable cursor             : CURSOR_RANGE_SUBTYPE;
     begin
         if rising_edge(clk) then
             if switch_buffer then
-                cursor := 0;
+                cursor := cur_block_size -1;
                 if selected_buffer = 1 then
                     selected_buffer := 0;
                 else
@@ -85,7 +92,9 @@ begin
                 else
                     buffer_1(cursor) := mosi;
                 end if;
-                cursor := cursor + 1;
+                if cursor > 0 then
+                    cursor := cursor -1;
+                end if;
             end if;
         end if;
         if selected_buffer = 0 then
@@ -95,27 +104,35 @@ begin
         end if;
     end process;
 
-    -- The output controller, handles the miso and data_in signals
-    output_controller : process(clk, read_data_in, next_output)
-        variable data_in_buffer : STD_LOGIC_VECTOR(31 DOWNTO 0);
+    -- The miso (slave output) controller, handles the MISO and data_in signals
+    miso_controller : process(clk, read_data_in, next_output, ss)
+        variable data_in_buffer :   STD_LOGIC_VECTOR(31 DOWNTO 0);
+        variable cursor         :   CURSOR_RANGE_SUBTYPE;
     begin
         if rising_edge(clk) then
             if read_data_in then
                 data_in_buffer := data_in;
+                cursor := cur_block_size-1;
             elsif next_output then
-                data_in_buffer := '0' & data_in_buffer(31 DOWNTO 1);
+                if cursor > 0 then
+                    cursor := cursor-1;
+                end if;
             end if;
         end if;
-            miso <= data_in_buffer(0);
+        if ss = '1' then
+            miso <= 'Z';
+        else
+            miso <= data_in_buffer(cursor);
+        end if;
     end process;
 
     -- The safe that locks the settings
-    settings_safe : process(clk, lock_safe)
+    settings_safe : process(lock_safe, polarity, phase, block_size)
         variable lock_polarity      : STD_LOGIC;
         variable lock_phase         : STD_LOGIC;
-        variable lock_block_size    : natural range 1 to 32;
+        variable lock_block_size    : BIT_RANGE_SUBTYPE;
     begin
-        if rising_edge(clk) and not lock_safe then
+        if not lock_safe then
             lock_polarity := polarity;
             lock_phase := phase;
             lock_block_size := block_size;
@@ -172,7 +189,7 @@ begin
     state_transition: process(clk, rst, mosi, sclk, ss)
         variable prev_sclk  : STD_LOGIC;
         variable cur_sclk   : STD_LOGIC;
-        variable cur_bit    : natural range 0 to 32;
+        variable cur_bit    : BIT_RANGE_SUBTYPE;
     begin
         if rst = '1' then
             state <= reset;
@@ -182,7 +199,7 @@ begin
             cur_sclk := sclk_debounced;
             case state is
                 when reset|wait_for_slave_select =>
-                    if ss = '1' then 
+                    if ss = '1' then
                         state <= wait_for_slave_select;
                     else
                         state <= wait_for_idle;
@@ -218,12 +235,15 @@ begin
                     end if;
                 when data_get =>
                     if cur_phase /= cur_polarity then
-                        cur_bit := cur_bit + 1;
-                        if cur_bit = cur_block_size then
+                        if cur_bit+1 = cur_block_size then
                             state <= block_finished;
+                        else
+                            state <= data_set_wait;
+                            cur_bit := cur_bit + 1;
                         end if;
+                    else
+                        state <= data_set_wait;
                     end if;
-                    state <= data_set_wait;
                 when data_set_wait =>
                     if prev_sclk /= cur_sclk then
                         state <= data_set;
@@ -232,10 +252,10 @@ begin
                     end if;
                 when data_set =>
                     if cur_phase = cur_polarity then
-                        cur_bit := cur_bit + 1;
-                        if cur_bit >= cur_block_size then
+                        if cur_bit+1 >= cur_block_size then
                             state <= block_finished;
                         else
+                            cur_bit := cur_bit + 1;
                             state <= data_get_wait;
                         end if;
                     else
