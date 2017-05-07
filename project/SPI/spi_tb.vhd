@@ -19,7 +19,7 @@ end spi_tb;
 architecture Behavioral of spi_tb is
 
     constant clk_freq                       : natural := (1000 ms / clock_period);
-    constant sclk_period                    : time := clock_period * 100;        -- Run ten times slower then the system clock
+    constant sclk_period                    : time := clock_period * 8;        -- Run eight times slower then the system clock
     constant half_sclk_period               : time := sclk_period / 2;          -- Convinience thing
 
     -- inout signals slave 1
@@ -45,7 +45,7 @@ begin
 
     spi_slave_1 : entity work.spi_slave
     generic map (
-        debounce_ticks => 3
+        debounce_ticks => 0
     )
     port map (
         rst => slave_1_rst,
