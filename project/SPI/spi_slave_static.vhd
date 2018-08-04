@@ -1,7 +1,8 @@
 library IEEE;
 use IEEE.STD_LOGIC_1164.ALL;
+use IEEE.NUMERIC_STD.ALL;
 
--- A static SPI slave. It is static in the sense that all settings (frame size, frame buffer, ..)
+-- A static SPI slave. It is static in the sense that all settings (frame size, polarity, ..)
 -- are set before synthesis and cannot be changed afterwards.
 -- The MSB is transmitted and received first, so if the word is 0101 (5), then we receive or send 0-1-0-1.
 -- Two important properties are SPO (Clock polarity) and SPH (Phase Control)
@@ -15,8 +16,6 @@ use IEEE.STD_LOGIC_1164.ALL;
 entity spi_slave is
   generic (
     FRAME_SIZE_BIT          : natural   := 16;
-    TRANS_BUF_FRAMES        : natural   := 4;
-    RECEIV_BUS_FRAMES       : natural   := 4;
     POLARITY                : std_logic := '0';
     PHASE                   : std_logic := '0';
     AUTOCLEAR_FRAMES        : boolean   := true
@@ -28,85 +27,24 @@ entity spi_slave is
     mosi                    : in  STD_LOGIC;                                    -- Master output slave input
     miso                    : out STD_LOGIC;                                    -- Master input slave output
     ss                      : in  STD_LOGIC;                                    -- Slave Select
-    trans_buf_data          : in  std_logic_vector(FRAME_SIZE_BIT - 1 downto 0);
-    trans_buf_en            : in  boolean;
-    trans_buf_full          : out boolean;
-    receiv_buf_data         : out std_logic_vector(FRAME_SIZE_BIT - 1 downto 0);
-    receiv_buf_en           : in  boolean;
-    receiv_buf_empty        : out boolean
+    trans_data              : in  std_logic_vector(FRAME_SIZE_BIT - 1 downto 0);
+    receiv_data             : out std_logic_vector(FRAME_SIZE_BIT - 1 downto 0);
+    done                    : out boolean;
   );
 end spi_slave;
 
 
 architecture Behavioral of spi_slave is
-  type state_type is (reset, wait_for_slave_select, wait_for_idle, data_get_wait, data_get, data_set_wait, data_set, block_finished);
-  subtype frame is std_logic_vector(FRAME_SIZE_BIT - 1 downto 0);
-  type frame_buf is array (natural range <>) of frame;
-
-  -- A send frame and a receive frame, plus a signal to commit/update
-  signal trans_frame          : frame;
-  signal receiv_frame         : frame;
-  signal next_frame           : boolean;
-
+  type state_type is (reset, wait_for_slave_select, wait_for_idle, transaction, finished);
   -- The state of the FSM
   signal state                : state_type := reset;
+  signal
 
 begin
-  -- This process manages the buffers
-  buffer_manager :  process(clk)
-    -- The two buffers, one send and one receive
-    variable trans_buf        : frame_buf(TRANS_BUF_FRAMES - 1 downto 0)  := (others => (others => '0'));
-    variable receiv_buf       : frame_buf(RECEIV_BUS_FRAMES - 1 downto 0) := (others => (others => 'X'));
-    variable trans_r_c        : unsigned range 0 to TRANS_BUF_FRAMES - 1  := TRANS_BUF_FRAMES - 1;
-    variable trans_w_c        : unsigned range 0 to TRANS_BUF_FRAMES - 1  := 0;
-    variable receiv_r_c       : unsigned range 0 to RECEIV_BUS_FRAMES - 1 := RECEIV_BUS_FRAMES - 1;
-    variable receiv_w_c       : unsigned range 0 to RECEIV_BUS_FRAMES - 1 := 0;
-  begin
-    if rising_edge(clk) then
-      if rst = 1 then
-        trans_r_c := TRANS_BUF_FRAMES - 1;
-        trans_w_c := 0;
-        receiv_r_c := RECEIV_BUS_FRAMES - 1;
 
-  end process
-
-
-  -- The mosi (slave input) controller, handles the MOSI and data_out signals. One buffer is being written, the other one is being forwarded to the rest of the system.
-  mosi_controller : process(clk, next_input, switch_buffer)
-      variable selected_buffer    : natural range 0 to 1 := 0;
-      variable buffer_0           : STD_LOGIC_VECTOR(max_bus_size-1 DOWNTO 0) := (others => '0');
-      variable buffer_1           : STD_LOGIC_VECTOR(max_bus_size-1 DOWNTO 0) := (others => '0');
-      variable cursor             : CURSOR_RANGE_SUBTYPE;
-  begin
-      if rising_edge(clk) then
-          if switch_buffer then
-              cursor := cur_block_size -1;
-              if selected_buffer = 1 then
-                  selected_buffer := 0;
-              else
-                  selected_buffer := 1;
-              end if;
-          elsif next_input then
-              if selected_buffer = 0 then
-                  buffer_0(cursor) := mosi;
-              else
-                  buffer_1(cursor) := mosi;
-              end if;
-              if cursor > 0 then
-                  cursor := cursor -1;
-              end if;
-          end if;
-      end if;
-      if selected_buffer = 0 then
-          data_out <= buffer_1;
-      else
-          data_out <= buffer_0;
-      end if;
-  end process;
 
   -- The miso (slave output) controller, handles the MISO and data_in signals
   miso_controller : process(clk, read_data_in, next_output, ss)
-      variable data_in_buffer :   STD_LOGIC_VECTOR(31 DOWNTO 0);
       variable cursor         :   CURSOR_RANGE_SUBTYPE;
   begin
       if rising_edge(clk) then
@@ -124,22 +62,6 @@ begin
       else
           miso <= data_in_buffer(cursor);
       end if;
-  end process;
-
-  -- The safe that locks the settings
-  settings_safe : process(lock_safe, polarity, phase, block_size)
-      variable lock_polarity      : STD_LOGIC;
-      variable lock_phase         : STD_LOGIC;
-      variable lock_block_size    : BIT_RANGE_SUBTYPE;
-  begin
-      if not lock_safe then
-          lock_polarity := polarity;
-          lock_phase := phase;
-          lock_block_size := block_size;
-      end if;
-      cur_polarity <= lock_polarity;
-      cur_phase <= lock_phase;
-      cur_block_size <= lock_block_size;
   end process;
 
   -- State behaviour
