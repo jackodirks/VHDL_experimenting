@@ -1,7 +1,18 @@
-include mk/flags.mk
-include mk/compilers.mk
-include mk/emptyvars.mk
-include mk/predefined.mk
+TIMESEED := $(shell date +%s)
+INCLUDEFLAGS = -i --work=$(WORKNAMEPREFIX) --std=$(STD) --workdir=$(WORKDIR)
+BUILDFLAGS = -m --work=$(WORKNAMEPREFIX) --std=$(STD) --workdir=$(WORKDIR)
+RUNFLAGS = -r --work=$(WORKNAMEPREFIX) --std=$(STD) --workdir=$(WORKDIR)
+BENCHFLAGS = --wave=$@ -gSEED=$(TIMESEED)
+VIEWFLAGS = --stdout
+CLEANFLAGS = --remove --workdir=$(WORKDIR)
+GHDL := ghdl
+VIEUWER := gtkwave
+SRC :=
+WORKDIR ?= work/
+WORKNAMEPREFIX ?= work
+WORKNAMESUFFIX ?= obj93.cf
+STD ?= 93
+MAXRUNTIME ?= 50000ns
 
 TESTBENCHFILE := tb_main.vhd
 TESTBENCH := tb_main
