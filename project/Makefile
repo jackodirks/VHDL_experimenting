@@ -14,36 +14,33 @@ DIRS := $(shell ls -d */)
 DIRS := $(DIRS:=rules.mk)
 
 -include $(DIRS)
-
 .PHONY: all clean run simulate pre-build distclean timedRun
-
 .DELETE_ON_ERROR:
 
-all: pre-build
 all: $(WORKFILE)
 
-run: pre-build
 run: $(TARGET)
 
-timedRun: pre-build
 timedRun: BENCHFLAGS += --stop-time=$(MAXRUNTIME)
 timedRun: $(TARGET)
 
-pre-build:
-	@mkdir -p $(WORKDIR)
+$(WORKDIR) :
+	@mkdir -p $@
 
-$(WORKFILE) : $(SRC)
-	$(GHDL) $(INCLUDEFLAGS) $^
+$(WORKFILE) : $(SRC) | $(WORKDIR)
+	$(GHDL) $(INCLUDEFLAGS) $?
 	$(GHDL) $(BUILDFLAGS) $(TESTBENCH)
 
 $(TARGET) : $(WORKFILE)
 	$(GHDL) $(RUNFLAGS) $(TESTBENCH) $(BENCHFLAGS)
 
-simulate: run
-	$(VIEUWER) $(TARGET)
+view: $(TARGET)
+	$(VIEWER) $(TARGET) &>/dev/null &
 
 clean:
-	$(GHDL) $(CLEANFLAGS)
+	$(GHDL) --remove --workdir=$(WORKDIR) --std=$(STD)
 
 distclean :
 	rm -rf $(WORKDIR)
+	rm *.o
+	rm $(TESTBENCH)
