@@ -73,8 +73,8 @@ architecture Behavioral of uart_tb is
 
 begin
 
-    done <= uart_receiv_1_done and uart_receiv_2_done and uart_send_1_done and uart_send_2_done;
-    success <= uart_receiv_1_success and uart_receiv_2_success and uart_send_1_success and uart_send_2_success;
+    done <= uart_receiv_1_done and uart_receiv_2_done and uart_send_1_done and uart_send_2_done and uart_main_done;
+    success <= uart_receiv_1_success and uart_receiv_2_success and uart_send_1_success and uart_send_2_success and uart_main_success;
 
     uart_receiver_1 : entity work.uart_receiv
     generic map (
@@ -182,7 +182,7 @@ begin
         uart_main_rst <= '0';
         wait for clock_period;
         report "clk_period " & time'image(clock_period) & " clk_ticks_per_baud " & natural'image(clk_ticks_per_baud) & " baud_period " & time'image(baud_period) severity note;
-        for D in 0 to 63 loop
+        for D in 32 to 43 loop
             uart_main_data_in(5 DOWNTO 0) <= STD_LOGIC_VECTOR(to_unsigned(D, 6));
             uart_main_send_start <= '1';
             wait for clock_period;
@@ -222,7 +222,7 @@ begin
     begin
         uart_receiv_1_rst <= '0';
         wait for baud_period;
-        for D in 0 to 255 loop
+        for D in 230 to 255 loop
             data_buffer := STD_LOGIC_VECTOR(to_unsigned(D, data_buffer'length));
             uart_receiv_1_rx <= '0';
             for I in 0 TO 7 loop
@@ -264,7 +264,7 @@ begin
         uart_receiv_2_rx <= '1';
         uart_receiv_2_rst <= '0';
         wait for baud_period;
-        for D in 0 to 255 loop
+        for D in 230 to 255 loop
             data_buffer := STD_LOGIC_VECTOR(to_unsigned(D, data_buffer'length));
             uart_receiv_2_rx <= '0';
             for I in 0 to 7 loop
@@ -361,7 +361,7 @@ begin
            report "uart_send_1_ready does not default to 1" severity error;
            suc := false;
        end if;
-        for D in 0 to 255 loop
+        for D in 230 to 255 loop
             data_buffer := STD_LOGIC_VECTOR(to_unsigned(D, data_buffer'length));
             uart_send_1_in(7 DOWNTO 0) <= STD_LOGIC_VECTOR(to_unsigned(D, data_buffer'length));
             uart_send_1_start <= '1';
@@ -424,7 +424,7 @@ begin
             suc := false;
         end if;
         wait for clock_period;
-        for D in 0 to 255 loop
+        for D in 230 to 255 loop
             even := '1';
             data_buffer := STD_LOGIC_VECTOR(to_unsigned(D, data_buffer'length));
             uart_send_2_in(7 DOWNTO 0) <= STD_LOGIC_VECTOR(to_unsigned(D, data_buffer'length));
