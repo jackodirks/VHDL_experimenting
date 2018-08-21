@@ -6,7 +6,7 @@ BENCHFLAGS = --wave=$@ -gSEED=$(TIMESEED)
 VIEWFLAGS = --stdout
 CLEANFLAGS = --remove --workdir=$(WORKDIR)
 GHDL := ghdl
-VIEUWER := gtkwave
+VIEWER := gtkwave
 SRC :=
 WORKDIR ?= work/
 WORKNAMEPREFIX ?= work
