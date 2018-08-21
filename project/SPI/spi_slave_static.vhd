@@ -43,7 +43,7 @@ begin
   begin
     if ss = '1' then
       miso <= 'Z';
-      sclk_int <= '0';
+      sclk_int <= POLARITY;
     else
       miso <= miso_int;
       sclk_int <= sclk;
@@ -76,16 +76,17 @@ begin
         last_sclk := sclk_int;
         if (PHASE = '0' and sclk_int = '0') or (PHASE = '1' and sclk_int = '1') then
           cursor := cursor - 1;
-        end if;
-        if (PHASE = '0' and sclk_int = '1') or (PHASE = '1' and sclk_int = '0') then
+        elsif (PHASE = '0' and sclk_int = '1') or (PHASE = '1' and sclk_int = '0') then
           data_out(to_integer(cursor)) := mosi;
         end if;
       end if;
     end if;
-    if POLARITY = PHASE then
-      transceiver_active <= not(cursor = 2**FRAME_SIZE_BIT_L2 - 1);
-    else
-      transceiver_active <= not(cursor = 0);
+    if (last_sclk = '0' and POLARITY = '0') or (last_sclk = '1' and POLARITY = '1') then
+      if POLARITY = PHASE then
+        transceiver_active <= not(cursor = 2**FRAME_SIZE_BIT_L2 - 1);
+      else
+        transceiver_active <= not(cursor = 0);
+      end if;
     end if;
     receiv_data <= data_out;
     miso_int <= trans_data(to_integer(cursor));
