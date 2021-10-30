@@ -28,10 +28,14 @@ architecture tb of tb_main is
     signal spi_success                      : boolean := true;
     signal spi_done                         : boolean := true;
 
+    signal bus_success                      : boolean := true;
+    signal bus_done                         : boolean := true;
+
     constant run_seven_segments_test        : boolean := true;
     constant run_common_test                : boolean := true;
     constant run_uart_test                  : boolean := true;
     constant run_spi_test                   : boolean := true;
+    constant run_bus_test                   : boolean := true;
 
     signal randVal                          : natural := 0;
 begin
@@ -89,6 +93,20 @@ begin
         );
     end generate spi_generate;
 
+    bus_generate:
+    if run_bus_test generate
+        bus_test : entity work.bus_tb
+        generic map (
+            clock_period => clock_period,
+            randVal =>randVal
+        )
+        port map (
+            clk => clk,
+            done => bus_done,
+            success => bus_success
+        );
+    end generate bus_generate;
+
     rand_gen : process
     begin
         wait for 20 ns;
@@ -101,7 +119,7 @@ begin
 
     clock_gen : process
     begin
-        if not (common_done and seven_segments_done and uart_done and spi_done) then
+        if not (common_done and seven_segments_done and uart_done and spi_done and bus_done) then
             -- 1/2 duty cycle
             clk <= not clk;
             wait for clock_period/2;
