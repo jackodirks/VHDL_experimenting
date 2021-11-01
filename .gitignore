@@ -4,3 +4,6 @@ work/
 tb_main
 *.o
 *.lst
+
+# VUnit
+vunit_out/
