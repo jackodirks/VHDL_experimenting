@@ -6,8 +6,8 @@ library vunit_lib;
 context vunit_lib.vunit_context;
 context vunit_lib.vc_context;
 
-library bus_lib;
-use bus_lib.bus_pkg.all;
+library src;
+use src.bus_pkg.all;
 
 entity bus_singleport_ram_tb is
     generic (
@@ -100,7 +100,7 @@ begin
 
     test_runner_watchdog(runner, 10 ms);
 
-    mem_256_byte : entity bus_lib.bus_singleport_ram
+    mem_256_byte : entity src.bus_singleport_ram
     generic map (
         DEPTH_LOG2B => 8
     )
@@ -111,7 +111,7 @@ begin
         mem2mst => mem_256_byte_control.slv2mst
     );
 
-    mem_2_byte : entity bus_lib.bus_singleport_ram
+    mem_2_byte : entity src.bus_singleport_ram
     generic map (
         DEPTH_LOG2B => 1
     )

@@ -6,9 +6,15 @@ VU.add_osvvm()
 VU.add_verification_components()
 VU.enable_location_preprocessing()
 
-SRC_PATH = Path(__file__).parent / "bus"
+SRC_PATH = Path(__file__).parent
 
-VU.add_library("bus_lib").add_source_files(SRC_PATH / "*.vhd")
-VU.add_library("tb_bus_lib").add_source_files(SRC_PATH / "test" / "*.vhd")
+src_library = VU.add_library("src")
+tb_library = VU.add_library("tb")
+
+src_library.add_source_files(SRC_PATH / "bus" / "*.vhd")
+tb_library.add_source_files(SRC_PATH / "bus" / "test" / "*.vhd")
+
+src_library.add_source_files(SRC_PATH / "deppSlave" / "*.vhd")
+tb_library.add_source_files(SRC_PATH / "deppSlave" / "test" / "*.vhd")
 
 VU.main()

@@ -1,122 +1,86 @@
 library IEEE;
 use IEEE.STD_LOGIC_1164.ALL;
 
+library work;
+use work.bus_pkg.all;
+
 entity depp_slave is
     port (
-             ----------------------------------------------------
-             -- Interaction with the rest of the system (internal)
-             ----------------------------------------------------
-             rst           : in STD_LOGIC;                         -- Reset the FSM
-             clk           : in STD_LOGIC;                         -- Clock
-             addr          : out STD_LOGIC_VECTOR(7 DOWNTO 0);     -- Address
-             data          : inout STD_LOGIC_VECTOR(7 DOWNTO 0);   -- Data bus
-             read_enable   : out STD_LOGIC;                        -- Request a read from the data bus. Cannot be high if write_enable is high
-             write_enable  : out STD_LOGIC;                        -- Request a write to the data bus. Cannot be high if read_enable is high
-             ready         : in STD_LOGIC;                         -- Signals to this device that a read/write has been completed.
-             ----------------------------------------------------
-             -- Interaction with the outside world (external). All control signals are active high.
-             ----------------------------------------------------
-             USB_DB        : inout STD_LOGIC_VECTOR(7 DOWNTO 0);
-             USB_WRITE     : in STD_LOGIC;
-             USB_ASTB      : in STD_LOGIC;
-             USB_DSTB      : in STD_LOGIC;
-             USB_WAIT      : out STD_LOGIC
+        ----------------------------------------------------
+        -- Interaction with the rest of the system (internal)
+        ----------------------------------------------------
+        rst           : in STD_LOGIC;                         -- Reset the FSM
+        clk           : in STD_LOGIC;                         -- Clock
+        mst2slv       : out bus_mst2slv_type;
+        slv2mst       : in bus_slv2mst_type;
+
+        ----------------------------------------------------
+        -- Interaction with the outside world (external). All control signals are active low.
+        ----------------------------------------------------
+        USB_DB        : inout STD_LOGIC_VECTOR(7 DOWNTO 0);
+        USB_WRITE     : in STD_LOGIC;
+        USB_ASTB      : in STD_LOGIC;
+        USB_DSTB      : in STD_LOGIC;
+        USB_WAIT      : out STD_LOGIC
          );
 
 end depp_slave;
 
 architecture behaviourial of depp_slave is
-    type state_type is (idle, data_write_wait_internal_ready, data_read_wait_internal_ready, data_wait_internal_complete, wait_usb_complete);
 
-    -- Control signals
-    signal state : state_type := idle;
-    signal address_write : boolean := false;
-    signal data_read : boolean := false;
-    signal data_write : boolean := false;
+    signal address : std_logic_vector(7 downto 0) := (others => '0');
 
-    -- Data storage
-    signal addr_internal : STD_LOGIC_VECTOR(7 DOWNTO 0) := (others => '0');
-    signal data_internal : STD_LOGIC_VECTOR(7 DOWNTO 0) := (others => '0');
 begin
 
-    address_write <= true when USB_ASTB = '0' else false;
-    data_write <= true when USB_DSTB = '0' and USB_WRITE = '0' else false;
-    data_read <= true when USB_DSTB = '0' and USB_WRITE = '1' else false;
-
-    data <= data_internal when data_write else (others => 'Z');
-    USB_DB <= data_internal when data_read else (others => 'Z');
-    addr <= addr_internal;
-
-    latch_data : process(clk, USB_ASTB, USB_DSTB, USB_WRITE)
+    sequential : process(clk)
+        variable wait_dstb_finish : boolean := false;
+        variable mst2slv_internal : bus_mst2slv_type := BUS_MST2SLV_IDLE;
     begin
         if rising_edge(clk) then
-            if address_write then
-                addr_internal <= USB_DB;
-            end if;
+            mst2slv_internal.writeEnable := '0';
+            mst2slv_internal.readEnable := '0';
+            mst2slv_internal.address := address;
+            USB_WAIT <= '0';
+            USB_DB <= (others => 'Z');
+            mst2slv <= BUS_MST2SLV_IDLE;
+            if rst = '1' then
+                wait_dstb_finish := false;
+            else
+                if wait_dstb_finish then
+                    if slv2mst.ack = '0' and USB_DSTB = '1' then
+                        wait_dstb_finish := false;
+                    else
+                        USB_WAIT <= '1';
+                    end if;
+                end if;
 
-            if data_write then
-                data_internal <= USB_DB;
-            end if;
+                if USB_ASTB = '0' then
+                    USB_WAIT <= '1';
+                    if USB_WRITE = '0' then
+                        address <= USB_DB;
+                    elsif USB_WRITE = '1' then
+                        USB_DB <= address;
+                    end if;
+                elsif USB_DSTB = '0' then
+                    if USB_WRITE = '0' then
+                        mst2slv_internal.writeData := USB_DB;
+                        mst2slv_internal.writeEnable := '1';
+                    elsif USB_WRITE = '1' then
+                        USB_DB <= slv2mst.readData;
+                        mst2slv_internal.readEnable := '1';
+                    end if;
 
-            if data_read and ready = '1' then
-                data_internal <= data;
+                    if slv2mst.ack = '1' then
+                        wait_dstb_finish := true;
+                    end if;
+                end if;
+
+                if wait_dstb_finish = false then
+                    mst2slv <= mst2slv_internal;
+                end if;
+
             end if;
         end if;
     end process;
 
-    state_transition : process(rst, clk, ready, USB_WRITE, USB_ASTB, USB_DSTB)
-    begin
-        if rst = '1' then
-            state <= idle;
-        elsif rising_edge(clk) then
-            case state is
-                when idle =>
-                    if address_write then
-                        state <= wait_usb_complete;
-                    elsif data_write then
-                        state <= data_write_wait_internal_ready;
-                    elsif data_read then
-                        state <= data_read_wait_internal_ready;
-                    end if;
-                when data_write_wait_internal_ready | data_read_wait_internal_ready =>
-                    if ready = '1' then
-                        state <= data_wait_internal_complete;
-                    end if;
-                when data_wait_internal_complete =>
-                    if ready = '0' then
-                        state <= wait_usb_complete;
-                    end if;
-                when wait_usb_complete =>
-                    if not data_write and not data_read and not address_read then
-                        state <= idle;
-                    end if;
-            end case;
-        end if;
-    end process;
-
-    state_output : process(state)
-    begin
-        case state is
-            when idle =>
-                read_enable <= '0';
-                write_enable <= '0';
-                USB_WAIT <= '0';
-            when data_write_wait_internal_ready =>
-                read_enable <= '0';
-                write_enable <= '1';
-                USB_WAIT <= '0';
-            when data_read_wait_internal_ready =>
-                read_enable <= '1';
-                write_enable <= '0';
-                USB_WAIT <= '0';
-            when data_wait_internal_complete =>
-                read_enable <= '0';
-                write_enable <= '0';
-                USB_WAIT <= '0';
-            When wait_usb_complete =>
-                read_enable <= '0';
-                write_enable <= '0';
-                USB_WAIT <= '1';
-        end case;
-    end process;
 end behaviourial;
