@@ -38,6 +38,7 @@ begin
             USB_DB <= (others => 'Z');
             mst2slv <= BUS_MST2SLV_IDLE;
             if rst = '1' then
+                USB_WAIT <= '1';
                 wait_dstb_finish := false;
             else
                 if wait_dstb_finish then
