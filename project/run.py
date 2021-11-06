@@ -17,4 +17,7 @@ tb_library.add_source_files(SRC_PATH / "bus" / "test" / "*.vhd")
 src_library.add_source_files(SRC_PATH / "deppSlave" / "*.vhd")
 tb_library.add_source_files(SRC_PATH / "deppSlave" / "test" / "*.vhd")
 
+
+tb_library.add_source_files(SRC_PATH / "intergrationTest" / "*.vhd")
+
 VU.main()
