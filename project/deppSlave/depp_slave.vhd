@@ -27,19 +27,13 @@ entity depp_slave is
 end depp_slave;
 
 architecture behaviourial of depp_slave is
-
-    signal address : std_logic_vector(7 downto 0) := (others => '0');
-
 begin
 
     sequential : process(clk)
         variable wait_dstb_finish : boolean := false;
-        variable mst2slv_internal : bus_mst2slv_type := BUS_MST2SLV_IDLE;
+        variable address : std_logic_vector(7 downto 0);
     begin
         if rising_edge(clk) then
-            mst2slv_internal.writeEnable := '0';
-            mst2slv_internal.readEnable := '0';
-            mst2slv_internal.address := address;
             USB_WAIT <= '0';
             USB_DB <= (others => 'Z');
             mst2slv <= BUS_MST2SLV_IDLE;
@@ -57,17 +51,17 @@ begin
                 if USB_ASTB = '0' then
                     USB_WAIT <= '1';
                     if USB_WRITE = '0' then
-                        address <= USB_DB;
+                        address := USB_DB;
                     elsif USB_WRITE = '1' then
                         USB_DB <= address;
                     end if;
                 elsif USB_DSTB = '0' then
                     if USB_WRITE = '0' then
-                        mst2slv_internal.writeData := USB_DB;
-                        mst2slv_internal.writeEnable := '1';
+                        mst2slv.writeData <= USB_DB;
+                        mst2slv.writeEnable <= '1';
                     elsif USB_WRITE = '1' then
                         USB_DB <= slv2mst.readData;
-                        mst2slv_internal.readEnable := '1';
+                        mst2slv.readEnable <= '1';
                     end if;
 
                     if slv2mst.ack = '1' then
@@ -75,9 +69,7 @@ begin
                     end if;
                 end if;
 
-                if wait_dstb_finish = false then
-                    mst2slv <= mst2slv_internal;
-                end if;
+                mst2slv.address <= address;
 
             end if;
         end if;

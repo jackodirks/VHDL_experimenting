@@ -96,7 +96,7 @@ begin
                 wait until depp_wait = '1';
                 slv2mst.ack <= '0';
                 wait for 2*clk_period;
-                check_equal('0', mst2slv.writeEnable);
+                check_equal('1', mst2slv.writeEnable);
                 check_equal(depp_wait, '1');
                 depp_dstb <= '1';
                 depp_write <= '1';
