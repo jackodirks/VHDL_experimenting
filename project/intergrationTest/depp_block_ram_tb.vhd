@@ -101,10 +101,10 @@ begin
                 depp_dstb <= '0';
                 wait until depp_wait = '1';
                 wait for 80 ns;
-                check_equal(254, to_integer(unsigned(depp_db)));
+                check_equal(to_integer(unsigned(depp_db)), 254);
                 depp_dstb <= '1';
                 wait until depp_wait = '0';
-                
+
             end if;
         end loop;
         wait until rising_edge(clk) or falling_edge(clk);
@@ -113,7 +113,7 @@ begin
     end process;
 
     test_runner_watchdog(runner, 10 ms);
-    
+
 
     slave : entity src.depp_slave
     port map (
