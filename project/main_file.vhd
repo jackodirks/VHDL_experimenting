@@ -31,9 +31,10 @@ architecture Behavioral of main_file is
         signal mem2depp : bus_slv2mst_type := BUS_SLV2MST_IDLE;
 begin
 
+    rst <= '0';
+
     concurrent : process(slide_switch, push_button)
     begin
-        rst <= push_button(0);
         led <= slide_switch;
     end process;
 
