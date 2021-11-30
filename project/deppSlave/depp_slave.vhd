@@ -67,7 +67,7 @@ begin
                     end if;
                 elsif usb_dstb_delayed = '0' then
 
-                    if slv2mst.ack = '1' and wait_dstb_finish = false then
+                    if bus_slave_finished(slv2mst) = '1' and wait_dstb_finish = false then
                         wait_dstb_finish := true;
                         read_latch := slv2mst.readData;
                     end if;
