@@ -17,6 +17,10 @@ tb_library.add_source_files(SRC_PATH / "bus" / "test" / "*.vhd")
 src_library.add_source_files(SRC_PATH / "deppSlave" / "*.vhd")
 tb_library.add_source_files(SRC_PATH / "deppSlave" / "test" / "*.vhd")
 
+src_library.add_source_files(SRC_PATH / "sevenSegment" / "*.vhd")
+tb_library.add_source_files(SRC_PATH / "sevenSegment" / "test" / "*.vhd")
+
+src_library.add_source_files(SRC_PATH / "common" / "simple_multishot_timer.vhd")
 
 tb_library.add_source_files(SRC_PATH / "intergrationTest" / "*.vhd")
 
