@@ -41,7 +41,7 @@ begin
 
     sequential : process(clk)
         variable addr : natural range 0 to digit_count - 1 := 0;
-        variable cur_digit : natural range 0 to digit_count := 0;
+        variable cur_digit : natural range 0 to digit_count - 1 := 0;
     begin
         if rising_edge(clk) then
             -- Bus interaction
@@ -65,9 +65,10 @@ begin
 
             -- Digit control
             if timer_done = '1' then
-                cur_digit := cur_digit + 1;
-                if cur_digit >= digit_count then
+                if cur_digit = digit_count - 1 then
                     cur_digit := 0;
+                else
+                    cur_digit := cur_digit + 1;
                 end if;
             end if;
 
