@@ -45,15 +45,15 @@ begin
     begin
         if rising_edge(clk) then
             -- Bus interaction
+            slv2mst.readData <= (others => '0');
             if bus_addr_in_range(mst2slv.address, check_range) then
                 addr := to_integer(unsigned(mst2slv.address(mst2slv.address'high downto 0)));
                 if mst2slv.writeEnable = '1' then
                     digit_storage(addr) <= mst2slv.writeData(digit_info_type'high downto 0);
                 end if;
-                slv2mst.readData <= (digit_info_type'high downto 0 => digit_storage(addr), others => '0');
+                slv2mst.readData(digit_info_type'high downto 0) <= digit_storage(addr);
                 slv2mst.fault <= '0';
             else
-                slv2mst.readData <= (others => '0');
                 slv2mst.fault <= '1';
             end if;
 
