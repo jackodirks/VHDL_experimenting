@@ -24,6 +24,8 @@ architecture Behavioral of bus_singleport_ram is
     signal ram  : ram_element_array(0 to 2**(DEPTH_LOG2B) - 1);
 begin
 
+    mem2mst.fault <= '0';
+
     sequential: process(clk, rst, mst2mem) is
         variable addr : natural range 0 to 2**DEPTH_LOG2B - 1;
     begin
