@@ -74,7 +74,6 @@ begin
 
             -- Set the output to the digits
             kathode <= hex_to_seven_seg(digit_storage(cur_digit));
-            kathode(kathode'high) <= not digit_storage(cur_digit)(digit_info_type'high);
 
             digit_anodes <= (others => '1');
             digit_anodes(cur_digit) <= '0';

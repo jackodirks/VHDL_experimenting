@@ -57,6 +57,11 @@ package body seven_seg_pkg is
             when others =>
                 retval := "00000000";
         end case;
+
+        if hex_in(digit_info_type'high) = '1' then
+            retval(seven_seg_kath_type'high) := '0';
+        end if;
+
         return retval;
     end function;
 end seven_seg_pkg;
