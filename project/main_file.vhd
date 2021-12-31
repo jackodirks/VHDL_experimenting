@@ -28,14 +28,13 @@ end main_file;
 
 architecture Behavioral of main_file is
 
-        constant address_map : addr_range_array := (
-            (
+        constant address_map : addr_range_and_mapping_array := (
+            address_range_and_map(
                 low => std_logic_vector(to_unsigned(0, bus_address_type'length)),
                 high => std_logic_vector(to_unsigned(3, bus_address_type'length))
             ),
-            (
-                low => std_logic_vector(to_unsigned(4, bus_address_type'length)),
-                high => (others => '1')
+            address_range_and_map(
+                low => std_logic_vector(to_unsigned(4, bus_address_type'length))
             ));
 
         signal rst          : STD_LOGIC;

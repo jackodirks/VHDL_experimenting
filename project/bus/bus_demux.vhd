@@ -7,7 +7,7 @@ use work.bus_pkg.all;
 
 entity bus_demux is
     generic (
-        ADDRESS_MAP         :  addr_range_array;
+        ADDRESS_MAP         :  addr_range_and_mapping_array;
         OOR_FAULT_CODE      :  bus_data_type := (others => '1')
     );
     port (
@@ -38,7 +38,7 @@ begin
 
         if rst /= '1' and bus_requesting(mst2demux) = '1' then
             for i in 0 to ADDRESS_MAP'high loop
-                if bus_addr_in_range(mst2demux.address, ADDRESS_MAP(i)) then
+                if bus_addr_in_range(mst2demux.address, ADDRESS_MAP(i).addr_range) then
                     none_selected := false;
                     selected_slv := i;
                 end if;
@@ -49,6 +49,7 @@ begin
                 demux2mst.readData <= OOR_FAULT_CODE;
             else
                 demux2slv(selected_slv) <= mst2demux;
+                demux2slv(selected_slv).address <= bus_apply_addr_map(mst2demux.address, ADDRESS_MAP(selected_slv).mapping);
                 demux2mst <= slv2demux(selected_slv);
             end if;
         end if;

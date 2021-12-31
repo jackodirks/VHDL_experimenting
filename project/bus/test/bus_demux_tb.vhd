@@ -18,14 +18,17 @@ architecture tb of bus_demux_tb is
 
     constant clk_period : time := 20 ns;
 
-    constant firstRange     :   addr_range_type := (
+    constant firstRange     :   addr_range_and_mapping_type := address_range_and_map(
         low => std_logic_vector(to_unsigned(0, bus_address_type'length)),
-        high => std_logic_vector(to_unsigned(100, bus_address_type'length))
+        high => std_logic_vector(to_unsigned(15, bus_address_type'length))
     );
 
-    constant secondRange    :   addr_range_type := (
-        low => std_logic_vector(to_unsigned(50, bus_address_type'length)),
-        high => std_logic_vector(to_unsigned(150, bus_address_type'length))
+    constant secondRangeMap : addrMapping_type := bus_map_constant(bus_address_type'high - 4, '0') & bus_map_range(4, 0);
+
+    constant secondRange    :   addr_range_and_mapping_type := address_range_and_map(
+        low => std_logic_vector(to_unsigned(32, bus_address_type'length)),
+        high => std_logic_vector(to_unsigned(63, bus_address_type'length)),
+        mapping => secondRangeMap
     );
 
     signal demux2firstSlave : bus_mst2slv_type := BUS_MST2SLV_IDLE;
@@ -37,6 +40,8 @@ architecture tb of bus_demux_tb is
     signal master2demux : bus_mst2slv_type := BUS_MST2SLV_IDLE;
     signal clk : std_logic := '0';
     signal rst : std_logic := '0';
+
+    signal helper_master : bus_mst2slv_type := BUS_MST2SLV_IDLE;
 
 begin
 
@@ -66,21 +71,24 @@ begin
                 check(demux2master = BUS_SLV2MST_IDLE);
 
                 firstSlave2demux <= BUS_SLV2MST_IDLE;
-                master2demux.address <= std_logic_vector(to_unsigned(101, bus_address_type'length));
+                master2demux.address <= std_logic_vector(to_unsigned(40, bus_address_type'length));
                 master2demux.writeEnable <= '1';
+                helper_master.address <= std_logic_vector(to_unsigned(8, bus_address_type'length));
+                helper_master.writeEnable <= '1';
                 wait for clk_period/4;
                 check(demux2firstSlave = BUS_MST2SLV_IDLE);
-                check(demux2secondSlave = master2demux);
+                check(demux2secondSlave = helper_master);
                 check(demux2master = BUS_SLV2MST_IDLE);
 
                 secondSlave2demux.fault <= '1';
                 secondSlave2demux.readData <= std_logic_vector(to_unsigned(14, bus_data_type'length));
                 wait for clk_period/4;
                 check(demux2firstSlave = BUS_MST2SLV_IDLE);
-                check(demux2secondSlave = master2demux);
+                check(demux2secondSlave = helper_master);
                 check(demux2master = secondSlave2demux);
 
                 master2demux.writeEnable <= '0';
+                helper_master.writeEnable <= '0';
                 wait for clk_period/4;
                 check(demux2firstSlave = BUS_MST2SLV_IDLE);
                 check(demux2secondSlave = BUS_MST2SLV_IDLE);
@@ -89,16 +97,18 @@ begin
                 secondSlave2demux <= BUS_SLV2MST_IDLE;
                 master2demux.address <= std_logic_vector(to_unsigned(50, bus_address_type'length));
                 master2demux.readEnable <= '1';
+                helper_master.address <= std_logic_vector(to_unsigned(18, bus_address_type'length));
+                helper_master.readEnable <= '1';
                 wait for clk_period/4;
                 check(demux2firstSlave = BUS_MST2SLV_IDLE);
-                check(demux2secondSlave = master2demux);
+                check(demux2secondSlave = helper_master);
                 check(demux2master = BUS_SLV2MST_IDLE);
 
                 secondSlave2demux.ack <= '1';
                 secondSlave2demux.readData <= std_logic_vector(to_unsigned(45, bus_data_type'length));
                 wait for clk_period/4;
                 check(demux2firstSlave = BUS_MST2SLV_IDLE);
-                check(demux2secondSlave = master2demux);
+                check(demux2secondSlave = helper_master);
                 check(demux2master = secondSlave2demux);
 
                 master2demux.readEnable <= '0';
@@ -107,7 +117,7 @@ begin
                 check(demux2secondSlave = BUS_MST2SLV_IDLE);
                 check(demux2master = BUS_SLV2MST_IDLE);
 
-                master2demux.address <= std_logic_vector(to_unsigned(200, bus_address_type'length));
+                master2demux.address <= std_logic_vector(to_unsigned(20, bus_address_type'length));
                 master2demux.readEnable <= '1';
                 wait for clk_period/4;
                 check(demux2firstSlave = BUS_MST2SLV_IDLE);
