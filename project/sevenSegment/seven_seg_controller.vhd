@@ -27,19 +27,18 @@ entity seven_seg_controller is
 end seven_seg_controller;
 
 architecture behaviourial of seven_seg_controller is
-    type digit_storage_array is array (natural range <>) of digit_info_type;
-
     constant check_range     :   addr_range_type := (
         low => std_logic_vector(to_unsigned(0, bus_address_type'length)),
         high => std_logic_vector(to_unsigned(digit_count - 1, bus_address_type'length))
     );
 
-    signal digit_storage : digit_storage_array(digit_count - 1 downto 0) := (others => (others => '0'));
+    signal digit_storage : bus_byte_array(digit_count - 1 downto 0) := (others => (others => '0'));
 
     signal timer_done : std_logic;
 begin
 
     sequential : process(clk)
+        variable full_addr : natural range 0 to 2**bus_address_type'length - 1;
         variable addr : natural range 0 to digit_count - 1 := 0;
         variable cur_digit : natural range 0 to digit_count - 1 := 0;
     begin
@@ -47,11 +46,16 @@ begin
             -- Bus interaction
             slv2mst.readData <= (others => '0');
             if bus_addr_in_range(mst2slv.address, check_range) then
-                addr := to_integer(unsigned(mst2slv.address(mst2slv.address'high downto 0)));
-                if mst2slv.writeEnable = '1' then
-                    digit_storage(addr) <= mst2slv.writeData(digit_info_type'high downto 0);
-                end if;
-                slv2mst.readData(digit_info_type'high downto 0) <= digit_storage(addr);
+                full_addr := to_integer(unsigned(mst2slv.address(mst2slv.address'range)));
+                for b in 0 to bus_bytes_per_word - 1 loop
+                    if (full_addr + b < digit_count) then
+                        addr := full_addr;
+                        if mst2slv.writeEnable = '1' and mst2slv.writeMask(b) = '1' then
+                            digit_storage(addr) <= mst2slv.writeData((b+1) * bus_byte_size - 1 downto b*bus_byte_size);
+                        end if;
+                        slv2mst.readData((b+1) * bus_byte_size - 1 downto b*bus_byte_size) <= digit_storage(addr);
+                    end if;
+                end loop;
                 slv2mst.fault <= '0';
             else
                 slv2mst.fault <= '1';
@@ -73,7 +77,7 @@ begin
             end if;
 
             -- Set the output to the digits
-            kathode <= hex_to_seven_seg(digit_storage(cur_digit));
+            kathode <= hex_to_seven_seg(digit_storage(cur_digit)(digit_info_type'range));
 
             digit_anodes <= (others => '1');
             digit_anodes(cur_digit) <= '0';

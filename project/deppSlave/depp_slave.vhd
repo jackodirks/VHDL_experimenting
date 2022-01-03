@@ -75,6 +75,7 @@ begin
                     if USB_WRITE = '0' then
                         mst2slv.writeData <= USB_DB;
                         mst2slv.writeEnable <= '1';
+                        mst2slv.writeMask <= (others => '1');
                     elsif USB_WRITE = '1' then
                         USB_DB <= read_latch;
                         mst2slv.readEnable <= '1';

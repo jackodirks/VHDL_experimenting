@@ -10,6 +10,9 @@ library src;
 use src.bus_pkg.all;
 use src.seven_seg_pkg.all;
 
+library tb;
+use tb.bus_tb_pkg.all;
+
 entity seven_seg_controller_tb is
     generic (
         runner_cfg : string);
@@ -49,54 +52,57 @@ begin
         while test_suite loop
             if run("Address out of range") then
                 wait until falling_edge(clk);
-                mst2ss1.address <= std_logic_vector(to_unsigned(10, bus_address_type'length));
-                mst2ss1.readEnable <= '1';
+                mst2ss1 <= bus_tb_mst2slv(address => 10, readEnable => '1');
                 wait for clk_period;
                 check(ss1_2mst.fault = '1');
                 check(ss1_2mst.ack = '1');
-                mst2ss1.address <= std_logic_vector(to_unsigned(0, bus_address_type'length));
+                mst2ss1 <= bus_tb_mst2slv(address => 0, readEnable => '1');
                 wait for clk_period;
                 check(ss1_2mst.fault = '0');
                 check(ss1_2mst.ack = '1');
-                mst2ss1.address <= std_logic_vector(to_unsigned(1, bus_address_type'length));
+                mst2ss1 <= bus_tb_mst2slv(address => 1, readEnable => '1');
                 wait for clk_period;
                 check(ss1_2mst.fault = '1');
                 check(ss1_2mst.ack = '1');
             end if;
             if run("Memory check") then
                 wait until falling_edge(clk);
-                mst2ss1.address <= std_logic_vector(to_unsigned(0, bus_address_type'length));
-                mst2ss1.writeData <= (others => '1');
-                mst2ss1.writeEnable <= '1';
+                mst2ss1 <= bus_tb_mst2slv(address => 0, writeData => 255,  writeEnable => '1', writeMask => 1);
                 wait for clk_period;
                 check(ss1_2mst.fault = '0');
                 check(ss1_2mst.ack = '1');
-                mst2ss1.writeEnable <= '0';
+                mst2ss1 <= BUS_MST2SLV_IDLE;
                 wait for clk_period;
                 check(ss1_2mst.fault = '0');
                 check(ss1_2mst.ack = '0');
-                mst2ss1.readEnable <= '1';
+                mst2ss1 <= bus_tb_mst2slv(address => 0, readEnable => '1');
                 wait for clk_period;
                 check(ss1_2mst.fault = '0');
                 check(ss1_2mst.ack = '1');
-                check(ss1_2mst.readData(digit_info_type'high downto 0) = all_one_digit);
-                check(ss1_2mst.readData(bus_data_type'high downto digit_info_type'high + 1) = digit_others_zeros);
-                mst2ss1.readEnable <= '0';
+                check(to_integer(unsigned(ss1_2mst.readData)) = 255);
+
+                mst2ss1 <= BUS_MST2SLV_IDLE;
                 wait for clk_period;
                 check(ss1_2mst.fault = '0');
                 check(ss1_2mst.ack = '0');
-                mst2ss1.writeData <= (others => '0');
-                mst2ss1.writeEnable <= '1';
+
+                mst2ss1 <= bus_tb_mst2slv(address => 0, writeData => 0,  writeEnable => '1', writeMask => 1);
                 wait for clk_period;
                 check(ss1_2mst.fault = '0');
                 check(ss1_2mst.ack = '1');
-                mst2ss1.writeEnable <= '0';
-                mst2ss1.readEnable <= '1';
+
+                mst2ss1 <= BUS_MST2SLV_IDLE;
+                wait for clk_period;
+                check(ss1_2mst.fault = '0');
+                check(ss1_2mst.ack = '0');
+
+                mst2ss1 <= bus_tb_mst2slv(address => 0, readEnable => '1');
                 wait for clk_period;
                 check(ss1_2mst.fault = '0');
                 check(ss1_2mst.ack = '1');
-                check(ss1_2mst.readData = std_logic_vector(to_unsigned(0, bus_data_type'length)));
-                mst2ss1.readEnable <= '0';
+                check(to_integer(unsigned(ss1_2mst.readData)) = 0);
+
+                mst2ss1 <= BUS_MST2SLV_IDLE;
                 wait for clk_period;
                 check(ss1_2mst.fault = '0');
                 check(ss1_2mst.ack = '0');
@@ -108,14 +114,11 @@ begin
                 check(ss1_digit_anodes(0) = '0');
                 check(ss1_kathode = "11000000");
                 -- Only enable the dot
-                mst2ss1.address <= std_logic_vector(to_unsigned(0, bus_address_type'length));
-                mst2ss1.writeData <= (others => '0');
-                mst2ss1.writeData(4) <= '1';
-                mst2ss1.writeEnable <= '1';
+                mst2ss1 <= bus_tb_mst2slv(address => 0, writeData => 16#10#,  writeEnable => '1', writeMask => 1);
                 wait for clk_period;
                 check(ss1_2mst.fault = '0');
                 check(ss1_2mst.ack = '1');
-                mst2ss1.writeEnable <= '0';
+                mst2ss1 <= BUS_MST2SLV_IDLE;
                 wait for clk_period;
                 check(ss1_digit_anodes(0) = '0');
                 check(ss1_kathode = "01000000");
@@ -124,42 +127,32 @@ begin
                 wait until falling_edge(clk);
                 -- First, enter all values
                 -- Digit 1: 1, with dot
-                mst2ss2.address <= std_logic_vector(to_unsigned(0, bus_address_type'length));
-                mst2ss2.writeData <= std_logic_vector(to_unsigned(1, bus_address_type'length));
-                mst2ss2.writeData(4) <= '1';
-                mst2ss2.writeEnable <= '1';
+                mst2ss2 <= bus_tb_mst2slv(address => 0, writeData => 16#11#,  writeEnable => '1', writeMask => 1);
                 wait for clk_period;
                 check(ss2_2mst.fault = '0');
                 check(ss2_2mst.ack = '1');
-                mst2ss2.writeEnable <= '0';
+                mst2ss2 <= BUS_MST2SLV_IDLE;
                 wait for clk_period;
                 -- Digit 2: 8, no dot
-                mst2ss2.address <= std_logic_vector(to_unsigned(1, bus_address_type'length));
-                mst2ss2.writeData <= std_logic_vector(to_unsigned(8, bus_address_type'length));
-                mst2ss2.writeEnable <= '1';
+                mst2ss2 <= bus_tb_mst2slv(address => 1, writeData => 16#08#,  writeEnable => '1', writeMask => 1);
                 wait for clk_period;
                 check(ss2_2mst.fault = '0');
                 check(ss2_2mst.ack = '1');
-                mst2ss2.writeEnable <= '0';
+                mst2ss2 <= BUS_MST2SLV_IDLE;
                 wait for clk_period;
                 -- Digit 3: a, with dot
-                mst2ss2.address <= std_logic_vector(to_unsigned(2, bus_address_type'length));
-                mst2ss2.writeData <= std_logic_vector(to_unsigned(16#a#, bus_address_type'length));
-                mst2ss2.writeData(4) <= '1';
-                mst2ss2.writeEnable <= '1';
+                mst2ss2 <= bus_tb_mst2slv(address => 2, writeData => 16#1a#,  writeEnable => '1', writeMask => 1);
                 wait for clk_period;
                 check(ss2_2mst.fault = '0');
                 check(ss2_2mst.ack = '1');
-                mst2ss2.writeEnable <= '0';
+                mst2ss2 <= BUS_MST2SLV_IDLE;
                 wait for clk_period;
                 -- Digit 4: f, no dot
-                mst2ss2.address <= std_logic_vector(to_unsigned(3, bus_address_type'length));
-                mst2ss2.writeData <= std_logic_vector(to_unsigned(16#f#, bus_address_type'length));
-                mst2ss2.writeEnable <= '1';
+                mst2ss2 <= bus_tb_mst2slv(address => 3, writeData => 16#0f#,  writeEnable => '1', writeMask => 1);
                 wait for clk_period;
                 check(ss2_2mst.fault = '0');
                 check(ss2_2mst.ack = '1');
-                mst2ss2.writeEnable <= '0';
+                mst2ss2 <= BUS_MST2SLV_IDLE;
                 -- Check the actual outputs. We expect digit 1 to be active right now
                 check(ss2_digit_anodes = "1110");
                 check(ss2_kathode = "01111001");

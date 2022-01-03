@@ -3,16 +3,35 @@ use IEEE.std_logic_1164.all;
 use IEEE.numeric_std.all;
 
 package bus_pkg is
-
     -- General information on the bus:
     -- The master initiates all communication. When readEnable or writeEnable become high (they must never be high at the same time) address and possibly writeData must be valid.
     -- The master must now wait until ack becomes high. Ack has to remain high until readData/writeData is zero.
     -- On read, the slave must keep readData valid until readEnable is low again.
     -- This finishes the transaction.
     -- A fault sets a faultcode on the WriteData bus and is handled similarly to an ack otherwise.
+    --
+    -- The bus is byte-adressable. The data width of the bus is called a word and is always a multiple of the amount of bytes.
 
-    subtype bus_address_type     is std_logic_vector(7 downto  0); -- Any bus address.
-    subtype bus_data_type        is std_logic_vector(7 downto  0); -- Any data word.
+    -- These are the relevant sizes of the bus. They are defined like this because if they are not a power of 2,
+    -- some things, like remapping, will become impossible.
+    constant bus_byte_size_log2b : natural := 3;
+    constant bus_address_width_log2b : natural := 3;
+    -- Make sure that data_width >= byte_size.
+    constant bus_data_width_log2b : natural := 3;
+
+    constant bus_byte_size    : natural := 2**bus_byte_size_log2b;
+
+    subtype bus_address_type     is std_logic_vector(2**bus_address_width_log2b - 1 downto  0); -- Any bus address.
+    subtype bus_data_type        is std_logic_vector(2**bus_data_width_log2b - 1 downto  0); -- Any data word.
+    subtype bus_byte_type        is std_logic_vector(bus_byte_size - 1 downto 0);   -- A byte, lowest adressable unit
+
+    type bus_data_array is array (natural range <>) of bus_data_type;
+    type bus_byte_array is array (natural range <>) of bus_byte_type;
+
+    constant bus_bytes_per_word : positive := bus_data_type'length / bus_byte_size;
+    constant bus_bytes_per_word_log2b : natural := bus_data_width_log2b - bus_byte_size_log2b;
+
+    subtype bus_write_mask is std_logic_vector(bus_bytes_per_word - 1 downto 0);
 
     -- The remapping logic.
     -- Any range of input can be placed at any range of output. Moreover, parts of the output can be set to 0 or 1.
@@ -25,6 +44,7 @@ package bus_pkg is
     type bus_mst2slv_type is record
         address         : bus_address_type;
         writeData       : bus_data_type;
+        writeMask       : bus_write_mask;
         readEnable      : std_logic;
         writeEnable     : std_logic;
     end record;
@@ -54,6 +74,7 @@ package bus_pkg is
     constant BUS_MST2SLV_IDLE : bus_mst2slv_type := (
         address => (others => '0'),
         writeData => (others => '0'),
+        writeMask => (others => '0'),
         readEnable => '0',
         writeEnable => '0'
     );

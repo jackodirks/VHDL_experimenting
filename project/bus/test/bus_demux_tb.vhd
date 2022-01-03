@@ -9,6 +9,9 @@ context vunit_lib.vc_context;
 library src;
 use src.bus_pkg.all;
 
+library tb;
+use tb.bus_tb_pkg.all;
+
 entity bus_demux_tb is
     generic (
         runner_cfg : string);
@@ -52,8 +55,7 @@ begin
         test_runner_setup(runner, runner_cfg);
         while test_suite loop
             if run("Complete run") then
-                master2demux.address <= std_logic_vector(to_unsigned(10, bus_address_type'length));
-                master2demux.readEnable <= '1';
+                master2demux <= bus_tb_mst2slv(address => 10, readEnable => '1');
                 wait for clk_period/4;
                 check(demux2secondSlave = BUS_MST2SLV_IDLE);
                 check(demux2firstSlave = master2demux);
@@ -64,17 +66,15 @@ begin
                 check(demux2firstSlave = master2demux);
                 check(demux2master = firstSlave2demux);
 
-                master2demux.readEnable <= '0';
+                master2demux <= BUS_MST2SLV_IDLE;
                 wait for clk_period/4;
                 check(demux2firstSlave = BUS_MST2SLV_IDLE);
                 check(demux2secondSlave = BUS_MST2SLV_IDLE);
                 check(demux2master = BUS_SLV2MST_IDLE);
 
                 firstSlave2demux <= BUS_SLV2MST_IDLE;
-                master2demux.address <= std_logic_vector(to_unsigned(40, bus_address_type'length));
-                master2demux.writeEnable <= '1';
-                helper_master.address <= std_logic_vector(to_unsigned(8, bus_address_type'length));
-                helper_master.writeEnable <= '1';
+                master2demux <= bus_tb_mst2slv(address => 40, writeEnable => '1');
+                helper_master <= bus_tb_mst2slv(address => 8, writeEnable => '1');
                 wait for clk_period/4;
                 check(demux2firstSlave = BUS_MST2SLV_IDLE);
                 check(demux2secondSlave = helper_master);
@@ -87,18 +87,16 @@ begin
                 check(demux2secondSlave = helper_master);
                 check(demux2master = secondSlave2demux);
 
-                master2demux.writeEnable <= '0';
-                helper_master.writeEnable <= '0';
+                master2demux <= BUS_MST2SLV_IDLE;
+                helper_master <= BUS_MST2SLV_IDLE;
                 wait for clk_period/4;
                 check(demux2firstSlave = BUS_MST2SLV_IDLE);
                 check(demux2secondSlave = BUS_MST2SLV_IDLE);
                 check(demux2master = BUS_SLV2MST_IDLE);
 
                 secondSlave2demux <= BUS_SLV2MST_IDLE;
-                master2demux.address <= std_logic_vector(to_unsigned(50, bus_address_type'length));
-                master2demux.readEnable <= '1';
-                helper_master.address <= std_logic_vector(to_unsigned(18, bus_address_type'length));
-                helper_master.readEnable <= '1';
+                master2demux <= bus_tb_mst2slv(address => 50, readEnable => '1');
+                helper_master <= bus_tb_mst2slv(address => 18, readEnable => '1');
                 wait for clk_period/4;
                 check(demux2firstSlave = BUS_MST2SLV_IDLE);
                 check(demux2secondSlave = helper_master);
@@ -111,14 +109,14 @@ begin
                 check(demux2secondSlave = helper_master);
                 check(demux2master = secondSlave2demux);
 
-                master2demux.readEnable <= '0';
+                master2demux <= BUS_MST2SLV_IDLE;
+                helper_master <= BUS_MST2SLV_IDLE;
                 wait for clk_period/4;
                 check(demux2firstSlave = BUS_MST2SLV_IDLE);
                 check(demux2secondSlave = BUS_MST2SLV_IDLE);
                 check(demux2master = BUS_SLV2MST_IDLE);
 
-                master2demux.address <= std_logic_vector(to_unsigned(20, bus_address_type'length));
-                master2demux.readEnable <= '1';
+                master2demux <= bus_tb_mst2slv(address => 20, readEnable => '1');
                 wait for clk_period/4;
                 check(demux2firstSlave = BUS_MST2SLV_IDLE);
                 check(demux2secondSlave = BUS_MST2SLV_IDLE);
