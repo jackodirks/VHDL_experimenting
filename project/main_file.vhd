@@ -57,7 +57,7 @@ begin
         led <= slide_switch;
     end process;
 
-    depp_slave : entity work.depp_slave
+    depp_slave_controller : entity work.depp_slave_controller
     port map (
         rst => rst,
         clk => clk,

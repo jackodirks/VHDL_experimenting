@@ -3,6 +3,7 @@ use IEEE.STD_LOGIC_1164.ALL;
 
 library work;
 use work.bus_pkg.all;
+use work.depp_pkg.all;
 
 entity depp_slave is
     port (
@@ -11,8 +12,8 @@ entity depp_slave is
         ----------------------------------------------------
         rst           : in STD_LOGIC;                         -- Reset the FSM
         clk           : in STD_LOGIC;                         -- Clock
-        mst2slv       : out bus_mst2slv_type;
-        slv2mst       : in bus_slv2mst_type;
+        depp2bus      : out depp2bus_type;
+        bus2depp      : in bus2depp_type;
 
         ----------------------------------------------------
         -- Interaction with the outside world (external). All control signals are active low.
@@ -45,13 +46,13 @@ begin
 
             USB_WAIT <= '0';
             USB_DB <= (others => 'Z');
-            mst2slv <= BUS_MST2SLV_IDLE;
+            depp2bus <= DEPP2BUS_IDLE;
             if rst = '1' then
                 USB_WAIT <= '1';
                 wait_dstb_finish := false;
             else
                 if wait_dstb_finish then
-                    if slv2mst.ack = '0' and usb_dstb_delayed = '1' then
+                    if bus2depp.done = false and usb_dstb_delayed = '1' then
                         wait_dstb_finish := false;
                     else
                         USB_WAIT <= '1';
@@ -67,26 +68,25 @@ begin
                     end if;
                 elsif usb_dstb_delayed = '0' then
 
-                    if bus_slave_finished(slv2mst) = '1' and wait_dstb_finish = false then
+                    if bus2depp.done = true and wait_dstb_finish = false then
                         wait_dstb_finish := true;
-                        read_latch := slv2mst.readData;
+                        read_latch := bus2depp.readData;
                     end if;
 
                     if USB_WRITE = '0' then
-                        mst2slv.writeData <= USB_DB;
-                        mst2slv.writeEnable <= '1';
-                        mst2slv.writeMask <= (others => '1');
+                        depp2bus.writeData <= USB_DB;
+                        depp2bus.writeEnable <= true;
                     elsif USB_WRITE = '1' then
                         USB_DB <= read_latch;
-                        mst2slv.readEnable <= '1';
+                        depp2bus.readEnable <= true;
                     end if;
                 end if;
 
-                mst2slv.address <= address;
+                depp2bus.address <= address;
 
                 if wait_dstb_finish then
-                    mst2slv.writeEnable <= '0';
-                    mst2slv.readEnable <= '0';
+                    depp2bus.writeEnable <= false;
+                    depp2bus.readEnable <= false;
                 end if;
 
             end if;

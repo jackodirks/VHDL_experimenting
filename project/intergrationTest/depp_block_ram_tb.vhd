@@ -115,7 +115,7 @@ begin
     test_runner_watchdog(runner, 10 ms);
 
 
-    slave : entity src.depp_slave
+    controller : entity src.depp_slave_controller
     port map (
         rst => rst,
         clk => clk,

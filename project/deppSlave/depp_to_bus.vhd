@@ -36,6 +36,7 @@ begin
 
     sequential : process(clk)
         variable bus_active : boolean := false;
+        variable wait_for_completion : boolean := false;
         variable address : natural range 0 to 2**8 - 1;
         variable write_endpoint : natural range 0 to 2**8 - 1;
     begin
@@ -49,48 +50,62 @@ begin
                 bus2depp_out <= BUS2DEPP_IDLE;
                 slv2mst_cpy <= BUS_SLV2MST_IDLE;
                 bus_active := false;
-            elsif bus_active then
-                if bus_slave_finished(slv2mst) then
-                    bus_active := false;
-                    mst2slv_out.readEnable <= '0';
-                    mst2slv_out.writeEnable <= '0';
-                    slv2mst_cpy <= slv2mst;
-                end if;
-            elsif depp2bus.writeEnable = true then
-                if address < data_reg_start then
-                    mst2slv_out.address(8*(address + 1) - 1 downto 8*address) <= depp2bus.writeData;
-                elsif address < write_mask_start then
-                    address := address - data_reg_start;
-                    mst2slv_out.writeData(8*(address + 1) - 1 downto 8*address) <= depp2bus.writeData;
-                elsif address < activation_register_start then
-                    address := address - write_mask_start;
-                    write_endpoint := 8*(address + 1) - 1;
-                    if write_endpoint > bus_write_mask'high then
-                        write_endpoint := bus_write_mask'high;
+                wait_for_completion := false;
+                bus2depp_out.done <= false;
+            else
+                if bus_active then
+                    if bus_slave_finished(slv2mst) = '1' then
+                        bus_active := false;
+                        mst2slv_out.readEnable <= '0';
+                        mst2slv_out.writeEnable <= '0';
+                        slv2mst_cpy <= slv2mst;
+                        wait_for_completion := true;
                     end if;
-                    mst2slv_out.writeMask(write_endpoint downto 8*address) <= depp2bus.writeData(write_endpoint - 8*address downto 0);
-                elsif address = activation_register_start then
-                    mst2slv_out.writeEnable <= '1';
-                    for i in 0 to depp2bus.writeData'high loop
-                        if depp2bus.writeData(i) = '1' then
-                            mst2slv_out.writeEnable <= '0';
-                            mst2slv_out.readEnable <= '1';
+                elsif wait_for_completion then
+                    if not (depp2bus.writeEnable or depp2bus.readEnable) then
+                        wait_for_completion := false;
+                    end if;
+                elsif depp2bus.writeEnable = true then
+                    if address < data_reg_start then
+                        mst2slv_out.address(8*(address + 1) - 1 downto 8*address) <= depp2bus.writeData;
+                        wait_for_completion := true;
+                    elsif address < write_mask_start then
+                        address := address - data_reg_start;
+                        mst2slv_out.writeData(8*(address + 1) - 1 downto 8*address) <= depp2bus.writeData;
+                        wait_for_completion := true;
+                    elsif address < activation_register_start then
+                        address := address - write_mask_start;
+                        write_endpoint := 8*(address + 1) - 1;
+                        if write_endpoint > bus_write_mask'high then
+                            write_endpoint := bus_write_mask'high;
                         end if;
-                    end loop;
-                    bus_active := true;
+                        mst2slv_out.writeMask(write_endpoint downto 8*address) <= depp2bus.writeData(write_endpoint - (8*address) downto 0);
+                        wait_for_completion := true;
+                    elsif address = activation_register_start then
+                        mst2slv_out.writeEnable <= '1';
+                        for i in 0 to depp2bus.writeData'high loop
+                            if depp2bus.writeData(i) = '1' then
+                                mst2slv_out.writeEnable <= '0';
+                                mst2slv_out.readEnable <= '1';
+                            end if;
+                        end loop;
+                        bus_active := true;
+                    end if;
+                elsif depp2bus.readEnable = true then
+                    if address < data_reg_start then
+                        bus2depp_out.readData <= mst2slv_out.address(8*(address + 1) - 1 downto 8*address);
+                        wait_for_completion := true;
+                    elsif address < fault_register_start then
+                        address := address - data_reg_start;
+                        bus2depp_out.readData <= slv2mst_cpy.readData(8*(address + 1) - 1 downto 8*address);
+                        wait_for_completion := true;
+                    elsif address = fault_register_start then
+                        bus2depp_out.readData(0) <= slv2mst_cpy.fault;
+                        wait_for_completion := true;
+                    end if;
                 end if;
-            elsif depp2bus.readEnable = true then
-                if address < data_reg_start then
-                    bus2depp_out.readData <= mst2slv_out.address(8*(address + 1) - 1 downto 8*address);
-                elsif address < fault_register_start then
-                    address := address - data_reg_start;
-                    bus2depp_out.readData <= slv2mst_cpy.readData(8*(address + 1) - 1 downto 8*address);
-                elsif address = fault_register_start then
-                    bus2depp_out.readData(0) <= slv2mst_cpy.fault;
-                end if;
+                bus2depp_out.done <= (depp2bus.writeEnable or depp2bus.readEnable) and wait_for_completion;
             end if;
-
-            bus2depp_out.done <= not bus_active and (depp2bus.writeEnable = true or depp2bus.readEnable = true) and rst = '0';
         end if;
     end process;
 
