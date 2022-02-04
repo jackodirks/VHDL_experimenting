@@ -1,6 +1,7 @@
 library ieee;
 use ieee.std_logic_1164.all;
 use ieee.numeric_std.all;
+use ieee.math_real.all;
 
 library vunit_lib;
 context vunit_lib.vunit_context;
@@ -21,6 +22,21 @@ end entity;
 
 architecture tb of depp_to_bus_tb is
     constant clk_period : time := 20 ns;
+
+    constant write_mask_length_ceil : natural := natural(ceil(real(bus_write_mask'length)/real(8)));
+
+    constant addr_reg_start : natural := 0;
+    constant addr_reg_len : natural := bus_address_type'length/8;
+    constant data_reg_start : natural := addr_reg_start + addr_reg_len;
+    constant data_reg_len : natural := bus_data_type'length/8;
+    -- Write mask only exists from the perspective of the writer and shares its address with the fault register
+    constant write_mask_start : natural := data_reg_start + data_reg_len;
+    constant write_mask_len : natural := write_mask_length_ceil;
+    -- Fault register only exists from the perspective of the reader and shares its address with the write mask
+    -- The fault register has a length of 1 byte.
+    constant fault_register_start : natural := write_mask_start;
+    -- The activation register only exists from the perspective of the writer
+    constant activation_register_start : natural := write_mask_start + write_mask_length_ceil;
 
     signal clk : std_logic := '0';
     signal rst : std_logic := '0';
@@ -60,7 +76,7 @@ begin
             end if;
             if run("Write from depp_to_bus") then
                 wait for clk_period;
-                depp2bus <= depp_tb_depp2bus(address => 3, writeEnable => true);
+                depp2bus <= depp_tb_depp2bus(address => activation_register_start, writeEnable => true);
                 wait for clk_period;
                 check(bus2depp.done = false);
                 check(bus_tb_mst2slv(writeEnable => '1') = mst2slv);
@@ -78,25 +94,25 @@ begin
             end if;
             if run("Extended write from depp_to_bus") then
                 wait for clk_period;
-                depp2bus <= depp_tb_depp2bus(address => 0, writeData => 1, writeEnable => true);
+                depp2bus <= depp_tb_depp2bus(address => addr_reg_start, writeData => 1, writeEnable => true);
                 wait for clk_period;
                 check(bus2depp.done = true);
                 depp2bus.writeEnable <= false;
                 wait for clk_period;
                 check(bus2depp.done = false);
-                depp2bus <= depp_tb_depp2bus(address => 1, writeData => 2, writeEnable => true);
+                depp2bus <= depp_tb_depp2bus(address => data_reg_start, writeData => 2, writeEnable => true);
                 wait for clk_period;
                 check(bus2depp.done = true);
                 depp2bus.writeEnable <= false;
                 wait for clk_period;
                 check(bus2depp.done = false);
-                depp2bus <= depp_tb_depp2bus(address => 2, writeData => 1, writeEnable => true);
+                depp2bus <= depp_tb_depp2bus(address => write_mask_start, writeData => 1, writeEnable => true);
                 wait for clk_period;
                 check(bus2depp.done = true);
                 depp2bus.writeEnable <= false;
                 wait for clk_period;
                 check(bus2depp.done = false);
-                depp2bus <= depp_tb_depp2bus(address => 3, writeEnable => true);
+                depp2bus <= depp_tb_depp2bus(address => activation_register_start, writeEnable => true);
                 wait for clk_period;
                 check(bus2depp.done = false);
                 check(bus_tb_mst2slv(address => 1, writeData => 2, writeMask => 1, writeEnable => '1') = mst2slv);
@@ -108,7 +124,7 @@ begin
                 depp2bus.writeEnable <= false;
                 wait for clk_period;
                 check(bus2depp.done = false);
-                depp2bus <= depp_tb_depp2bus(address => 0, readEnable => true);
+                depp2bus <= depp_tb_depp2bus(address => addr_reg_start, readEnable => true);
                 slv2mst <= BUS_SLV2MST_IDLE;
                 wait for clk_period;
                 check(bus2depp.done = true);
@@ -116,11 +132,11 @@ begin
                 depp2bus.readEnable <= false;
                 wait for clk_period;
                 check(bus2depp.done = false);
-                depp2bus <= depp_tb_depp2bus(address => 1, readEnable => true);
+                depp2bus <= depp_tb_depp2bus(address => data_reg_start, readEnable => true);
                 wait for clk_period;
                 check(bus2depp.done = true);
                 check(to_integer(unsigned(bus2depp.readData)) = 255);
-                depp2bus <= depp_tb_depp2bus(address => 2, readEnable => true);
+                depp2bus <= depp_tb_depp2bus(address => fault_register_start, readEnable => true);
                 wait for clk_period;
                 check(bus2depp.done = true);
                 check(bus2depp.readData(0) = '1');

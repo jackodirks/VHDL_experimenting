@@ -38,7 +38,7 @@ architecture behaviourial of seven_seg_controller is
 begin
 
     sequential : process(clk)
-        variable full_addr : natural range 0 to 2**bus_address_type'length - 1;
+        variable full_addr : natural range 0 to 2*digit_count;
         variable addr : natural range 0 to digit_count - 1 := 0;
         variable cur_digit : natural range 0 to digit_count - 1 := 0;
     begin
