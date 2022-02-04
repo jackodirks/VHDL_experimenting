@@ -34,7 +34,7 @@ architecture tb of bus_singleport_ram_tb is
     constant clk_period : time := 20 ns;
 
     signal mem_256_byte_control : mem_type := MEM_TYPE_DEFAULT;
-    signal mem_2_byte_control : mem_type := MEM_TYPE_DEFAULT;
+    signal mem_32_byte_control : mem_type := MEM_TYPE_DEFAULT;
 
     signal clk : std_logic := '0';
 begin
@@ -50,65 +50,55 @@ begin
                 check_equal(mem_256_byte_control.slv2mst.ack, '0');
             elsif run ("test_write_then_read") then
                 wait for clk_period;
-                mem_256_byte_control.mst2slv.address <= std_logic_vector(to_unsigned(25, bus_address_type'length));
+                mem_256_byte_control.mst2slv.address <= std_logic_vector(to_unsigned(16, bus_address_type'length));
                 mem_256_byte_control.mst2slv.writeData <= std_logic_vector(to_unsigned(14, bus_data_type'length));
                 mem_256_byte_control.mst2slv.writeEnable <= '1';
                 mem_256_byte_control.mst2slv.writeMask <= (others => '1');
-                wait for clk_period;
-                check_equal(mem_256_byte_control.slv2mst.ack, '1');
+                wait until mem_256_byte_control.slv2mst.ack = '1';
                 mem_256_byte_control.mst2slv.writeEnable <= '0';
-                wait for clk_period;
+                wait for 2*clk_period;
                 check_equal(mem_256_byte_control.slv2mst.ack, '0');
-                mem_256_byte_control.mst2slv.address <= std_logic_vector(to_unsigned(35, bus_address_type'length));
+                mem_256_byte_control.mst2slv.address <= std_logic_vector(to_unsigned(24, bus_address_type'length));
                 mem_256_byte_control.mst2slv.writeData <= std_logic_vector(to_unsigned(15, bus_data_type'length));
                 mem_256_byte_control.mst2slv.writeEnable <= '1';
-                wait for clk_period;
-                check_equal(mem_256_byte_control.slv2mst.ack, '1');
+                wait until mem_256_byte_control.slv2mst.ack = '1';
                 mem_256_byte_control.mst2slv.writeEnable <= '0';
-                wait for clk_period;
+                wait for 2*clk_period;
                 check_equal(mem_256_byte_control.slv2mst.ack, '0');
-                mem_256_byte_control.mst2slv.address <= std_logic_vector(to_unsigned(25, bus_address_type'length));
+                mem_256_byte_control.mst2slv.address <= std_logic_vector(to_unsigned(16, bus_address_type'length));
                 mem_256_byte_control.mst2slv.readEnable <= '1';
-                wait for clk_period;
-                check_equal(mem_256_byte_control.slv2mst.ack, '1');
-                check_equal(14, to_integer(unsigned(mem_256_byte_control.slv2mst.readData)));
+                wait until mem_256_byte_control.slv2mst.ack = '1';
+                check_equal(to_integer(unsigned(mem_256_byte_control.slv2mst.readData)), 14);
                 mem_256_byte_control.mst2slv.readEnable <= '0';
-                wait for clk_period;
+                wait for 2*clk_period;
                 check_equal(mem_256_byte_control.slv2mst.ack, '0');
-                mem_256_byte_control.mst2slv.address <= std_logic_vector(to_unsigned(25, bus_address_type'length));
+                mem_256_byte_control.mst2slv.address <= std_logic_vector(to_unsigned(16, bus_address_type'length));
                 mem_256_byte_control.mst2slv.writeData <= std_logic_vector(to_unsigned(20, bus_data_type'length));
                 mem_256_byte_control.mst2slv.writeEnable <= '1';
                 mem_256_byte_control.mst2slv.writeMask <= (others => '0');
-                wait for clk_period;
-                check_equal(mem_256_byte_control.slv2mst.ack, '1');
+                wait until mem_256_byte_control.slv2mst.ack = '1';
                 mem_256_byte_control.mst2slv.writeEnable <= '0';
-                wait for clk_period;
+                wait for 2*clk_period;
                 check_equal(mem_256_byte_control.slv2mst.ack, '0');
                 mem_256_byte_control.mst2slv.readEnable <= '1';
-                wait for clk_period;
-                check_equal(mem_256_byte_control.slv2mst.ack, '1');
+                wait until mem_256_byte_control.slv2mst.ack = '1';
                 check_equal(14, to_integer(unsigned(mem_256_byte_control.slv2mst.readData)));
-                mem_256_byte_control.mst2slv.readEnable <= '0';
-                wait for clk_period;
-                check_equal(mem_256_byte_control.slv2mst.ack, '0');
-            elsif run("Test 2 byte memory") then
-                mem_2_byte_control.mst2slv.address <= std_logic_vector(to_unsigned(1, bus_address_type'length));
-                mem_2_byte_control.mst2slv.writeData <= std_logic_vector(to_unsigned(14, bus_data_type'length));
-                mem_2_byte_control.mst2slv.writeEnable <= '1';
-                mem_2_byte_control.mst2slv.writeMask <= (others => '1');
-                wait for clk_period;
-                check_equal(mem_2_byte_control.slv2mst.ack, '1');
-                mem_2_byte_control.mst2slv.writeEnable <= '0';
-                wait for clk_period;
-                check_equal(mem_2_byte_control.slv2mst.ack, '0');
-                mem_2_byte_control.mst2slv.address <= std_logic_vector(to_unsigned(3, bus_address_type'length));
-                mem_2_byte_control.mst2slv.readEnable <= '1';
-                wait for clk_period;
-                check_equal(mem_2_byte_control.slv2mst.ack, '1');
-                check_equal(14, to_integer(unsigned(mem_2_byte_control.slv2mst.readData)));
-                mem_2_byte_control.mst2slv.readEnable <= '0';
-                wait for clk_period;
-                check_equal(mem_2_byte_control.slv2mst.ack, '0');
+            elsif run("Test address space mirroring") then
+                mem_32_byte_control.mst2slv.address <= std_logic_vector(to_unsigned(0, bus_address_type'length));
+                mem_32_byte_control.mst2slv.writeData <= std_logic_vector(to_unsigned(14, bus_data_type'length));
+                mem_32_byte_control.mst2slv.writeEnable <= '1';
+                mem_32_byte_control.mst2slv.writeMask <= (others => '1');
+                wait until mem_32_byte_control.slv2mst.ack = '1';
+                mem_32_byte_control.mst2slv.writeEnable <= '0';
+                wait for 2*clk_period;
+                check_equal(mem_32_byte_control.slv2mst.ack, '0');
+                mem_32_byte_control.mst2slv.address <= std_logic_vector(to_unsigned(32, bus_address_type'length));
+                mem_32_byte_control.mst2slv.readEnable <= '1';
+                wait until mem_32_byte_control.slv2mst.ack = '1';
+                check_equal(14, to_integer(unsigned(mem_32_byte_control.slv2mst.readData)));
+                mem_32_byte_control.mst2slv.readEnable <= '0';
+                wait for 2*clk_period;
+                check_equal(mem_32_byte_control.slv2mst.ack, '0');
             end if;
         end loop;
         wait until rising_edge(clk) or falling_edge(clk);
@@ -129,14 +119,14 @@ begin
         mem2mst => mem_256_byte_control.slv2mst
     );
 
-    mem_2_byte : entity src.bus_singleport_ram
+    mem_32_byte : entity src.bus_singleport_ram
     generic map (
-        DEPTH_LOG2B => 1
+        DEPTH_LOG2B => 4
     )
     port map (
-        rst => mem_2_byte_control.rst,
+        rst => mem_32_byte_control.rst,
         clk => clk,
-        mst2mem => mem_2_byte_control.mst2slv,
-        mem2mst => mem_2_byte_control.slv2mst
+        mst2mem => mem_32_byte_control.mst2slv,
+        mem2mst => mem_32_byte_control.slv2mst
     );
 end architecture;

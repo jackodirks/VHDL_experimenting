@@ -8,8 +8,8 @@ use src.bus_pkg.all;
 package bus_tb_pkg is
 
     function bus_tb_mst2slv(
-        address : natural range 0 to 2**bus_address_type'length - 1 := 0;
-        writeData    : natural range 0 to 2**bus_data_type'length - 1 := 0;
+        address : natural := 0;
+        writeData    : natural := 0;
         writeMask : natural range 0 to 2**bus_write_mask'length - 1 := 0;
         readEnable : std_logic := '0';
         writeEnable : std_logic := '0'
@@ -20,8 +20,8 @@ end bus_tb_pkg;
 package body bus_tb_pkg is
 
     function bus_tb_mst2slv(
-        address : natural range 0 to 2**bus_address_type'length - 1 := 0;
-        writeData    : natural range 0 to 2**bus_data_type'length - 1 := 0;
+        address : natural := 0;
+        writeData    : natural := 0;
         writeMask : natural range 0 to 2**bus_write_mask'length - 1 := 0;
         readEnable : std_logic := '0';
         writeEnable : std_logic := '0'
