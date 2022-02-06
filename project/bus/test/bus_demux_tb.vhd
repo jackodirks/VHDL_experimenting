@@ -121,14 +121,14 @@ begin
                 check(demux2firstSlave = BUS_MST2SLV_IDLE);
                 check(demux2secondSlave = BUS_MST2SLV_IDLE);
                 check(demux2master.fault = '1');
-                check(demux2master.readData = std_logic_vector(to_unsigned(255, bus_address_type'length)));
-
+                for i in bus_address_type'range loop
+                    check(demux2master.readData(i) = '1');
+                end loop;
                 rst <= '1';
                 wait for clk_period/4;
                 check(demux2firstSlave = BUS_MST2SLV_IDLE);
                 check(demux2secondSlave = BUS_MST2SLV_IDLE);
                 check(demux2master = BUS_SLV2MST_IDLE);
-
             end if;
         end loop;
         wait until rising_edge(clk) or falling_edge(clk);
