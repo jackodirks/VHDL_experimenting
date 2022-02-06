@@ -15,9 +15,9 @@ package bus_pkg is
     -- These are the relevant sizes of the bus. They are defined like this because if they are not a power of 2,
     -- some things, like remapping, will become impossible.
     constant bus_byte_size_log2b : natural := 3;
-    constant bus_address_width_log2b : natural := 3;
+    constant bus_address_width_log2b : natural := 5;
     -- Make sure that data_width >= byte_size.
-    constant bus_data_width_log2b : natural := 3;
+    constant bus_data_width_log2b : natural := 5;
 
     constant bus_byte_size    : natural := 2**bus_byte_size_log2b;
 
