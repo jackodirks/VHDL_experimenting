@@ -36,6 +36,8 @@ begin
         variable wait_dstb_finish : boolean := false;
         variable address : std_logic_vector(7 downto 0) := (others => '0');
         variable read_latch : std_logic_vector(7 downto 0) := (others => '0');
+        variable usb_dstb_act : std_logic := '0';
+        variable usb_astb_act : std_logic := '0';
     begin
         if rising_edge(clk) then
 
@@ -50,23 +52,30 @@ begin
             if rst = '1' then
                 USB_WAIT <= '1';
                 wait_dstb_finish := false;
+                usb_dstb_act := '1';
+                usb_astb_act := '1';
             else
-                if wait_dstb_finish then
-                    if bus2depp.done = false and usb_dstb_delayed = '1' then
-                        wait_dstb_finish := false;
-                    else
-                        USB_WAIT <= '1';
-                    end if;
+
+                if usb_dstb_delayed = '0' and usb_dstb = '0' then
+                    usb_dstb_act := '0';
+                else
+                    usb_dstb_act := '1';
                 end if;
 
-                if usb_astb_delayed = '0' then
+                if usb_astb_delayed = '0' and usb_astb = '0' then
+                    usb_astb_act := '0';
+                else
+                    usb_astb_act := '1';
+                end if;
+
+                if usb_astb_act = '0' then
                     USB_WAIT <= '1';
                     if USB_WRITE = '0' then
                         address := USB_DB;
                     elsif USB_WRITE = '1' then
                         USB_DB <= address;
                     end if;
-                elsif usb_dstb_delayed = '0' then
+                elsif usb_dstb_act = '0' then
 
                     if bus2depp.done = true and wait_dstb_finish = false then
                         wait_dstb_finish := true;
@@ -85,6 +94,11 @@ begin
                 depp2bus.address <= address;
 
                 if wait_dstb_finish then
+                    if usb_dstb_act = '1' then
+                        wait_dstb_finish := false;
+                    else
+                        USB_WAIT <= '1';
+                    end if;
                     depp2bus.writeEnable <= false;
                     depp2bus.readEnable <= false;
                 end if;

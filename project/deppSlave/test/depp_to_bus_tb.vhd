@@ -136,6 +136,8 @@ begin
                 wait for clk_period;
                 check(bus2depp.done = true);
                 check(to_integer(unsigned(bus2depp.readData)) = 255);
+                wait for clk_period;
+                check(bus2depp.done = false);
                 depp2bus <= depp_tb_depp2bus(address => fault_register_start, readEnable => true);
                 wait for clk_period;
                 check(bus2depp.done = true);

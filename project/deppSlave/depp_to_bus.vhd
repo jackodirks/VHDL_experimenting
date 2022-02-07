@@ -77,9 +77,7 @@ begin
                         slv2mst_cpy := slv2mst;
                     end if;
                 elsif wait_for_completion then
-                    if not (depp2bus.writeEnable or depp2bus.readEnable) then
-                        wait_for_completion := false;
-                    end if;
+                    wait_for_completion := false;
                 elsif depp2bus.writeEnable = true then
                     if address <= addr_reg_end then
                         address := address - addr_reg_start;
