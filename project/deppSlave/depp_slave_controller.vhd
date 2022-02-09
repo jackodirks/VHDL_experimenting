@@ -1,5 +1,6 @@
 library IEEE;
-use IEEE.STD_LOGIC_1164.ALL;
+use ieee.std_logic_1164.all;
+use ieee.numeric_std.all;
 
 library work;
 use work.bus_pkg.all;
@@ -23,31 +24,131 @@ entity depp_slave_controller is
     );
 end depp_slave_controller;
 
-architecture behavioural of depp_slave_controller is
-    signal depp2bus : depp2bus_type;
-    signal bus2depp : bus2depp_type;
+architecture behaviourial of depp_slave_controller is
+    signal usb_astb_delayed : std_logic;
+    signal usb_dstb_delayed : std_logic;
+    signal mst2slv_out : bus_mst2slv_type := BUS_MST2SLV_IDLE;
 begin
 
-    depp_slave : entity work.depp_slave
-    port map (
-        clk => clk,
-        rst => rst,
-        depp2bus => depp2bus,
-        bus2depp => bus2depp,
-        USB_DB => USB_DB,
-        USB_WRITE => USB_WRITE,
-        USB_ASTB => USB_ASTB,
-        USB_DSTB => USB_DSTB,
-        USB_WAIT => USB_WAIT
-    );
+    sequential : process(clk)
+        variable wait_dstb_finish : boolean := false;
+        variable address : natural range 0 to 2**8 - 1;
+        variable address_tmp : natural range 0 to 2**8 - 1;
+        variable read_latch : std_logic_vector(7 downto 0) := (others => '0');
+        variable usb_dstb_act : std_logic := '0';
+        variable usb_astb_act : std_logic := '0';
 
-    depp_to_bus : entity work.depp_to_bus
-    port map (
-        clk => clk,
-        rst => rst,
-        bus2depp => bus2depp,
-        depp2bus => depp2bus,
-        slv2mst => slv2mst,
-        mst2slv => mst2slv
-    );
-end behavioural;
+        variable bus_active : boolean := false;
+        variable write_mask_reg : std_logic_vector(depp2bus_write_mask_length_ceil*8 - 1 downto 0) := (others => '0');
+        variable slv2mst_cpy : bus_slv2mst_type := BUS_SLV2MST_IDLE;
+    begin
+        if rising_edge(clk) then
+
+            -- We are crossing clock domains. Therefore, if either of these is high, other signals might still be settling.
+            -- Therefore, delay these by one cycle so that by the time interpretation starts, everything has settled.
+            usb_astb_delayed <= USB_ASTB;
+            usb_dstb_delayed <= USB_DSTB;
+
+            USB_WAIT <= '0';
+            USB_DB <= (others => 'Z');
+            if rst = '1' then
+                USB_WAIT <= '1';
+                wait_dstb_finish := false;
+                usb_dstb_act := '1';
+                usb_astb_act := '1';
+                mst2slv_out <= BUS_MST2SLV_IDLE;
+                slv2mst_cpy := BUS_SLV2MST_IDLE;
+                write_mask_reg := (others => '0');
+                bus_active := false;
+
+            else
+
+                if usb_dstb_delayed = '0' and usb_dstb = '0' then
+                    usb_dstb_act := '0';
+                else
+                    usb_dstb_act := '1';
+                end if;
+
+                if usb_astb_delayed = '0' and usb_astb = '0' then
+                    usb_astb_act := '0';
+                else
+                    usb_astb_act := '1';
+                end if;
+
+                if bus_active then
+                    if bus_slave_finished(slv2mst) = '1' then
+                        bus_active := false;
+                        mst2slv_out.writeEnable <= '0';
+                        mst2slv_out.readEnable <= '0';
+                        wait_dstb_finish := true;
+                        slv2mst_cpy := slv2mst;
+                    end if;
+                elsif usb_astb_act = '0' then
+                    USB_WAIT <= '1';
+                    if USB_WRITE = '0' then
+                        address := to_integer(unsigned(USB_DB));
+                    elsif USB_WRITE = '1' then
+                        USB_DB <= std_logic_vector(to_unsigned(address, usb_db'length));
+                    end if;
+                elsif usb_dstb_act = '0' and wait_dstb_finish = false then
+                    wait_dstb_finish := true;
+
+                    if USB_WRITE = '0' then
+                        if address <= depp2bus_addr_reg_end then
+                            address_tmp := address - depp2bus_addr_reg_start;
+                            mst2slv_out.address(8*(address_tmp + 1) - 1 downto 8*address_tmp) <= usb_db;
+                        elsif address <= depp2bus_data_reg_end then
+                            address_tmp := address - depp2bus_data_reg_start;
+                            mst2slv_out.writeData(8*(address_tmp + 1) - 1 downto 8*address_tmp) <= usb_db;
+                        elsif address <= depp2bus_write_mask_end then
+                            address_tmp := address - depp2bus_write_mask_start;
+                            write_mask_reg(8*(address_tmp + 1) - 1 downto 8*address_tmp) := usb_db;
+                            mst2slv_out.writeMask <= write_mask_reg(mst2slv_out.writeMask'range);
+                        elsif address <= depp2bus_activation_register_end then
+                            mst2slv_out.writeEnable <= '1';
+                            for i in 0 to usb_db'high loop
+                                if usb_db(i) = '1' then
+                                    mst2slv_out.writeEnable <= '0';
+                                    mst2slv_out.readEnable <= '1';
+                                end if;
+                            end loop;
+                            bus_active := true;
+                            wait_dstb_finish := false;
+                        end if;
+                    elsif USB_WRITE = '1' then
+                        if address <= depp2bus_addr_reg_end then
+                            address_tmp := address - depp2bus_addr_reg_start;
+                            read_latch := mst2slv_out.address(8*address_tmp + 7 downto 8*address_tmp);
+                        elsif address <= depp2bus_data_reg_end then
+                            address_tmp := address - depp2bus_data_reg_start;
+                            read_latch := slv2mst_cpy.readData(8*address_tmp + 7 downto 8*address_tmp);
+                        elsif address = depp2bus_fault_register_start then
+                            read_latch := (others => '0');
+                            read_latch(0) := slv2mst_cpy.fault;
+                        end if;
+                    end if;
+                end if;
+
+                if usb_dstb_act = '0' and usb_write = '1' then
+                    usb_db <= read_latch;
+                end if;
+
+
+                if wait_dstb_finish then
+                    if usb_dstb_act = '1' then
+                        wait_dstb_finish := false;
+                    else
+                        USB_WAIT <= '1';
+                    end if;
+                end if;
+            end if;
+        end if;
+    end process;
+
+
+    concurrent : process(mst2slv_out)
+    begin
+        mst2slv <= mst2slv_out;
+    end process;
+
+end behaviourial;
