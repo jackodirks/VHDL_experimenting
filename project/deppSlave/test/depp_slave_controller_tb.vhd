@@ -8,6 +8,10 @@ context vunit_lib.vc_context;
 
 library src;
 use src.bus_pkg.all;
+use src.depp_pkg.all;
+
+library tb;
+use tb.depp_tb_pkg.all;
 
 entity depp_slave_controller_tb is
     generic (
@@ -34,13 +38,69 @@ begin
     clk <= not clk after (clk_period/2);
 
     main : process
+        variable address : bus_address_type;
+        variable writeData : bus_data_type;
+        variable writeMask : bus_write_mask;
     begin
         test_runner_setup(runner, runner_cfg);
         while test_suite loop
-            if run("Simple transaction") then
-                -- Initial situation
+            if run("Write without increment") then
+                slv2mst <= BUS_SLV2MST_IDLE;
+                depp_db <= (others => 'Z');
+                -- Initial situation:
                 wait for clk_period;
                 check_equal('0', depp_wait);
+                wait until falling_edge(clk);
+                -- Start setting the output
+                address := std_logic_vector(to_unsigned(125, address'length));
+                writeData := std_logic_vector(to_unsigned(14, writeData'length));
+                writeMask := (others => '1');
+                depp_tb_bus_prepare_write(
+                    clk => clk,
+                    usb_db => depp_db,
+                    usb_write => depp_write,
+                    usb_astb => depp_astb,
+                    usb_dstb => depp_dstb,
+                    usb_wait => depp_wait,
+                    address => address,
+                    writeData => writeData,
+                    writeMask => writeMask
+                );
+                -- Start the write
+                depp_tb_bus_start_transaction(
+                    clk => clk,
+                    usb_db => depp_db,
+                    usb_write => depp_write,
+                    usb_astb => depp_astb,
+                    usb_dstb => depp_dstb,
+                    usb_wait => depp_wait,
+                    doRead => false
+                );
+                wait for 2*clk_period;
+                check_equal(mst2slv.address, address);
+                check_equal(mst2slv.writeData, writeData);
+                check_equal(mst2slv.writeMask, writeMask);
+                check_equal(mst2slv.writeEnable, '1');
+                check_equal(mst2slv.readEnable, '0');
+                check_equal(depp_wait, '0');
+                -- Wait a while, then finish normally
+                wait for 26*clk_period;
+                wait until falling_edge(clk);
+                slv2mst.ack <= '1';
+                wait for clk_period;
+                check_equal(mst2slv.writeEnable, '0');
+                check_equal(mst2slv.readEnable, '0');
+                check_equal(depp_wait, '1');
+                depp_tb_bus_finish_transaction(
+                    clk => clk,
+                    usb_db => depp_db,
+                    usb_write => depp_write,
+                    usb_astb => depp_astb,
+                    usb_dstb => depp_dstb,
+                    usb_wait => depp_wait
+                );
+
+
             end if;
         end loop;
         wait until rising_edge(clk) or falling_edge(clk);

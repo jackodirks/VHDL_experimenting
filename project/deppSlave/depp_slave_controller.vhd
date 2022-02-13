@@ -41,6 +41,10 @@ begin
         variable bus_active : boolean := false;
         variable write_mask_reg : std_logic_vector(depp2bus_write_mask_length_ceil*8 - 1 downto 0) := (others => '0');
         variable slv2mst_cpy : bus_slv2mst_type := BUS_SLV2MST_IDLE;
+
+        variable fast_write_enabled : boolean := false;
+
+        variable next_bus_address : bus_address_type := (others => '0');
     begin
         if rising_edge(clk) then
 
@@ -60,6 +64,7 @@ begin
                 slv2mst_cpy := BUS_SLV2MST_IDLE;
                 write_mask_reg := (others => '0');
                 bus_active := false;
+                address := 0;
 
             else
 
@@ -80,6 +85,7 @@ begin
                         bus_active := false;
                         mst2slv_out.writeEnable <= '0';
                         mst2slv_out.readEnable <= '0';
+                        mst2slv_out.address <= next_bus_address;
                         wait_dstb_finish := true;
                         slv2mst_cpy := slv2mst;
                     end if;
@@ -100,8 +106,20 @@ begin
                         elsif address <= depp2bus_data_reg_end then
                             address_tmp := address - depp2bus_data_reg_start;
                             mst2slv_out.writeData(8*(address_tmp + 1) - 1 downto 8*address_tmp) <= usb_db;
-                        elsif address <= depp2bus_write_mask_end then
-                            address_tmp := address - depp2bus_write_mask_start;
+                            if fast_write_enabled then
+                                address := address + 1;
+                                if address > depp2bus_data_reg_end then
+                                    next_bus_address := std_logic_vector(to_unsigned(
+                                                        to_integer(unsigned(mst2slv_out.address)) + depp2bus_addr_reg_len,
+                                                        next_bus_address'length));
+                                    address := depp2bus_data_reg_start;
+                                    mst2slv_out.writeEnable <= '1';
+                                    bus_active := true;
+                                    wait_dstb_finish := false;
+                                end if;
+                            end if;
+                        elsif address <= depp2bus_write_mask_reg_end then
+                            address_tmp := address - depp2bus_write_mask_reg_start;
                             write_mask_reg(8*(address_tmp + 1) - 1 downto 8*address_tmp) := usb_db;
                             mst2slv_out.writeMask <= write_mask_reg(mst2slv_out.writeMask'range);
                         elsif address <= depp2bus_activation_register_end then
@@ -114,6 +132,12 @@ begin
                             end loop;
                             bus_active := true;
                             wait_dstb_finish := false;
+                        elsif address <= depp2bus_mode_register_end then
+                            if usb_db(depp_mode_fast_write_bit) = '1' then
+                                fast_write_enabled := true;
+                            else
+                                fast_write_enabled := false;
+                            end if;
                         end if;
                     elsif USB_WRITE = '1' then
                         if address <= depp2bus_addr_reg_end then
@@ -122,7 +146,10 @@ begin
                         elsif address <= depp2bus_data_reg_end then
                             address_tmp := address - depp2bus_data_reg_start;
                             read_latch := slv2mst_cpy.readData(8*address_tmp + 7 downto 8*address_tmp);
-                        elsif address = depp2bus_fault_register_start then
+                        elsif address <= depp2bus_write_mask_reg_end then
+                            address_tmp := address - depp2bus_write_mask_reg_start;
+                            read_latch := write_mask_reg(8*(address_tmp + 1) - 1 downto 8*address_tmp);
+                        elsif address <= depp2bus_fault_register_end then
                             read_latch := (others => '0');
                             read_latch(0) := slv2mst_cpy.fault;
                         end if;
