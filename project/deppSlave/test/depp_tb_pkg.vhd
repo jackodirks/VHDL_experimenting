@@ -15,20 +15,6 @@ package depp_tb_pkg is
         writeMask       : bus_write_mask;
     end record;
 
-    procedure depp_tb_single_write (
-        signal clk : in std_logic;
-
-        signal usb_db : inout std_logic_vector(7 downto 0);
-        signal usb_write : out std_logic;
-        signal usb_astb : out std_logic;
-        signal usb_dstb : out std_logic;
-        signal usb_wait : in std_logic;
-
-        signal addr : in bus_address_type;
-        signal data : in bus_data_type;
-        signal wMask : in bus_write_mask
-    );
-
     procedure depp_tb_depp_write_with_address (
         signal clk : in std_logic;
 
@@ -81,47 +67,6 @@ package depp_tb_pkg is
 end depp_tb_pkg;
 
 package body depp_tb_pkg is
-    procedure depp_tb_single_write (
-        signal clk : in std_logic;
-
-        signal usb_db : inout std_logic_vector(7 downto 0);
-        signal usb_write : out std_logic;
-        signal usb_astb : out std_logic;
-        signal usb_dstb : out std_logic;
-        signal usb_wait : in std_logic;
-
-        signal addr : in bus_address_type;
-        signal data : in bus_data_type;
-        signal wMask : in bus_write_mask
-    ) is
-    begin
-        usb_write <= '1';
-        usb_astb <= '1';
-        usb_dstb <= '1';
-        usb_db <= (others => 'Z');
-        wait until usb_wait = '0';
-        wait until falling_edge(clk);
-        -- Transmit the address
-        for b in 0 to bus_address_type'length/usb_db'length - 1 loop
-            usb_db <= std_logic_vector(to_unsigned(depp2bus_addr_reg_start + b, usb_db'length));
-            usb_write <= '0';
-            usb_astb <= '0';
-            wait until usb_wait = '1' and falling_edge(clk);
-            usb_write <= '1';
-            usb_astb <= '1';
-            usb_db <= (others => 'Z');
-            wait until usb_wait = '0' and falling_edge(clk);
-            usb_db <= addr((b+1)*usb_db'length - 1 downto b * usb_db'length);
-            usb_write <= '0';
-            usb_dstb <= '0';
-            wait until usb_wait = '1' and falling_edge(clk);
-            usb_write <= '1';
-            usb_dstb <= '1';
-            usb_db <= (others => 'Z');
-            wait until usb_wait = '0' and falling_edge(clk);
-        end loop;
-    end depp_tb_single_write;
-
     procedure depp_tb_depp_write_with_address (
         signal clk : in std_logic;
 
