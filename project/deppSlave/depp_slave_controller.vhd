@@ -34,7 +34,7 @@ begin
         variable wait_dstb_finish : boolean := false;
         variable address : natural range 0 to 2**8 - 1;
         variable address_tmp : natural range 0 to 2**8 - 1;
-        variable read_latch : std_logic_vector(7 downto 0) := (others => '0');
+        variable read_latch : depp_data_type := (others => '0');
         variable usb_dstb_act : std_logic := '0';
         variable usb_astb_act : std_logic := '0';
 
@@ -42,7 +42,7 @@ begin
         variable write_mask_reg : std_logic_vector(depp2bus_write_mask_length_ceil*8 - 1 downto 0) := (others => '0');
         variable slv2mst_cpy : bus_slv2mst_type := BUS_SLV2MST_IDLE;
 
-        variable fast_write_enabled : boolean := false;
+        variable depp_mode : depp_data_type := (others => '0');
 
         variable next_bus_address : bus_address_type := (others => '0');
     begin
@@ -103,16 +103,16 @@ begin
                         if address <= depp2bus_addr_reg_end then
                             address_tmp := address - depp2bus_addr_reg_start;
                             mst2slv_out.address(8*(address_tmp + 1) - 1 downto 8*address_tmp) <= usb_db;
-                        elsif address <= depp2bus_data_reg_end then
-                            address_tmp := address - depp2bus_data_reg_start;
+                        elsif address <= depp2bus_writeData_reg_end then
+                            address_tmp := address - depp2bus_writeData_reg_start;
                             mst2slv_out.writeData(8*(address_tmp + 1) - 1 downto 8*address_tmp) <= usb_db;
-                            if fast_write_enabled then
+                            if depp_mode_fast_write_active(depp_mode) then
                                 address := address + 1;
-                                if address > depp2bus_data_reg_end then
+                                if address > depp2bus_writeData_reg_end then
                                     next_bus_address := std_logic_vector(to_unsigned(
                                                         to_integer(unsigned(mst2slv_out.address)) + depp2bus_addr_reg_len,
                                                         next_bus_address'length));
-                                    address := depp2bus_data_reg_start;
+                                    address := depp2bus_writeData_reg_start;
                                     mst2slv_out.writeEnable <= '1';
                                     bus_active := true;
                                     wait_dstb_finish := false;
@@ -122,7 +122,10 @@ begin
                             address_tmp := address - depp2bus_write_mask_reg_start;
                             write_mask_reg(8*(address_tmp + 1) - 1 downto 8*address_tmp) := usb_db;
                             mst2slv_out.writeMask <= write_mask_reg(mst2slv_out.writeMask'range);
+                        elsif address <= depp2bus_mode_register_end then
+                            depp_mode := usb_db;
                         elsif address <= depp2bus_activation_register_end then
+                            next_bus_address := mst2slv_out.address;
                             mst2slv_out.writeEnable <= '1';
                             for i in 0 to usb_db'high loop
                                 if usb_db(i) = '1' then
@@ -132,23 +135,23 @@ begin
                             end loop;
                             bus_active := true;
                             wait_dstb_finish := false;
-                        elsif address <= depp2bus_mode_register_end then
-                            if usb_db(depp_mode_fast_write_bit) = '1' then
-                                fast_write_enabled := true;
-                            else
-                                fast_write_enabled := false;
-                            end if;
                         end if;
                     elsif USB_WRITE = '1' then
+                        read_latch := (others => '0');
                         if address <= depp2bus_addr_reg_end then
                             address_tmp := address - depp2bus_addr_reg_start;
                             read_latch := mst2slv_out.address(8*address_tmp + 7 downto 8*address_tmp);
-                        elsif address <= depp2bus_data_reg_end then
-                            address_tmp := address - depp2bus_data_reg_start;
+                        elsif address <= depp2bus_writeData_reg_end then
+                            address_tmp := address - depp2bus_writeData_reg_start;
+                            read_latch := mst2slv_out.writeData(8*address_tmp + 7 downto 8*address_tmp);
+                        elsif address <= depp2bus_readData_reg_end then
+                            address_tmp := address - depp2bus_readData_reg_start;
                             read_latch := slv2mst_cpy.readData(8*address_tmp + 7 downto 8*address_tmp);
                         elsif address <= depp2bus_write_mask_reg_end then
                             address_tmp := address - depp2bus_write_mask_reg_start;
                             read_latch := write_mask_reg(8*(address_tmp + 1) - 1 downto 8*address_tmp);
+                        elsif address <= depp2bus_mode_register_end then
+                            read_latch := depp_mode;
                         elsif address <= depp2bus_fault_register_end then
                             read_latch := (others => '0');
                             read_latch(0) := slv2mst_cpy.fault;
