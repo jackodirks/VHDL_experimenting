@@ -41,6 +41,7 @@ begin
         variable address : bus_address_type;
         variable writeData : bus_data_type;
         variable readData : bus_data_type;
+        variable readData_out : bus_data_type;
         variable writeMask : bus_write_mask;
         variable deppMode : depp_data_type;
         variable deppAddr : depp_address_type;
@@ -96,7 +97,7 @@ begin
                 check_equal(mst2slv.writeEnable, '0');
                 check_equal(mst2slv.readEnable, '0');
                 check_equal(depp_wait, '1');
-                depp_tb_bus_finish_transaction(
+                depp_tb_bus_finish_write_transaction(
                     clk => clk,
                     usb_db => depp_db,
                     usb_write => depp_write,
@@ -164,7 +165,7 @@ begin
                 check_equal(mst2slv.writeEnable, '0');
                 check_equal(mst2slv.readEnable, '0');
                 check_equal(depp_wait, '1');
-                depp_tb_bus_finish_transaction(
+                depp_tb_bus_finish_write_transaction(
                     clk => clk,
                     usb_db => depp_db,
                     usb_write => depp_write,
@@ -236,7 +237,7 @@ begin
                 check_equal(mst2slv.writeEnable, '0');
                 check_equal(mst2slv.readEnable, '0');
                 check_equal(depp_wait, '1');
-                depp_tb_bus_finish_transaction(
+                depp_tb_bus_finish_write_transaction(
                     clk => clk,
                     usb_db => depp_db,
                     usb_write => depp_write,
@@ -326,7 +327,7 @@ begin
                     check_equal(mst2slv.readEnable, '0');
                     check_equal(depp_wait, '0');
                     slv2mst.ack <= '1';
-                    depp_tb_bus_finish_transaction(
+                    depp_tb_bus_finish_write_transaction(
                         clk => clk,
                         usb_db => depp_db,
                         usb_write => depp_write,
@@ -336,7 +337,97 @@ begin
                     );
                     slv2mst.ack <= '0';
                 end loop;
+            end if;
+            if run("Sequential read mode") then
+                slv2mst <= BUS_SLV2MST_IDLE;
+                address := (others => '0');
+                writeData := (others => '0');
+                readData := (others => '0');
+                writeMask := (others => '0');
+                deppMode := (others => '0');
+                deppMode(depp_mode_fast_read_bit) := '1';
+                deppAddr := std_logic_vector(to_unsigned(depp2bus_mode_register_start, deppAddr'length));
+                -- Initial situation:
+                wait for clk_period;
+                check_equal('0', depp_wait);
+                -- Enable sequential read mode
+                depp_tb_depp_write_to_address(
+                    clk => clk,
+                    usb_db => depp_db,
+                    usb_write => depp_write,
+                    usb_astb => depp_astb,
+                    usb_dstb => depp_dstb,
+                    usb_wait => depp_wait,
+                    addr => deppAddr,
+                    data => deppMode
+                );
+                -- Set the start address
+                depp_tb_bus_set_address (
+                    clk => clk,
+                    usb_db => depp_db,
+                    usb_write => depp_write,
+                    usb_astb => depp_astb,
+                    usb_dstb => depp_dstb,
+                    usb_wait => depp_wait,
+                    address => address
+                );
+                -- Set the depp address
+                deppAddr := std_logic_vector(to_unsigned(depp2bus_readData_reg_start, deppAddr'length));
+                depp_tb_depp_set_address (
+                    clk => clk,
+                    usb_db => depp_db,
+                    usb_write => depp_write,
+                    usb_astb => depp_astb,
+                    usb_dstb => depp_dstb,
+                    usb_wait => depp_wait,
+                    addr => deppAddr
+                );
+                -- Now start reading
+                for i in 0 to 20 loop
+                    readData := std_logic_vector(to_unsigned(i, writeData'length));
+                    address := std_logic_vector(to_unsigned(i*depp2bus_readData_reg_len, address'length));
+                    depp_tb_depp_get_data(
+                        clk => clk,
+                        usb_db => depp_db,
+                        usb_write => depp_write,
+                        usb_astb => depp_astb,
+                        usb_dstb => depp_dstb,
+                        usb_wait => depp_wait,
+                        data => readData_out(7 downto 0),
+                        expect_completion => false
+                    );
+                    wait until mst2slv.readEnable = '1';
+                    check_equal(mst2slv.address, address);
+                    check_equal(mst2slv.writeEnable, '0');
+                    check_equal(mst2slv.readEnable, '1');
+                    check_equal(depp_wait, '0');
+                    slv2mst.readData <= readData;
+                    slv2mst.ack <= '1';
+                    depp_tb_bus_finish_read_transaction(
+                        clk => clk,
+                        usb_db => depp_db,
+                        usb_write => depp_write,
+                        usb_astb => depp_astb,
+                        usb_dstb => depp_dstb,
+                        usb_wait => depp_wait,
+                        data => readData_out(7 downto 0)
+                    );
+                    slv2mst.ack <= '0';
 
+                    for j in 1 to depp2bus_readData_reg_len - 1 loop
+                        depp_tb_depp_get_data(
+                            clk => clk,
+                            usb_db => depp_db,
+                            usb_write => depp_write,
+                            usb_astb => depp_astb,
+                            usb_dstb => depp_dstb,
+                            usb_wait => depp_wait,
+                            data => readData_out((j+1)*8 - 1 downto j*8),
+                            expect_completion => true
+                        );
+                    end loop;
+                    check_equal(readData, readData_out);
+                end loop;
             end if;
         end loop;
         wait until rising_edge(clk) or falling_edge(clk);

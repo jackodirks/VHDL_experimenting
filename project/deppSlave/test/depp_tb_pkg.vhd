@@ -51,6 +51,19 @@ package depp_tb_pkg is
         constant expect_completion : in boolean
     );
 
+    procedure depp_tb_depp_get_data (
+        signal clk : in std_logic;
+
+        signal usb_db : inout std_logic_vector(7 downto 0);
+        signal usb_write : out std_logic;
+        signal usb_astb : out std_logic;
+        signal usb_dstb : out std_logic;
+        signal usb_wait : in std_logic;
+
+        variable data : out depp_data_type;
+        constant expect_completion : in boolean
+    );
+
     procedure depp_tb_depp_write_to_address (
         signal clk : in std_logic;
 
@@ -127,7 +140,7 @@ package depp_tb_pkg is
         constant doRead : in boolean
     );
 
-    procedure depp_tb_bus_finish_transaction (
+    procedure depp_tb_bus_finish_write_transaction (
         signal clk : in std_logic;
 
         signal usb_db : inout std_logic_vector(7 downto 0);
@@ -135,6 +148,18 @@ package depp_tb_pkg is
         signal usb_astb : out std_logic;
         signal usb_dstb : out std_logic;
         signal usb_wait : in std_logic
+    );
+
+    procedure depp_tb_bus_finish_read_transaction (
+        signal clk : in std_logic;
+
+        signal usb_db : inout std_logic_vector(7 downto 0);
+        signal usb_write : out std_logic;
+        signal usb_astb : out std_logic;
+        signal usb_dstb : out std_logic;
+        signal usb_wait : in std_logic;
+
+        variable data : out depp_data_type
     );
 
     procedure depp_tb_slave_check_state (
@@ -205,6 +230,34 @@ package body depp_tb_pkg is
         end if;
     end procedure;
 
+    procedure depp_tb_depp_get_data (
+        signal clk : in std_logic;
+
+        signal usb_db : inout std_logic_vector(7 downto 0);
+        signal usb_write : out std_logic;
+        signal usb_astb : out std_logic;
+        signal usb_dstb : out std_logic;
+        signal usb_wait : in std_logic;
+
+        variable data : out depp_data_type;
+        constant expect_completion : in boolean
+    ) is
+    begin
+        usb_db <= (others => 'Z');
+        usb_astb <= '1';
+        usb_dstb <= '1';
+        usb_write <= '1';
+        wait until usb_wait = '0' and falling_edge(clk);
+        usb_dstb <= '0';
+        if expect_completion then
+            wait until usb_wait = '1' and falling_edge(clk);
+            data := usb_db;
+            usb_dstb <= '1';
+        else
+            data := (others => '0');
+        end if;
+    end procedure;
+
     procedure depp_tb_depp_write_to_address (
         signal clk : in std_logic;
 
@@ -261,15 +314,16 @@ package body depp_tb_pkg is
             usb_wait => usb_wait,
             addr => addr
         );
-        usb_db <= (others => 'Z');
-        usb_astb <= '1';
-        usb_dstb <= '1';
-        usb_write <= '1';
-        wait until usb_wait = '0' and falling_edge(clk);
-        usb_dstb <= '0';
-        wait until usb_wait = '1' and falling_edge(clk);
-        data := usb_db;
-        usb_dstb <= '1';
+        depp_tb_depp_get_data(
+            clk => clk,
+            usb_db => usb_db,
+            usb_write => usb_write,
+            usb_astb => usb_astb,
+            usb_dstb => usb_dstb,
+            usb_wait => usb_wait,
+            data => data,
+            expect_completion => true
+        );
     end procedure;
 
     procedure depp_tb_bus_set_address (
@@ -407,7 +461,7 @@ package body depp_tb_pkg is
         usb_write <= '0';
     end procedure;
 
-    procedure depp_tb_bus_finish_transaction (
+    procedure depp_tb_bus_finish_write_transaction (
         signal clk : in std_logic;
 
         signal usb_db : inout std_logic_vector(7 downto 0);
@@ -422,6 +476,26 @@ package body depp_tb_pkg is
         usb_dstb <= '1';
         usb_write <= '1';
         wait until usb_wait = '0' and falling_edge(clk);
+    end procedure;
+
+    procedure depp_tb_bus_finish_read_transaction (
+        signal clk : in std_logic;
+
+        signal usb_db : inout std_logic_vector(7 downto 0);
+        signal usb_write : out std_logic;
+        signal usb_astb : out std_logic;
+        signal usb_dstb : out std_logic;
+        signal usb_wait : in std_logic;
+
+        variable data : out depp_data_type
+    ) is
+    begin
+        wait until usb_wait = '1' and falling_edge(clk);
+        data := usb_db;
+        usb_dstb <= '1';
+        usb_write <= '1';
+        wait until usb_wait = '0' and falling_edge(clk);
+        usb_db <= (others => 'Z');
     end procedure;
 
     procedure depp_tb_slave_check_state (

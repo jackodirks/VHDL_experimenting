@@ -37,9 +37,27 @@ package depp_pkg is
     constant depp2bus_activation_register_end : natural := depp2bus_activation_register_start;
 
     -- The possible modes of the depp2bus device. This is about address increment rules (both depp and bus)
+    --
+    -- With fast write enabled, a write to depp2bus_writeData_reg_end will first execute normally and then trigger a write action on the bus.
+    -- After the write action, the bus address will be incremented by depp2bus_writeData_reg_len.
+    -- Moreover, any write to the writeData_reg will cause the depp address to increase by one, wrapping around to start when required.
+    -- One should set the start bus address and the writemask, then set the depp address to depp2bus_writeData_start and
+    -- then just keep writing the dstb.
     constant depp_mode_fast_write_bit : natural := 0;
 
+    -- When fast read is enabled:
+    -- Any read from the readData reg will increment the depp address with wraparound after the read is completed.
+    -- Any read from readData_reg_start will first cause a bus read before executing the read.
+    -- The bus address is incremented by depp2bus_readData_reg_len after such an automatic read.
+    --
+    -- One should set the bus address, set the depp address to depp2bus_readData_reg_start and then keep on reading for as long as required.
+    constant depp_mode_fast_read_bit : natural := 1;
+
     function depp_mode_fast_write_active(
+        depp_mode   :   depp_data_type
+    ) return boolean;
+
+    function depp_mode_fast_read_active(
         depp_mode   :   depp_data_type
     ) return boolean;
 
@@ -52,6 +70,13 @@ package body depp_pkg is
     ) return boolean is
     begin
         return depp_mode(depp_mode_fast_write_bit) = '1';
+    end function;
+
+    function depp_mode_fast_read_active(
+        depp_mode   :   depp_data_type
+    ) return boolean is
+    begin
+        return depp_mode(depp_mode_fast_read_bit) = '1';
     end function;
 
 end package body;
