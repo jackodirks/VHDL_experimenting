@@ -49,7 +49,7 @@ begin
                 full_addr := to_integer(unsigned(mst2slv.address(mst2slv.address'range)));
                 for b in 0 to bus_bytes_per_word - 1 loop
                     if (full_addr + b < digit_count) then
-                        addr := full_addr;
+                        addr := full_addr + b;
                         if mst2slv.writeEnable = '1' and mst2slv.writeMask(b) = '1' then
                             digit_storage(addr) <= mst2slv.writeData((b+1) * bus_byte_size - 1 downto b*bus_byte_size);
                         end if;
