@@ -35,8 +35,6 @@ begin
         variable address : natural range 0 to 2**8 - 1;
         variable address_tmp : natural range 0 to 2**8 - 1;
         variable read_latch : depp_data_type := (others => '0');
-        variable usb_dstb_act : std_logic := '0';
-        variable usb_astb_act : std_logic := '0';
 
         variable bus_active : boolean := false;
         variable reread : boolean := false;
@@ -59,26 +57,12 @@ begin
             if rst = '1' then
                 USB_WAIT <= '1';
                 wait_dstb_finish := false;
-                usb_dstb_act := '1';
-                usb_astb_act := '1';
                 mst2slv_out <= BUS_MST2SLV_IDLE;
                 slv2mst_cpy := BUS_SLV2MST_IDLE;
                 write_mask_reg := (others => '0');
                 bus_active := false;
                 address := 0;
             else
-                if usb_dstb_delayed = '0' and usb_dstb = '0' then
-                    usb_dstb_act := '0';
-                else
-                    usb_dstb_act := '1';
-                end if;
-
-                if usb_astb_delayed = '0' and usb_astb = '0' then
-                    usb_astb_act := '0';
-                else
-                    usb_astb_act := '1';
-                end if;
-
                 if bus_active then
                     if bus_slave_finished(slv2mst) = '1' then
                         bus_active := false;
@@ -92,14 +76,14 @@ begin
                             reread := false;
                         end if;
                     end if;
-                elsif usb_astb_act = '0' then
+                elsif usb_astb_delayed = '0' then
                     USB_WAIT <= '1';
                     if USB_WRITE = '0' then
                         address := to_integer(unsigned(USB_DB));
                     elsif USB_WRITE = '1' then
                         USB_DB <= std_logic_vector(to_unsigned(address, usb_db'length));
                     end if;
-                elsif usb_dstb_act = '0' and wait_dstb_finish = false then
+                elsif usb_dstb_delayed = '0' and wait_dstb_finish = false then
                     wait_dstb_finish := true;
 
                     if USB_WRITE = '0' then
@@ -177,12 +161,12 @@ begin
                     end if;
                 end if;
 
-                if usb_dstb_act = '0' and usb_write = '1' then
+                if usb_dstb_delayed = '0' and usb_write = '1' then
                     usb_db <= read_latch;
                 end if;
 
                 if wait_dstb_finish then
-                    if usb_dstb_act = '1' then
+                    if usb_dstb_delayed = '1' then
                         wait_dstb_finish := false;
                     else
                         USB_WAIT <= '1';
