@@ -87,10 +87,10 @@ begin
                     wait_dstb_finish := true;
 
                     if USB_WRITE = '0' then
-                        if address <= depp2bus_addr_reg_end then
+                        if address >= depp2bus_addr_reg_start and address <= depp2bus_addr_reg_end then
                             address_tmp := address - depp2bus_addr_reg_start;
                             mst2slv_out.address(8*(address_tmp + 1) - 1 downto 8*address_tmp) <= usb_db;
-                        elsif address <= depp2bus_writeData_reg_end then
+                        elsif address >= depp2bus_writeData_reg_start and address <= depp2bus_writeData_reg_end then
                             address_tmp := address - depp2bus_writeData_reg_start;
                             mst2slv_out.writeData(8*(address_tmp + 1) - 1 downto 8*address_tmp) <= usb_db;
                             if depp_mode_fast_write_active(depp_mode) then
@@ -105,13 +105,13 @@ begin
                                     wait_dstb_finish := false;
                                 end if;
                             end if;
-                        elsif address <= depp2bus_write_mask_reg_end then
+                        elsif address >= depp2bus_write_mask_reg_start and address <= depp2bus_write_mask_reg_end then
                             address_tmp := address - depp2bus_write_mask_reg_start;
                             write_mask_reg(8*(address_tmp + 1) - 1 downto 8*address_tmp) := usb_db;
                             mst2slv_out.writeMask <= write_mask_reg(mst2slv_out.writeMask'range);
-                        elsif address <= depp2bus_mode_register_end then
+                        elsif address >= depp2bus_mode_register_start and address <= depp2bus_mode_register_end then
                             depp_mode := usb_db;
-                        elsif address <= depp2bus_activation_register_end then
+                        elsif address >= depp2bus_activation_register_start and address <= depp2bus_activation_register_end then
                             next_bus_address := mst2slv_out.address;
                             mst2slv_out.writeEnable <= '1';
                             for i in 0 to usb_db'high loop
@@ -125,13 +125,13 @@ begin
                         end if;
                     elsif USB_WRITE = '1' then
                         read_latch := (others => '0');
-                        if address <= depp2bus_addr_reg_end then
+                        if address >= depp2bus_addr_reg_start and address <= depp2bus_addr_reg_end then
                             address_tmp := address - depp2bus_addr_reg_start;
                             read_latch := mst2slv_out.address(8*address_tmp + 7 downto 8*address_tmp);
-                        elsif address <= depp2bus_writeData_reg_end then
+                        elsif address >= depp2bus_writeData_reg_start and address <= depp2bus_writeData_reg_end then
                             address_tmp := address - depp2bus_writeData_reg_start;
                             read_latch := mst2slv_out.writeData(8*address_tmp + 7 downto 8*address_tmp);
-                        elsif address <= depp2bus_readData_reg_end then
+                        elsif address >= depp2bus_readData_reg_start and address <= depp2bus_readData_reg_end then
                             address_tmp := address - depp2bus_readData_reg_start;
                             if depp_mode_fast_read_active(depp_mode) then
                                 if address = depp2bus_readData_reg_start then
@@ -149,12 +149,12 @@ begin
                                 end if;
                             end if;
                             read_latch := slv2mst_cpy.readData(8*address_tmp + 7 downto 8*address_tmp);
-                        elsif address <= depp2bus_write_mask_reg_end then
+                        elsif address >= depp2bus_write_mask_reg_start and address <= depp2bus_write_mask_reg_end then
                             address_tmp := address - depp2bus_write_mask_reg_start;
                             read_latch := write_mask_reg(8*(address_tmp + 1) - 1 downto 8*address_tmp);
-                        elsif address <= depp2bus_mode_register_end then
+                        elsif address >= depp2bus_mode_register_start and address <= depp2bus_mode_register_end then
                             read_latch := depp_mode;
-                        elsif address <= depp2bus_fault_register_end then
+                        elsif address >= depp2bus_fault_register_start and address <= depp2bus_fault_register_end then
                             read_latch := (others => '0');
                             read_latch(0) := slv2mst_cpy.fault;
                         end if;
