@@ -102,7 +102,7 @@ begin
 
     mem : entity work.bus_singleport_ram
     generic map (
-        DEPTH_LOG2B => 8
+        DEPTH_LOG2B => 11
     )
     port map (
         rst => rst,
