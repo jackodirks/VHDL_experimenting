@@ -1,0 +1,5 @@
+(sym_lib_table
+  (lib (name "23LC1024IP")(type "KiCad")(uri "${KIPRJMOD}/symbols/23LC1024IP.kicad_sym")(options "")(descr ""))
+  (lib (name "AP2141SG-13")(type "KiCad")(uri "${KIPRJMOD}/symbols/AP2141SG-13.kicad_sym")(options "")(descr ""))
+  (lib (name "ProjectSpecific")(type "KiCad")(uri "${KIPRJMOD}/symbols/ProjectSpecific.kicad_sym")(options "")(descr ""))
+)
