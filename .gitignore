@@ -37,3 +37,8 @@ fp-info-cache
 # Exported BOM files
 *.xml
 *.csv
+
+#DeppMaster project
+depp_master/final
+depp_master/final_debug
+depp_master/obj/*
