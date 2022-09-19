@@ -119,7 +119,9 @@
         "use_height_for_length_calcs": true
       },
       "track_widths": [
-        0.0
+        0.0,
+        0.15,
+        0.3
       ],
       "via_dimensions": [
         {
@@ -383,7 +385,6 @@
         "microvia_drill": 0.1,
         "name": "VCC",
         "nets": [
-          "+3V3",
           "BASYS3V3"
         ],
         "pcb_color": "rgba(0, 0, 0, 0.000)",
