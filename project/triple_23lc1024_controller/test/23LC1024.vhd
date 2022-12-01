@@ -41,12 +41,6 @@ architecture behavioral of M23LC1024 is
     signal outputActive : boolean := false;
     signal hold : boolean := false;
 
-    constant CSSetupTime : time := 25 ns;
-    constant CSHoldTime : time := 50 ns;
-    constant CSDisableTime : time := 25 ns;
-    constant DataSetupTime : time := 10 ns;
-    constant DataHoldTime : time := 10 ns;
-
     pure function decodeInstRegister(instRegister : std_logic_vector(7 downto 0)) return ActiveInstruction is
         variable ret_val : ActiveInstruction := InstructionNOP;
     begin
