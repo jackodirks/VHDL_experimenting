@@ -23,6 +23,9 @@ tb_library.add_source_files(SRC_PATH / "sevenSegment" / "test" / "*.vhd")
 src_library.add_source_files(SRC_PATH / "complete_system" / "*.vhd")
 tb_library.add_source_files(SRC_PATH / "complete_system"/ "test" / "*.vhd")
 
+src_library.add_source_files(SRC_PATH / "triple_23lc1024_controller" / "*.vhd")
+tb_library.add_source_files(SRC_PATH / "triple_23lc1024_controller"/ "test" / "*.vhd")
+
 src_library.add_source_files(SRC_PATH / "common" / "simple_multishot_timer.vhd")
 
 VU.main()
