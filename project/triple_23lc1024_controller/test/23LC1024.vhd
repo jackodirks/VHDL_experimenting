@@ -9,6 +9,9 @@ library IEEE;
 use IEEE.std_logic_1164.all;
 use IEEE.numeric_std.all;
 
+library tb;
+use tb.M23LC1024_pkg.all;
+
 entity M23LC1024 is
     port (
         cs_n : in std_logic;
@@ -16,15 +19,16 @@ entity M23LC1024 is
         sio2 : inout std_logic;
         hold_n_sio3 : inout std_logic;
         sck : in std_logic;
-        si_sio0 : inout std_logic
+        si_sio0 : inout std_logic;
+
+        dbg_opmode : out OperationMode;
+        dbg_iomode : out InoutMode
     );
 end M23LC1024;
 
 
 architecture behavioral of M23LC1024 is
     type ActiveInstruction is (InstructionNOP, InstructionRead, InstructionRDMR, InstructionWRMR, InstructionWrite, InstructionEDIO, InstructionEQIO, InstructionRSTIO);
-    type OperationMode is (ByteMode, PageMode, SeqMode);
-    type InoutMode is (SpiMode, SdiMode, SqiMode);
     type ByteArray is array (0 to 2**17 - 1) of std_logic_vector(7 downto 0);
 
     signal memoryBlock : ByteArray := (others => (others => '0'));
@@ -149,7 +153,7 @@ begin
 -- -------------------------------------------------------------------------------------------------------
 --      1.02:  Input Data Shifter
 -- -------------------------------------------------------------------------------------------------------
-    process(cs_n, hold, sck, ioMode)
+    process(sck)
     begin
         if rising_edge(sck) and not hold and cs_n = '0' then
             case ioMode is
@@ -165,7 +169,7 @@ begin
 -- -------------------------------------------------------------------------------------------------------
 --      1.03:  Clock Cycle Counter
 -- -------------------------------------------------------------------------------------------------------
-    process(cs_n, hold, sck)
+    process(cs_n, sck)
     begin
         if rising_edge(cs_n) then
             clockCounter <= 0;
@@ -176,7 +180,7 @@ begin
 -- -------------------------------------------------------------------------------------------------------
 --      1.04:  Instruction Register
 -- -------------------------------------------------------------------------------------------------------
-    process(hold, sck, clockCounter, ioMode)
+    process(sck)
     begin
         if rising_edge(sck) and not hold then
             case ioMode is
@@ -198,7 +202,7 @@ begin
 -- -------------------------------------------------------------------------------------------------------
 --      1.05:  Address Register
 -- -------------------------------------------------------------------------------------------------------
-    process(hold, sck, clockCounter, ioMode, activeInstr)
+    process(sck)
     begin
         if rising_edge(sck) and (activeInstr = InstructionRead or activeInstr = InstructionWrite) and not hold then
             case ioMode is
@@ -220,7 +224,7 @@ begin
 -- -------------------------------------------------------------------------------------------------------
 --      1.06:  Status Register Write
 -- -------------------------------------------------------------------------------------------------------
-    process(hold, sck, clockCounter, ioMode, activeInstr)
+    process(sck)
     begin
         if rising_edge(sck) and (activeInstr = InstructionWRMR) and not hold then
             case ioMode is
@@ -340,7 +344,7 @@ begin
 -- -------------------------------------------------------------------------------------------------------
 --      1.10:  Output Data Buffer
 -- -------------------------------------------------------------------------------------------------------
-    process(dataShifterO, outputActive, ioMode, cs_n)
+    process(dataShifterO, cs_n)
     begin
         if cs_n = '1' then
             si_sio0 <= 'Z';
@@ -378,4 +382,12 @@ begin
             end case;
         end if;
     end process;
+-- *******************************************************************************************************
+-- **   DEBUG LOGIC                                                                                     **
+-- *******************************************************************************************************
+-- -------------------------------------------------------------------------------------------------------
+--      2.1:  Debug signal handling
+-- -------------------------------------------------------------------------------------------------------
+    dbg_opmode <= opMode;
+    dbg_iomode <= ioMode;
 end behavioral;
