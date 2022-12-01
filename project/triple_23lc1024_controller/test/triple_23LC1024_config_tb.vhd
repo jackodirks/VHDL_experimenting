@@ -23,8 +23,7 @@ architecture tb of triple_23LC1024_config_tb is
     constant spi_clk_half_period_ticks : natural := 2;
 
     signal clk : std_logic := '0';
-    signal rst : std_logic := '0';
-    signal config_run : boolean := false;
+    signal rst : std_logic := '1';
     signal config_done : boolean;
 
     signal cs_n : std_logic_vector(2 downto 0);
@@ -37,6 +36,16 @@ architecture tb of triple_23LC1024_config_tb is
     signal dbg_opmode_array : OperationModeArray(2 downto 0);
     signal dbg_iomode_array : InoutModeArray(2 downto 0);
 
+    procedure check_all_mode(expOp : OperationMode; expIo : InoutMode) is
+    begin
+        for i in dbg_opmode_array'range loop
+            check(dbg_opmode_array(i) = expOp);
+        end loop;
+        for i in dbg_iomode_array'range loop
+            check(dbg_iomode_array(i) = expIo);
+        end loop;
+    end procedure;
+
 
 begin
     clk <= not clk after (clk_period/2);
@@ -46,22 +55,24 @@ begin
         test_runner_setup(runner, runner_cfg);
         while test_suite loop
             if run("Config run") then
-                config_run <= true;
-                wait until config_done = true;
-                check(dbg_opmode_array(0) = SeqMode);
-                check(dbg_opmode_array(1) = SeqMode);
-                check(dbg_opmode_array(2) = SeqMode);
-                check(dbg_iomode_array(0) = SqiMode);
-                check(dbg_iomode_array(1) = SqiMode);
-                check(dbg_iomode_array(2) = SqiMode);
+                check_all_mode(ByteMode, SpiMode);
+                check(not config_done);
+                rst <= '0';
+                wait until config_done;
+                check_all_mode(SeqMode, SqiMode);
+                rst <= '1';
+                wait until not config_done;
+                rst <= '0';
+                wait until config_done;
+                check_all_mode(SeqMode, SqiMode);
             end if;
         end loop;
-        wait until rising_edge(clk) or falling_edge(clk);
+        wait for 2*clk_period;
         test_runner_cleanup(runner);
         wait;
     end process;
 
-    test_runner_watchdog(runner, 1 ms);
+    test_runner_watchdog(runner,  100 us);
 
     mem_pcb : entity tb.triple_M23LC1024
     port map (
@@ -89,7 +100,6 @@ begin
         spi_sio(2) => sio2,
         spi_sio(3) => hold_n_sio3,
         spi_cs => cs_n,
-        config_run => config_run,
         config_done => config_done
     );
 end tb;

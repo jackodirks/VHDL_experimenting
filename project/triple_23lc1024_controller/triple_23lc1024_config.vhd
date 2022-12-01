@@ -15,7 +15,6 @@ entity triple_23lc1024_config is
         spi_sio : inout std_logic_vector(3 downto 0);
         spi_cs : out std_logic_vector(2 downto 0);
 
-        config_run : in boolean;
         config_done : out boolean
     );
 end triple_23lc1024_config;
@@ -140,7 +139,7 @@ begin
     end process;
 
     concurrent: process(cur_state, cur_transmission_state, instruction_index, cur_active_operation,
-        cs_timer_done, half_period_timer_done, transmission_request, transmission_complete, config_run)
+        cs_timer_done, half_period_timer_done, transmission_request, transmission_complete)
     begin
         -- Main state machine
         next_state <= cur_state;
@@ -150,9 +149,7 @@ begin
                 transmission_request <= false;
                 cs_timer_rst <= '1';
                 spi_cs <= (others => '1');
-                if config_run then
-                    next_state <= drop_cs_state;
-                end if;
+                next_state <= drop_cs_state;
             when drop_cs_state =>
                 config_done <= false;
                 transmission_request <= false;
