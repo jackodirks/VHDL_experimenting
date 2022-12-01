@@ -43,6 +43,16 @@ architecture behavioral of M23LC1024 is
     signal outputActive : boolean := false;
     signal hold : boolean := false;
 
+    constant CSSetupTime : time := 25 ns;
+    constant CSHoldTime : time := 50 ns;
+    constant CSDisableTime : time := 25 ns;
+    constant DataSetupTime : time := 10 ns;
+    constant DataHoldTime : time := 10 ns;
+    constant ClkHighTime : time := 25 ns;
+    constant ClkLowTime : time := 25 ns;
+    constant ClkDelayTime : time := 25 ns;
+    constant DataValidFromClockLow : time := 25 ns;
+
     pure function decodeInstRegister(instRegister : std_logic_vector(7 downto 0)) return ActiveInstruction is
         variable ret_val : ActiveInstruction := InstructionNOP;
     begin
@@ -385,4 +395,63 @@ begin
 -- -------------------------------------------------------------------------------------------------------
     dbg_opmode <= opMode;
     dbg_iomode <= ioMode;
+-- *******************************************************************************************************
+-- **   TIMING CHECKS                                                                                   **
+-- *******************************************************************************************************
+-- The numbers in the falure message come from the datasheet.
+    process(sck, cs_n, si_sio0, so_sio1, sio2, hold_n_sio3)
+        variable last_sck_rise : time := 0 ns;
+        variable last_sck_fall : time := 0 ns;
+    begin
+        if rising_edge(sck) then
+            last_sck_rise := now;
+            assert sck'delayed'stable(ClkLowTime) report "Timing failure 9" severity error;
+            if cs_n = '0' then
+                assert cs_n'stable(CSSetupTime) report "Timing failure 2" severity error;
+            end if;
+            if cs_n = '1' then
+                assert cs_n'stable(ClkDelayTime) report "Timing failure 11" severity error;
+            end if;
+            case ioMode is
+                when SpiMode =>
+                    assert si_sio0'stable(DataSetupTime) report "Timing failure 5" severity error;
+                when SdiMode =>
+                    assert si_sio0'stable(DataSetupTime) report "Timing failure 5" severity error;
+                    assert so_sio1'stable(DataSetupTime) report "Timing failure 5" severity error;
+                when SqiMode =>
+                    assert si_sio0'stable(DataSetupTime) report "Timing failure 5" severity error;
+                    assert so_sio1'stable(DataSetupTime) report "Timing failure 5" severity error;
+                    assert sio2'stable(DataSetupTime) report "Timing failure 5" severity error;
+                    assert hold_n_sio3'stable(DataSetupTime) report "Timing failure 5" severity error;
+            end case;
+        end if;
+        if falling_edge(sck) then
+            last_sck_fall := now;
+            assert sck'delayed'stable(ClkHighTime) report "Timing failure 10" severity error;
+        end if;
+        if falling_edge(cs_n) then
+            assert cs_n'delayed'stable(CSDisableTime) report "Timing failure 4" severity error;
+        end if;
+        if rising_edge(cs_n) then
+            assert now - last_sck_rise >= CSHoldTime report "Timing failure 3" severity error;
+        end if;
+        if (rising_edge(si_sio0) or falling_edge(si_sio0)) and last_sck_rise >= 0 ns then
+            assert now - last_sck_rise >= DataHoldTime report "Timing failure 6" severity error;
+            assert now - last_sck_fall <= DataValidFromClockLow report "Timing failure 12" severity error;
+        end if;
+        if (rising_edge(so_sio1) or falling_edge(so_sio1)) and (ioMode = SdiMode or ioMode = SqiMode) and last_sck_rise >= 0 ns then
+            assert now - last_sck_rise >= DataHoldTime report "Timing failure 6" severity error;
+            assert now - last_sck_fall <= DataValidFromClockLow report "Timing failure 12" severity error;
+        end if;
+        if (rising_edge(sio2) or falling_edge(sio2)) and ioMode = SqiMode and last_sck_rise >= 0 ns then
+            assert now - last_sck_rise >= DataHoldTime report "Timing failure 6" severity error;
+            assert now - last_sck_fall <= DataValidFromClockLow report "Timing failure 12" severity error;
+        end if;
+        if (rising_edge(hold_n_sio3) or falling_edge(hold_n_sio3)) and ioMode = SqiMode and last_sck_rise >= 0 ns then
+            assert now - last_sck_rise >= DataHoldTime report "Timing failure 6" severity error;
+            assert now - last_sck_fall <= DataValidFromClockLow report "Timing failure 12" severity error;
+        end if;
+
+    end process;
+
 end behavioral;
