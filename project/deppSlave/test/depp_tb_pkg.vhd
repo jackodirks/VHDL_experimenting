@@ -187,7 +187,7 @@ package body depp_tb_pkg is
         signal usb_dstb : out std_logic;
         signal usb_wait : in std_logic;
 
-        constant addr : in std_logic_vector(7 downto 0)
+        constant addr : in depp_address_type
     ) is
     begin
         usb_write <= '1';
@@ -267,8 +267,8 @@ package body depp_tb_pkg is
         signal usb_dstb : out std_logic;
         signal usb_wait : in std_logic;
 
-        constant addr : in std_logic_vector(7 downto 0);
-        constant data : in std_logic_vector(7 downto 0)
+        constant addr : in depp_address_type;
+        constant data : in depp_data_type
     ) is
     begin
         depp_tb_depp_set_address(
