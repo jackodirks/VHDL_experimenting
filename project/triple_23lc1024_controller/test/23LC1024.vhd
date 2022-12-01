@@ -125,11 +125,25 @@ begin
 -- -------------------------------------------------------------------------------------------------------
 --      1.01:  Internal Reset Logic
 -- -------------------------------------------------------------------------------------------------------
-    process(cs_n)
+    process(cs_n, sck)
     begin
-        if falling_edge(cs_n) then
+        if rising_edge(cs_n) then
             outputActive <= false;
-            clockCounter <= 0;
+        elsif rising_edge(sck) and not hold and (activeInstr = InstructionRead or activeInstr = InstructionRDMR) then
+            case ioMode is
+                when SpiMode =>
+                    if (clockCounter >= 32) and (clockCounter mod 8 = 0) then
+                        outputActive <= true;
+                    end if;
+                when SdiMode =>
+                    if (clockCounter >= 20) and (clockCounter mod 4 = 0) then
+                        outputActive <= true;
+                    end if;
+                when SqiMode =>
+                    if (clockCounter >= 10) and (clockCounter mod 2 = 0) then
+                        outputActive <= true;
+                    end if;
+            end case;
         end if;
     end process;
 -- -------------------------------------------------------------------------------------------------------
@@ -137,7 +151,7 @@ begin
 -- -------------------------------------------------------------------------------------------------------
     process(cs_n, hold, sck, ioMode)
     begin
-        if rising_edge(sck) and not hold and cs_n = '1' then
+        if rising_edge(sck) and not hold and cs_n = '0' then
             case ioMode is
                 when SpiMode =>
                     dataShifterI <= dataShifterI(6 downto 0) & si_sio0;
@@ -153,7 +167,9 @@ begin
 -- -------------------------------------------------------------------------------------------------------
     process(cs_n, hold, sck)
     begin
-        if rising_edge(sck) and not hold and cs_n = '1' then
+        if rising_edge(cs_n) then
+            clockCounter <= 0;
+        elsif rising_edge(sck) and not hold and cs_n = '0' then
             clockCounter <= clockCounter + 1;
         end if;
     end process;
@@ -274,7 +290,6 @@ begin
                     if (clockCounter >= 32) and (clockCounter mod 8 = 0) then
                         dataShifterO <= memoryBlock(to_integer(unsigned(addrRegister)));
                         addrRegister <= incrementAddress(addrRegister, opMode);
-                        outputActive <= true;
                     else
                         dataShifterO <= std_logic_vector(shift_left(unsigned(dataShifterO), 1));
                     end if;
@@ -282,7 +297,6 @@ begin
                     if (clockCounter >= 20) and (clockCounter mod 4 = 0) then
                         dataShifterO <= memoryBlock(to_integer(unsigned(addrRegister)));
                         addrRegister <= incrementAddress(addrRegister, opMode);
-                        outputActive <= true;
                     else
                         dataShifterO <= std_logic_vector(shift_left(unsigned(dataShifterO), 2));
                     end if;
@@ -290,7 +304,6 @@ begin
                     if (clockCounter >= 10) and (clockCounter mod 2 = 0) then
                         dataShifterO <= memoryBlock(to_integer(unsigned(addrRegister)));
                         addrRegister <= incrementAddress(addrRegister, opMode);
-                        outputActive <= true;
                     else
                         dataShifterO <= std_logic_vector(shift_left(unsigned(dataShifterO), 4));
                     end if;
@@ -306,21 +319,18 @@ begin
                 when SpiMode =>
                     if (clockCounter >= 32) and (clockCounter mod 8 = 0) then
                         dataShifterO <= encodeModeRegister(opMode);
-                        outputActive <= true;
                     else
                         dataShifterO <= std_logic_vector(shift_left(unsigned(dataShifterO), 1));
                     end if;
                 when SdiMode =>
                     if (clockCounter >= 20) and (clockCounter mod 4 = 0) then
                         dataShifterO <= encodeModeRegister(opMode);
-                        outputActive <= true;
                     else
                         dataShifterO <= std_logic_vector(shift_left(unsigned(dataShifterO), 2));
                     end if;
                 when SqiMode =>
                     if (clockCounter >= 10) and (clockCounter mod 2 = 0) then
                         dataShifterO <= encodeModeRegister(opMode);
-                        outputActive <= true;
                     else
                         dataShifterO <= std_logic_vector(shift_left(unsigned(dataShifterO), 4));
                     end if;
@@ -330,35 +340,42 @@ begin
 -- -------------------------------------------------------------------------------------------------------
 --      1.10:  Output Data Buffer
 -- -------------------------------------------------------------------------------------------------------
-    process(dataShifterO, outputActive, ioMode)
+    process(dataShifterO, outputActive, ioMode, cs_n)
     begin
-        case ioMode is
-            when SpiMode =>
-                if outputActive then
-                    so_sio1 <= dataShifterO(0);
-                else
-                    so_sio1 <= 'Z';
-                end if;
-            when SdiMode =>
-                if outputActive then
-                    si_sio0 <= dataShifterO(0);
-                    so_sio1 <= dataShifterO(1);
-                else
-                    si_sio0 <= 'Z';
-                    so_sio1 <= 'Z';
-                end if;
-            when SqiMode =>
-                if outputActive then
-                    si_sio0 <= dataShifterO(0);
-                    so_sio1 <= dataShifterO(1);
-                    sio2 <= dataShifterO(2);
-                    HOLD_N_SIO3 <= dataShifterO(3);
-                else
-                    si_sio0 <= 'Z';
-                    so_sio1 <= 'Z';
-                    sio2 <= 'Z';
-                    HOLD_N_SIO3 <= 'Z';
-                end if;
-        end case;
+        if cs_n = '1' then
+            si_sio0 <= 'Z';
+            so_sio1 <= 'Z';
+            sio2 <= 'Z';
+            HOLD_N_SIO3 <= 'Z';
+        else
+            case ioMode is
+                when SpiMode =>
+                    if outputActive then
+                        so_sio1 <= dataShifterO(0);
+                    else
+                        so_sio1 <= 'Z';
+                    end if;
+                when SdiMode =>
+                    if outputActive then
+                        si_sio0 <= dataShifterO(0);
+                        so_sio1 <= dataShifterO(1);
+                    else
+                        si_sio0 <= 'Z';
+                        so_sio1 <= 'Z';
+                    end if;
+                when SqiMode =>
+                    if outputActive then
+                        si_sio0 <= dataShifterO(0);
+                        so_sio1 <= dataShifterO(1);
+                        sio2 <= dataShifterO(2);
+                        HOLD_N_SIO3 <= dataShifterO(3);
+                    else
+                        si_sio0 <= 'Z';
+                        so_sio1 <= 'Z';
+                        sio2 <= 'Z';
+                        HOLD_N_SIO3 <= 'Z';
+                    end if;
+            end case;
+        end if;
     end process;
 end behavioral;
