@@ -14,7 +14,9 @@ entity triple_M23LC1024 is
         si_sio0 : inout std_logic;
 
         dbg_opmode_array : out OperationModeArray(2 downto 0);
-        dbg_iomode_array : out InoutModeArray(2 downto 0)
+        dbg_iomode_array : out InoutModeArray(2 downto 0);
+        dbg_readAddr_array : in ReadAddressArray(2 downto 0);
+        dbg_readData_array : out ByteArray(2 downto 0)
     );
 end triple_M23LC1024;
 
@@ -29,7 +31,8 @@ begin
         sck => sck,
         si_sio0 => si_sio0,
         dbg_opmode => dbg_opmode_array(0),
-        dbg_iomode => dbg_iomode_array(0)
+        dbg_iomode => dbg_iomode_array(0),
+        dbg_readAddr => dbg_readAddr_array(0)
     );
 
     mem1 : entity tb.M23LC1024
@@ -41,7 +44,8 @@ begin
         sck => sck,
         si_sio0 => si_sio0,
         dbg_opmode => dbg_opmode_array(1),
-        dbg_iomode => dbg_iomode_array(1)
+        dbg_iomode => dbg_iomode_array(1),
+        dbg_readAddr => dbg_readAddr_array(1)
     );
 
     mem2 : entity tb.M23LC1024
@@ -53,6 +57,7 @@ begin
         sck => sck,
         si_sio0 => si_sio0,
         dbg_opmode => dbg_opmode_array(2),
-        dbg_iomode => dbg_iomode_array(2)
+        dbg_iomode => dbg_iomode_array(2),
+        dbg_readAddr => dbg_readAddr_array(2)
     );
 end behavioral;

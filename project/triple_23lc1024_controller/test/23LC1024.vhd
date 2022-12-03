@@ -22,7 +22,10 @@ entity M23LC1024 is
         si_sio0 : inout std_logic;
 
         dbg_opmode : out OperationMode;
-        dbg_iomode : out InoutMode
+        dbg_iomode : out InoutMode;
+
+        dbg_readAddr : in std_logic_vector(16 downto 0);
+        dbg_readData : out std_logic_vector(7 downto 0)
     );
 end M23LC1024;
 
@@ -269,7 +272,7 @@ begin
 -- -------------------------------------------------------------------------------------------------------
 --      1.08:  Array Read/Write
 -- -------------------------------------------------------------------------------------------------------
-    process(sck)
+    process(sck, dbg_readAddr)
         variable memoryBlock : ByteArray := (others => (others => '0'));
     begin
         if rising_edge(sck) and not hold then
@@ -317,6 +320,8 @@ begin
                 end case;
             end if;
         end if;
+
+        dbg_readData <= memoryBlock(to_integer(unsigned(dbg_readAddr)));
     end process;
 -- -------------------------------------------------------------------------------------------------------
 --      1.09:  Output Data Shifter

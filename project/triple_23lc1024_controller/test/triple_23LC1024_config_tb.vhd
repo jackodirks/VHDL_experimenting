@@ -83,7 +83,8 @@ begin
         sck => sck,
         si_sio0 => si_sio0,
         dbg_opmode_array => dbg_opmode_array,
-        dbg_iomode_array => dbg_iomode_array
+        dbg_iomode_array => dbg_iomode_array,
+        dbg_readAddr_array => (others => (others => '0'))
     );
 
     config : entity src.triple_23lc1024_config
