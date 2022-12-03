@@ -47,6 +47,11 @@ package bus_pkg is
         writeMask       : bus_write_mask;
         readEnable      : std_logic;
         writeEnable     : std_logic;
+        -- When burst is active, multiple reads/writes can happen in quick succession.
+        -- The address must be increased (not decreased!) with exactly bus_bytes_per_word between two bursts, the slave does not have to check this.
+        -- The operation (read or write) must remain the same within a burst, the slave does not have to check this.
+        -- The master should leave burst high until the entire operation has been completed.
+        burst           : std_logic;
     end record;
 
     type bus_mst2slv_array is array (natural range <>) of bus_mst2slv_type;
@@ -76,7 +81,8 @@ package bus_pkg is
         writeData => (others => '0'),
         writeMask => (others => '0'),
         readEnable => '0',
-        writeEnable => '0'
+        writeEnable => '0',
+        burst => '0'
     );
 
     constant BUS_SLV2MST_IDLE : bus_slv2mst_type := (

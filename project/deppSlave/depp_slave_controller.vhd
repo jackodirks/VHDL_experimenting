@@ -69,6 +69,7 @@ begin
                         mst2slv_out.writeEnable <= '0';
                         mst2slv_out.readEnable <= '0';
                         mst2slv_out.address <= next_bus_address;
+                        mst2slv_out.burst <= '0';
                         wait_dstb_finish := true;
                         slv2mst_cpy := slv2mst;
                         if reread then
