@@ -33,38 +33,82 @@ architecture tb of triple_23LC1024_config_tb is
     signal sck : std_logic;
     signal si_sio0 : std_logic;
 
-    signal dbg_opmode_array : OperationModeArray(2 downto 0);
-    signal dbg_iomode_array : InoutModeArray(2 downto 0);
+    constant actor_mem0 : actor_t := find("M23LC1024.mem0");
+    constant actor_mem1 : actor_t := find("M23LC1024.mem1");
+    constant actor_mem2 : actor_t := find("M23LC1024.mem2");
+    constant actors : actor_vec_t := (
+        actor_mem0,
+        actor_mem1,
+        actor_mem2
+    );
 
-    procedure check_all_mode(expOp : OperationMode; expIo : InoutMode) is
+    procedure check_all_mode(constant expOp : in OperationMode;
+                             constant expIo : in InoutMode;
+                             signal net : inout network_t) is
+        variable received_opmode : OperationMode;
+        variable received_iomode : InoutMode;
     begin
-        for i in dbg_opmode_array'range loop
-            check(dbg_opmode_array(i) = expOp);
-        end loop;
-        for i in dbg_iomode_array'range loop
-            check(dbg_iomode_array(i) = expIo);
+        for i in actors'range loop
+            read_operationMode(net, actors(i), received_opmode);
+            read_inoutMode(net, actors(i), received_iomode);
+            check(received_opmode = expOp);
+            check(received_iomode = expIo);
         end loop;
     end procedure;
 
-
+    procedure set_all_mode(constant expOp : in OperationMode;
+                             constant expIo : in InoutMode;
+                             signal net : inout network_t) is
+    begin
+        for i in actors'range loop
+            write_operationMode(net, actors(i), expOp);
+            write_inoutMode(net, actors(i), expIo);
+        end loop;
+    end procedure;
 begin
     clk <= not clk after (clk_period/2);
 
-    main : process
+    test_runner : process
+        variable data                        : OperationMode;
+
     begin
         test_runner_setup(runner, runner_cfg);
         while test_suite loop
-            if run("Config run") then
-                check_all_mode(ByteMode, SpiMode);
+            if run("Config run when mode is (ByteMode, SpiMode) results in (SeqMode, SqiMode)") then
+                set_all_mode(ByteMode, SpiMode, net);
+                check_all_mode(ByteMode, SpiMode, net);
                 check(not config_done);
                 rst <= '0';
                 wait until config_done;
-                check_all_mode(SeqMode, SqiMode);
-                rst <= '1';
-                wait until not config_done;
+                check_all_mode(SeqMode, SqiMode, net);
+            elsif run("Config run when mode is (PageMode, SdiMode) results in (SeqMode, SqiMode)") then
+                set_all_mode(PageMode, SdiMode, net);
+                check_all_mode(PageMode, SdiMode, net);
+                check(not config_done);
                 rst <= '0';
                 wait until config_done;
-                check_all_mode(SeqMode, SqiMode);
+                check_all_mode(SeqMode, SqiMode, net);
+            elsif run("Config run when mode is (SeqMode, SqiMode) results in (SeqMode, SqiMode)") then
+                set_all_mode(SeqMode, SqiMode, net);
+                check_all_mode(SeqMode, SqiMode, net);
+                check(not config_done);
+                rst <= '0';
+                wait until config_done;
+                check_all_mode(SeqMode, SqiMode, net);
+            elsif run("Config run repeats after rst cycle") then
+                set_all_mode(ByteMode, SpiMode, net);
+                check_all_mode(ByteMode, SpiMode, net);
+                check(not config_done);
+                rst <= '0';
+                wait until config_done;
+                check_all_mode(SeqMode, SqiMode, net);
+                set_all_mode(ByteMode, SpiMode, net);
+                rst <= '1';
+                wait for clk_period;
+                check_all_mode(ByteMode, SpiMode, net);
+                rst <= '0';
+                wait until config_done;
+                check_all_mode(SeqMode, SqiMode, net);
             end if;
         end loop;
         wait for 2*clk_period;
@@ -81,10 +125,7 @@ begin
         sio2 => sio2,
         hold_n_sio3 => hold_n_sio3,
         sck => sck,
-        si_sio0 => si_sio0,
-        dbg_opmode_array => dbg_opmode_array,
-        dbg_iomode_array => dbg_iomode_array,
-        dbg_readAddr_array => (others => (others => '0'))
+        si_sio0 => si_sio0
     );
 
     config : entity src.triple_23lc1024_config

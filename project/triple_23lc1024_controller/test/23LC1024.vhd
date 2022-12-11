@@ -5,14 +5,24 @@
 -- *******************************************************************************************************
 
 -- Based on 23LC1024.v by Young Engineering
-library IEEE;
-use IEEE.std_logic_1164.all;
-use IEEE.numeric_std.all;
+library ieee;
+use ieee.std_logic_1164.all;
+use ieee.numeric_std.all;
+use ieee.numeric_std_unsigned.all;
 
 library tb;
 use tb.M23LC1024_pkg.all;
 
+library vunit_lib;
+context vunit_lib.vunit_context;
+context vunit_lib.com_context;
+use vunit_lib.sync_pkg.all;
+
 entity M23LC1024 is
+    generic (
+        constant actor : actor_t;
+        constant logger : logger_t
+    );
     port (
         cs_n : in std_logic;
         so_sio1 : inout std_logic;
@@ -22,10 +32,7 @@ entity M23LC1024 is
         si_sio0 : inout std_logic;
 
         dbg_opmode : out OperationMode;
-        dbg_iomode : out InoutMode;
-
-        dbg_readAddr : in std_logic_vector(16 downto 0);
-        dbg_readData : out std_logic_vector(7 downto 0)
+        dbg_iomode : out InoutMode
     );
 end M23LC1024;
 
@@ -41,7 +48,9 @@ architecture behavioral of M23LC1024 is
 
     signal activeInstr : ActiveInstruction := InstructionNOP;
     signal opMode : OperationMode := ByteMode;
+    signal opModeOverride : OperationMode := ByteMode;
     signal ioMode : InoutMode := SpiMode;
+    signal ioModeOverride : InoutMode := SpiMode;
 
     signal outputActive : boolean := false;
     signal hold : boolean := false;
@@ -80,37 +89,6 @@ architecture behavioral of M23LC1024 is
         return ret_val;
     end function;
 
-    pure function decodeModeRegister(modeRegister : std_logic_vector(7 downto 0)) return OperationMode is
-        variable ret_val : OperationMode := ByteMode;
-    begin
-        assert (modeRegister(5 downto 0) = "000000") report "Last 6 bit of mode register write should be all zeros!" severity error;
-        case modeRegister(7 downto 6) is
-            when "00" =>
-                ret_val := ByteMode;
-            when "01" =>
-                ret_val := SeqMode;
-            when "10" =>
-                ret_val := PageMode;
-            when others =>
-                assert false report "Illegal mode" severity error;
-        end case;
-        return ret_val;
-    end function;
-
-    pure function encodeModeRegister(curMode : OperationMode) return std_logic_vector is
-        variable ret_val : std_logic_vector(7 downto 0) := (others => '0');
-    begin
-        case curMode is
-            when ByteMode =>
-                ret_val(7 downto 6) := "00";
-            when SeqMode =>
-                ret_val(7 downto 6) := "01";
-            when PageMode =>
-                ret_val(7 downto 6) := "10";
-        end case;
-        return ret_val;
-    end function;
-
     pure function incrementAddress(curAddr : std_logic_vector(16 downto 0);
                                    operMode : OperationMode) return std_logic_vector is
         variable ret_val : std_logic_vector(16 downto 0) := curAddr;
@@ -126,6 +104,42 @@ architecture behavioral of M23LC1024 is
     end function;
 
 begin
+-- *******************************************************************************************************
+-- **   VUNIT Com
+-- *******************************************************************************************************
+    msg_handler : process is
+        variable request_msg, reply_msg : msg_t;
+        variable msg_type               : msg_type_t;
+        variable data : std_logic_vector(7 downto 0);
+    begin
+        receive(net, actor, request_msg);
+        msg_type := message_type(request_msg);
+        handle_sync_message(net, msg_type, request_msg);
+
+        if msg_type = read_operationMode_msg then
+            info(logger, "Requesting operation mode from " & name(actor));
+            reply_msg := new_msg(read_reply_msg);
+            push(reply_msg, encodeModeRegister(opMode));
+            reply(net, request_msg, reply_msg);
+        elsif msg_type = write_operationMode_msg then
+            info(logger, "Writing operation mode to " & name(actor));
+            opModeOverride <= decodeModeRegister(pop(request_msg));
+            acknowledge(net, request_msg, true);
+        elsif msg_type = read_inoutMode_msg then
+            info(logger, "Requesting inout mode from " & name(actor));
+            reply_msg := new_msg(read_reply_msg);
+            push(reply_msg, encodeInoutMode(ioMode));
+            reply(net, request_msg, reply_msg);
+        elsif msg_type = write_inoutMode_msg then
+            data := pop(request_msg);
+            info(logger, "Writing inout mode to " & name(actor) & " (" & to_hstring(data) & ")");
+            ioModeOverride <= decodeInoutMode(data);
+            acknowledge(net, request_msg, true);
+        else
+            unexpected_msg_type(msg_type);
+        end if;
+    end process;
+
 -- *******************************************************************************************************
 -- **   INITIALIZATION                                                                                  **
 -- *******************************************************************************************************
@@ -235,7 +249,7 @@ begin
 -- -------------------------------------------------------------------------------------------------------
 --      1.06:  Status Register Write
 -- -------------------------------------------------------------------------------------------------------
-    process(sck)
+    process(sck, opModeOverride'transaction)
     begin
         if rising_edge(sck) and (activeInstr = InstructionWRMR) and not hold then
             case ioMode is
@@ -253,11 +267,15 @@ begin
                     end if;
             end case;
         end if;
+
+        if opModeOverride'active then
+            opMode <= opModeOverride;
+        end if;
     end process;
 -- -------------------------------------------------------------------------------------------------------
 --      1.07:  I/O Mode Instructions
 -- -------------------------------------------------------------------------------------------------------
-    process(activeInstr)
+    process(activeInstr, ioModeOverride'transaction)
     begin
         case activeInstr is
             when InstructionEDIO =>
@@ -268,11 +286,15 @@ begin
                 ioMode <= SpiMode;
             when others =>
         end case;
+
+        if ioModeOverride'active then
+            ioMode <= ioModeOverride;
+        end if;
     end process;
 -- -------------------------------------------------------------------------------------------------------
 --      1.08:  Array Read/Write
 -- -------------------------------------------------------------------------------------------------------
-    process(sck, dbg_readAddr)
+    process(sck)
         variable memoryBlock : ByteArray := (others => (others => '0'));
     begin
         if rising_edge(sck) and not hold then
@@ -320,8 +342,6 @@ begin
                 end case;
             end if;
         end if;
-
-        dbg_readData <= memoryBlock(to_integer(unsigned(dbg_readAddr)));
     end process;
 -- -------------------------------------------------------------------------------------------------------
 --      1.09:  Output Data Shifter

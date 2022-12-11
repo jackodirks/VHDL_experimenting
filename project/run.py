@@ -5,6 +5,7 @@ VU = VUnit.from_argv()
 VU.add_osvvm()
 VU.add_verification_components()
 VU.enable_location_preprocessing()
+VU.add_com()
 
 SRC_PATH = Path(__file__).parent
 
