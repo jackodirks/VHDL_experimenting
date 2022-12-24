@@ -46,6 +46,11 @@ architecture behavioral of M23LC1024 is
     signal clockCounter : natural := 0; -- Serial input clock counter
     signal addrRegister : std_logic_vector(16 downto 0) := (others => '0'); -- Address register
 
+    signal dbg_readAddress : std_logic_vector(16 downto 0) := (others => '0');
+    signal dbg_readData : std_logic_vector(7 downto 0) := (others => '0');
+    signal dbg_writeAddress : std_logic_vector(16 downto 0) := (others => '0');
+    signal dbg_writeData : std_logic_vector(7 downto 0) := (others => '0');
+
     signal activeInstr : ActiveInstruction := InstructionNOP;
     signal opMode : OperationMode := ByteMode;
     signal opModeOverride : OperationMode := ByteMode;
@@ -134,6 +139,19 @@ begin
             data := pop(request_msg);
             info(logger, "Writing inout mode to " & name(actor) & " (" & to_hstring(data) & ")");
             ioModeOverride <= decodeInoutMode(data);
+            acknowledge(net, request_msg, true);
+        elsif msg_type = read_fromAddress_msg then
+            dbg_readAddress <= pop(request_msg);
+            wait for 1 fs;
+            reply_msg := new_msg(read_reply_msg);
+            push(reply_msg, dbg_readData);
+            info(logger, name(actor) & " is reading " & to_hstring(dbg_readData) & " from address " & to_hstring(dbg_readAddress));
+            reply(net, request_msg, reply_msg);
+        elsif msg_type = write_toAddress_msg then
+            dbg_writeData <= pop(request_msg);
+            dbg_writeAddress <= pop(request_msg);
+            wait for 1 fs;
+            info(logger, name(actor) & " is writing " & to_hstring(dbg_writeData) & " to address " & to_hstring(dbg_writeAddress));
             acknowledge(net, request_msg, true);
         else
             unexpected_msg_type(msg_type);
@@ -294,53 +312,80 @@ begin
 -- -------------------------------------------------------------------------------------------------------
 --      1.08:  Array Read/Write
 -- -------------------------------------------------------------------------------------------------------
-    process(sck)
+    process(sck, dbg_writeAddress'transaction, dbg_readAddress'transaction)
         variable memoryBlock : ByteArray := (others => (others => '0'));
+        variable address : std_logic_vector(addrRegister'range) := (others => '0');
     begin
         if rising_edge(sck) and not hold then
             if activeInstr = InstructionWrite then
                 case ioMode is
                     when SpiMode =>
+                        if clockCounter = 39 then
+                            address := addrRegister;
+                        end if;
                         if (clockCounter >= 39) and (clockCounter mod 8 = 7) then
-                        memoryBlock(to_integer(unsigned(addrRegister))) := dataShifterI(6 downto 0) & si_sio0;
-                        addrRegister <= incrementAddress(addrRegister, opMode);
+                        memoryBlock(to_integer(unsigned(address))) := dataShifterI(6 downto 0) & si_sio0;
+                        address := incrementAddress(address, opMode);
                         end if;
                     when SdiMode =>
+                        if clockCounter = 19 then
+                            address := addrRegister;
+                        end if;
                         if (clockCounter >= 19) and (clockCounter mod 4 = 3) then
-                        memoryBlock(to_integer(unsigned(addrRegister))) := dataShifterI(5 downto 0) & so_sio1 & si_sio0;
-                        addrRegister <= incrementAddress(addrRegister, opMode);
+                        memoryBlock(to_integer(unsigned(address))) := dataShifterI(5 downto 0) & so_sio1 & si_sio0;
+                        address := incrementAddress(address, opMode);
                         end if;
                     when SqiMode =>
+                        if clockCounter = 9 then
+                            address := addrRegister;
+                        end if;
                         if (clockCounter >= 9) and (clockCounter mod 2 = 1) then
-                        memoryBlock(to_integer(unsigned(addrRegister))) := dataShifterI(3 downto 0) & hold_n_sio3 & sio2 & so_sio1 & si_sio0;
-                        addrRegister <= incrementAddress(addrRegister, opMode);
+                        memoryBlock(to_integer(unsigned(address))) := dataShifterI(3 downto 0) & hold_n_sio3 & sio2 & so_sio1 & si_sio0;
+                        address := incrementAddress(address, opMode);
                         end if;
                 end case;
             elsif activeInstr = InstructionRead then
                 case ioMode is
                     when SpiMode =>
+                        if clockCounter = 32 then
+                            address := addrRegister;
+                        end if;
                         if (clockCounter >= 32) and (clockCounter mod 8 = 0) then
-                            dataShifterO <= memoryBlock(to_integer(unsigned(addrRegister)));
-                            addrRegister <= incrementAddress(addrRegister, opMode);
+                            dataShifterO <= memoryBlock(to_integer(unsigned(address)));
+                            address := incrementAddress(address, opMode);
                         else
                             dataShifterO <= std_logic_vector(shift_left(unsigned(dataShifterO), 1));
                         end if;
                     when SdiMode =>
+                        if clockCounter = 20 then
+                            address := addrRegister;
+                        end if;
                         if (clockCounter >= 20) and (clockCounter mod 4 = 0) then
-                            dataShifterO <= memoryBlock(to_integer(unsigned(addrRegister)));
-                            addrRegister <= incrementAddress(addrRegister, opMode);
+                            dataShifterO <= memoryBlock(to_integer(unsigned(address)));
+                            address := incrementAddress(address, opMode);
                         else
                             dataShifterO <= std_logic_vector(shift_left(unsigned(dataShifterO), 2));
                         end if;
                     when SqiMode =>
+                        if clockCounter = 10 then
+                            address := addrRegister;
+                        end if;
                         if (clockCounter >= 10) and (clockCounter mod 2 = 0) then
-                            dataShifterO <= memoryBlock(to_integer(unsigned(addrRegister)));
-                            addrRegister <= incrementAddress(addrRegister, opMode);
+                            dataShifterO <= memoryBlock(to_integer(unsigned(address)));
+                            address := incrementAddress(address, opMode);
                         else
                             dataShifterO <= std_logic_vector(shift_left(unsigned(dataShifterO), 4));
                         end if;
                 end case;
             end if;
+        end if;
+
+        if dbg_writeAddress'active then
+            memoryBlock(to_integer(unsigned(dbg_writeAddress))) := dbg_writeData;
+        end if;
+
+        if dbg_readAddress'active then
+            dbg_readData <= memoryBlock(to_integer(unsigned(dbg_readAddress)));
         end if;
     end process;
 -- -------------------------------------------------------------------------------------------------------

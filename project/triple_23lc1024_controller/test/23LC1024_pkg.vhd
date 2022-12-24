@@ -18,6 +18,9 @@ package M23LC1024_pkg is
     constant read_inoutMode_msg : msg_type_t := new_msg_type("read inoutMode");
     constant write_inoutMode_msg : msg_type_t := new_msg_type("write inoutMode");
 
+    constant read_fromAddress_msg : msg_type_t := new_msg_type("read from address");
+    constant write_toAddress_msg : msg_type_t := new_msg_type("write to address");
+
     procedure read_operationMode(
               signal net : inout network_t;
               constant actor : in actor_t;
@@ -37,6 +40,18 @@ package M23LC1024_pkg is
               signal net : inout network_t;
               constant actor : in actor_t;
               constant data : in InoutMode);
+
+    procedure read_from_address(
+              signal net : inout network_t;
+              constant actor : in actor_t;
+              constant addr : in std_logic_vector(16 downto 0);
+              variable data : out std_logic_vector(7 downto 0));
+
+    procedure write_to_address(
+              signal net : inout network_t;
+              constant actor : in actor_t;
+              constant addr : in std_logic_vector(16 downto 0);
+              constant data : in std_logic_vector(7 downto 0));
 
     pure function decodeModeRegister(modeRegister : std_logic_vector(7 downto 0)) return OperationMode;
     pure function encodeModeRegister(curMode : OperationMode) return std_logic_vector;
@@ -91,6 +106,34 @@ package body M23LC1024_pkg is
         request(net, actor, msg, positive_ack);
         check(positive_ack, "Write failed");
     end;
+
+    procedure read_from_address(
+              signal net : inout network_t;
+              constant actor : in actor_t;
+              constant addr : in std_logic_vector(16 downto 0);
+              variable data : out std_logic_vector(7 downto 0)) is
+        variable msg : msg_t := new_msg(read_fromAddress_msg);
+        variable reply_msg : msg_t;
+    begin
+        push(msg, addr);
+        request(net, actor, msg, reply_msg);
+        data := pop(reply_msg);
+    end;
+
+    procedure write_to_address(
+              signal net : inout network_t;
+              constant actor : in actor_t;
+              constant addr : in std_logic_vector(16 downto 0);
+              constant data : in std_logic_vector(7 downto 0)) is
+        variable msg : msg_t := new_msg(write_toAddress_msg);
+        variable positive_ack : boolean;
+    begin
+        push(msg, data);
+        push(msg, addr);
+        request(net, actor, msg, positive_ack);
+        check(positive_ack, "write_to_address failed");
+    end;
+
 
     pure function decodeModeRegister(modeRegister : std_logic_vector(7 downto 0)) return OperationMode is
         variable ret_val : OperationMode := ByteMode;
