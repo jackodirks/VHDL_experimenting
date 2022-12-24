@@ -45,60 +45,46 @@ begin
     begin
         test_runner_setup(runner, runner_cfg);
         while test_suite loop
-            if run("test_ack_low_at_start") then
-                wait for clk_period;
-                check_equal(mem_256_byte_control.slv2mst.ack, '0');
-            elsif run ("test_write_then_read") then
-                wait for clk_period;
-                mem_256_byte_control.mst2slv.address <= std_logic_vector(to_unsigned(16, bus_address_type'length));
-                mem_256_byte_control.mst2slv.writeData <= std_logic_vector(to_unsigned(14, bus_data_type'length));
-                mem_256_byte_control.mst2slv.writeEnable <= '1';
-                mem_256_byte_control.mst2slv.writeMask <= (others => '1');
-                wait until mem_256_byte_control.slv2mst.ack = '1';
-                mem_256_byte_control.mst2slv.writeEnable <= '0';
-                wait for 2*clk_period;
-                check_equal(mem_256_byte_control.slv2mst.ack, '0');
-                mem_256_byte_control.mst2slv.address <= std_logic_vector(to_unsigned(24, bus_address_type'length));
-                mem_256_byte_control.mst2slv.writeData <= std_logic_vector(to_unsigned(15, bus_data_type'length));
-                mem_256_byte_control.mst2slv.writeEnable <= '1';
-                wait until mem_256_byte_control.slv2mst.ack = '1';
-                mem_256_byte_control.mst2slv.writeEnable <= '0';
-                wait for 2*clk_period;
-                check_equal(mem_256_byte_control.slv2mst.ack, '0');
-                mem_256_byte_control.mst2slv.address <= std_logic_vector(to_unsigned(16, bus_address_type'length));
-                mem_256_byte_control.mst2slv.readEnable <= '1';
-                wait until mem_256_byte_control.slv2mst.ack = '1';
+            if run ("test_write_then_read") then
+                wait until falling_edge(clk);
+                mem_256_byte_control.mst2slv <= bus_mst2slv_write(address => std_logic_vector(to_unsigned(16, bus_address_type'length)),
+                                                                  write_data => std_logic_vector(to_unsigned(14, bus_data_type'length)),
+                                                                  write_mask => (others => '1'));
+                wait until rising_edge(clk) and write_transaction(mem_256_byte_control.mst2slv, mem_256_byte_control.slv2mst);
+                mem_256_byte_control.mst2slv <= bus_mst2slv_write(address => std_logic_vector(to_unsigned(24, bus_address_type'length)),
+                                                                  write_data => std_logic_vector(to_unsigned(15, bus_data_type'length)),
+                                                                  write_mask => (others => '1'));
+                wait until rising_edge(clk) and write_transaction(mem_256_byte_control.mst2slv, mem_256_byte_control.slv2mst);
+                mem_256_byte_control.mst2slv <= bus_mst2slv_read(address => std_logic_vector(to_unsigned(16, bus_address_type'length)));
+                wait until rising_edge(clk) and read_transaction(mem_256_byte_control.mst2slv, mem_256_byte_control.slv2mst);
                 check_equal(to_integer(unsigned(mem_256_byte_control.slv2mst.readData)), 14);
-                mem_256_byte_control.mst2slv.readEnable <= '0';
-                wait for 2*clk_period;
-                check_equal(mem_256_byte_control.slv2mst.ack, '0');
-                mem_256_byte_control.mst2slv.address <= std_logic_vector(to_unsigned(16, bus_address_type'length));
-                mem_256_byte_control.mst2slv.writeData <= std_logic_vector(to_unsigned(20, bus_data_type'length));
-                mem_256_byte_control.mst2slv.writeEnable <= '1';
-                mem_256_byte_control.mst2slv.writeMask <= (others => '0');
-                wait until mem_256_byte_control.slv2mst.ack = '1';
-                mem_256_byte_control.mst2slv.writeEnable <= '0';
-                wait for 2*clk_period;
-                check_equal(mem_256_byte_control.slv2mst.ack, '0');
-                mem_256_byte_control.mst2slv.readEnable <= '1';
-                wait until mem_256_byte_control.slv2mst.ack = '1';
+                mem_256_byte_control.mst2slv <= bus_mst2slv_write(address => std_logic_vector(to_unsigned(16, bus_address_type'length)),
+                                                                  write_data => std_logic_vector(to_unsigned(20, bus_data_type'length)),
+                                                                  write_mask => (others => '0'));
+                wait until rising_edge(clk) and write_transaction(mem_256_byte_control.mst2slv, mem_256_byte_control.slv2mst);
+                mem_256_byte_control.mst2slv <= bus_mst2slv_read(address => std_logic_vector(to_unsigned(16, bus_address_type'length)));
+                wait until rising_edge(clk) and read_transaction(mem_256_byte_control.mst2slv, mem_256_byte_control.slv2mst);
                 check_equal(14, to_integer(unsigned(mem_256_byte_control.slv2mst.readData)));
             elsif run("Test address space mirroring") then
-                mem_32_byte_control.mst2slv.address <= std_logic_vector(to_unsigned(0, bus_address_type'length));
-                mem_32_byte_control.mst2slv.writeData <= std_logic_vector(to_unsigned(14, bus_data_type'length));
-                mem_32_byte_control.mst2slv.writeEnable <= '1';
-                mem_32_byte_control.mst2slv.writeMask <= (others => '1');
-                wait until mem_32_byte_control.slv2mst.ack = '1';
-                mem_32_byte_control.mst2slv.writeEnable <= '0';
-                wait for 2*clk_period;
-                check_equal(mem_32_byte_control.slv2mst.ack, '0');
-                mem_32_byte_control.mst2slv.address <= std_logic_vector(to_unsigned(32, bus_address_type'length));
-                mem_32_byte_control.mst2slv.readEnable <= '1';
-                wait until mem_32_byte_control.slv2mst.ack = '1';
+                mem_32_byte_control.mst2slv <= bus_mst2slv_write(address => std_logic_vector(to_unsigned(0, bus_address_type'length)),
+                                                                  write_data => std_logic_vector(to_unsigned(14, bus_data_type'length)),
+                                                                  write_mask => (others => '1'));
+                wait until rising_edge(clk) and write_transaction(mem_32_byte_control.mst2slv, mem_32_byte_control.slv2mst);
+                mem_32_byte_control.mst2slv <= bus_mst2slv_read(address => std_logic_vector(to_unsigned(32, bus_address_type'length)));
+                wait until rising_edge(clk) and read_transaction(mem_32_byte_control.mst2slv, mem_32_byte_control.slv2mst);
                 check_equal(14, to_integer(unsigned(mem_32_byte_control.slv2mst.readData)));
-                mem_32_byte_control.mst2slv.readEnable <= '0';
-                wait for 2*clk_period;
-                check_equal(mem_32_byte_control.slv2mst.ack, '0');
+            elsif run("Test unaligned access error") then
+                mem_32_byte_control.mst2slv <= bus_mst2slv_write(address => std_logic_vector(to_unsigned(1, bus_address_type'length)),
+                                                                  write_data => std_logic_vector(to_unsigned(14, bus_data_type'length)),
+                                                                  write_mask => (others => '1'));
+                wait until rising_edge(clk) and fault_transaction(mem_32_byte_control.mst2slv, mem_32_byte_control.slv2mst);
+                check_equal(bus_fault_unaligned_access, mem_32_byte_control.slv2mst.faultData);
+                mem_32_byte_control.mst2slv <= bus_mst2slv_write(address => std_logic_vector(to_unsigned(0, bus_address_type'length)),
+                                                                  write_data => std_logic_vector(to_unsigned(14, bus_data_type'length)),
+                                                                  write_mask => (others => '1'));
+                wait until rising_edge(clk) and write_transaction(mem_32_byte_control.mst2slv, mem_32_byte_control.slv2mst);
+                mem_32_byte_control.mst2slv <= bus_mst2slv_read(address => std_logic_vector(to_unsigned(2, bus_address_type'length)));
+                wait until rising_edge(clk) and fault_transaction(mem_32_byte_control.mst2slv, mem_32_byte_control.slv2mst);
             end if;
         end loop;
         wait until rising_edge(clk) or falling_edge(clk);

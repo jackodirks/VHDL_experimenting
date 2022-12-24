@@ -52,60 +52,28 @@ begin
         while test_suite loop
             if run("Address out of range") then
                 wait until falling_edge(clk);
-                mst2ss1 <= bus_tb_mst2slv(address => 10, readEnable => '1');
-                wait for clk_period;
-                check(ss1_2mst.fault = '1');
-                check(ss1_2mst.ack = '1');
-                mst2ss1 <= bus_tb_mst2slv(address => 0, readEnable => '1');
-                wait for clk_period;
-                check(ss1_2mst.fault = '0');
-                check(ss1_2mst.ack = '1');
-                mst2ss1 <= bus_tb_mst2slv(address => 1, readEnable => '1');
-                wait for clk_period;
-                check(ss1_2mst.fault = '1');
-                check(ss1_2mst.ack = '1');
+                mst2ss1 <= bus_tb_mst2slv(address => 10, readReady => '1');
+                wait until rising_edge(clk) and fault_transaction(mst2ss1, ss1_2mst);
+                check_equal(bus_fault_address_out_of_range, ss1_2mst.faultData);
+                mst2ss1 <= bus_tb_mst2slv(address => 0, readReady => '1');
+                wait until rising_edge(clk) and read_transaction(mst2ss1, ss1_2mst);
+                mst2ss1 <= bus_tb_mst2slv(address => 1, readReady => '1');
+                wait until rising_edge(clk) and fault_transaction(mst2ss1, ss1_2mst);
+                check_equal(bus_fault_address_out_of_range, ss1_2mst.faultData);
             end if;
             if run("Memory check") then
                 wait until falling_edge(clk);
-                mst2ss1 <= bus_tb_mst2slv(address => 0, writeData => 255,  writeEnable => '1', writeMask => 1);
-                wait for clk_period;
-                check(ss1_2mst.fault = '0');
-                check(ss1_2mst.ack = '1');
-                mst2ss1 <= BUS_MST2SLV_IDLE;
-                wait for clk_period;
-                check(ss1_2mst.fault = '0');
-                check(ss1_2mst.ack = '0');
-                mst2ss1 <= bus_tb_mst2slv(address => 0, readEnable => '1');
-                wait for clk_period;
-                check(ss1_2mst.fault = '0');
-                check(ss1_2mst.ack = '1');
+                mst2ss1 <= bus_tb_mst2slv(address => 0, writeData => 255,  writeReady => '1', writeMask => 1);
+                wait until rising_edge(clk) and write_transaction(mst2ss1, ss1_2mst);
+                mst2ss1 <= bus_tb_mst2slv(address => 0, readReady => '1');
+                wait until rising_edge(clk) and read_transaction(mst2ss1, ss1_2mst);
                 check(to_integer(unsigned(ss1_2mst.readData)) = 255);
-
+                mst2ss1 <= bus_tb_mst2slv(address => 0, writeData => 0,  writeReady => '1', writeMask => 1);
+                wait until rising_edge(clk) and write_transaction(mst2ss1, ss1_2mst);
                 mst2ss1 <= BUS_MST2SLV_IDLE;
-                wait for clk_period;
-                check(ss1_2mst.fault = '0');
-                check(ss1_2mst.ack = '0');
-
-                mst2ss1 <= bus_tb_mst2slv(address => 0, writeData => 0,  writeEnable => '1', writeMask => 1);
-                wait for clk_period;
-                check(ss1_2mst.fault = '0');
-                check(ss1_2mst.ack = '1');
-
-                mst2ss1 <= BUS_MST2SLV_IDLE;
-                wait for clk_period;
-                check(ss1_2mst.fault = '0');
-                check(ss1_2mst.ack = '0');
-
-                mst2ss1 <= bus_tb_mst2slv(address => 0, readEnable => '1');
-                wait for clk_period;
-                check(ss1_2mst.fault = '0');
-                check(ss1_2mst.ack = '1');
+                mst2ss1 <= bus_tb_mst2slv(address => 0, readReady => '1');
+                wait until rising_edge(clk) and read_transaction(mst2ss1, ss1_2mst);
                 check(to_integer(unsigned(ss1_2mst.readData)) = 0);
-
-                mst2ss1 <= BUS_MST2SLV_IDLE;
-                wait for clk_period;
-                check(ss1_2mst.fault = '0');
-                check(ss1_2mst.ack = '0');
             end if;
             if run("Single output check") then
                 wait until rising_edge(clk);
@@ -114,10 +82,8 @@ begin
                 check(ss1_digit_anodes(0) = '0');
                 check(ss1_kathode = "11000000");
                 -- Only enable the dot
-                mst2ss1 <= bus_tb_mst2slv(address => 0, writeData => 16#10#,  writeEnable => '1', writeMask => 1);
-                wait for clk_period;
-                check(ss1_2mst.fault = '0');
-                check(ss1_2mst.ack = '1');
+                mst2ss1 <= bus_tb_mst2slv(address => 0, writeData => 16#10#,  writeReady => '1', writeMask => 1);
+                wait until rising_edge(clk) and write_transaction(mst2ss1, ss1_2mst);
                 mst2ss1 <= BUS_MST2SLV_IDLE;
                 wait for clk_period;
                 check(ss1_digit_anodes(0) = '0');
@@ -127,31 +93,17 @@ begin
                 wait until falling_edge(clk);
                 -- First, enter all values
                 -- Digit 1: 1, with dot
-                mst2ss2 <= bus_tb_mst2slv(address => 0, writeData => 16#11#,  writeEnable => '1', writeMask => 1);
-                wait for clk_period;
-                check(ss2_2mst.fault = '0');
-                check(ss2_2mst.ack = '1');
-                mst2ss2 <= BUS_MST2SLV_IDLE;
-                wait for clk_period;
+                mst2ss2 <= bus_tb_mst2slv(address => 0, writeData => 16#11#,  writeReady => '1', writeMask => 1);
+                wait until rising_edge(clk) and write_transaction(mst2ss2, ss2_2mst);
                 -- Digit 2: 8, no dot
-                mst2ss2 <= bus_tb_mst2slv(address => 1, writeData => 16#08#,  writeEnable => '1', writeMask => 1);
-                wait for clk_period;
-                check(ss2_2mst.fault = '0');
-                check(ss2_2mst.ack = '1');
-                mst2ss2 <= BUS_MST2SLV_IDLE;
-                wait for clk_period;
+                mst2ss2 <= bus_tb_mst2slv(address => 1, writeData => 16#08#,  writeReady => '1', writeMask => 1);
+                wait until rising_edge(clk) and write_transaction(mst2ss2, ss2_2mst);
                 -- Digit 3: a, with dot
-                mst2ss2 <= bus_tb_mst2slv(address => 2, writeData => 16#1a#,  writeEnable => '1', writeMask => 1);
-                wait for clk_period;
-                check(ss2_2mst.fault = '0');
-                check(ss2_2mst.ack = '1');
-                mst2ss2 <= BUS_MST2SLV_IDLE;
-                wait for clk_period;
+                mst2ss2 <= bus_tb_mst2slv(address => 2, writeData => 16#1a#,  writeReady => '1', writeMask => 1);
+                wait until rising_edge(clk) and write_transaction(mst2ss2, ss2_2mst);
                 -- Digit 4: f, no dot
-                mst2ss2 <= bus_tb_mst2slv(address => 3, writeData => 16#0f#,  writeEnable => '1', writeMask => 1);
-                wait for clk_period;
-                check(ss2_2mst.fault = '0');
-                check(ss2_2mst.ack = '1');
+                mst2ss2 <= bus_tb_mst2slv(address => 3, writeData => 16#0f#,  writeReady => '1', writeMask => 1);
+                wait until rising_edge(clk) and write_transaction(mst2ss2, ss2_2mst);
                 mst2ss2 <= BUS_MST2SLV_IDLE;
                 -- Check the actual outputs. We expect digit 1 to be active right now
                 check(ss2_digit_anodes = "1110");
@@ -172,10 +124,8 @@ begin
             end if;
             if run("Multiple byte write") then
                 wait until falling_edge(clk);
-                mst2ss2 <= bus_tb_mst2slv(address => 0, writeData => 16#14131211#,  writeEnable => '1', writeMask => 15);
-                wait for clk_period;
-                check(ss2_2mst.fault = '0');
-                check(ss2_2mst.ack = '1');
+                mst2ss2 <= bus_tb_mst2slv(address => 0, writeData => 16#14131211#,  writeReady => '1', writeMask => 15);
+                wait until rising_edge(clk) and write_transaction(mst2ss2, ss2_2mst);
                 mst2ss2 <= BUS_MST2SLV_IDLE;
                 wait for clk_period;
                 -- Check the actual outputs. We expect digit 1 to be active right now
@@ -194,10 +144,9 @@ begin
                 -- We expect digit 4 to be active right now.
                 check(ss2_digit_anodes = "0111");
                 check(ss2_kathode = "00011001");
-                mst2ss2 <= bus_tb_mst2slv(address => 1, writeData => 16#14131211#,  writeEnable => '1', writeMask => 15);
-                wait for clk_period;
-                check(ss2_2mst.fault = '0');
-                check(ss2_2mst.ack = '1');
+                wait until falling_edge(clk);
+                mst2ss2 <= bus_tb_mst2slv(address => 1, writeData => 16#14131211#,  writeReady => '1', writeMask => 15);
+                wait until rising_edge(clk) and write_transaction(mst2ss2, ss2_2mst);
                 mst2ss2 <= BUS_MST2SLV_IDLE;
                 wait for clk_period;
                 wait until (ss2_digit_anodes = "1110");
@@ -209,7 +158,9 @@ begin
                 wait until (ss2_digit_anodes = "0111");
                 check(ss2_kathode = "00110000");
                 wait until falling_edge(clk);
-                mst2ss2 <= bus_tb_mst2slv(address => 2, writeData => 16#18181818#,  writeEnable => '1', writeMask => 16#9#);
+                mst2ss2 <= bus_tb_mst2slv(address => 2, writeData => 16#18181818#,  writeReady => '1', writeMask => 16#9#);
+                wait until rising_edge(clk) and write_transaction(mst2ss2, ss2_2mst);
+                mst2ss2 <= BUS_MST2SLV_IDLE;
                 wait until (ss2_digit_anodes = "1110");
                 check(ss2_kathode = "01111001");
                 wait until (ss2_digit_anodes = "1101");
@@ -221,47 +172,20 @@ begin
             end if;
             if run("Multiple byte read") then
                 wait until falling_edge(clk);
-                mst2ss2 <= bus_tb_mst2slv(address => 0, writeData => 16#14131211#,  writeEnable => '1', writeMask => 15);
-                wait for clk_period;
-                check(ss2_2mst.fault = '0');
-                check(ss2_2mst.ack = '1');
-                mst2ss2 <= BUS_MST2SLV_IDLE;
-                wait for clk_period;
-                check(ss2_2mst.fault = '0');
-                check(ss2_2mst.ack = '0');
-                mst2ss2 <= bus_tb_mst2slv(address => 0, readEnable => '1');
-                wait for clk_period;
-                check(ss2_2mst.fault = '0');
-                check(ss2_2mst.ack = '1');
+                mst2ss2 <= bus_tb_mst2slv(address => 0, writeData => 16#14131211#,  writeReady => '1', writeMask => 15);
+                wait until rising_edge(clk) and write_transaction(mst2ss2, ss2_2mst);
+                mst2ss2 <= bus_tb_mst2slv(address => 0, readReady => '1');
+                wait until rising_edge(clk) and read_transaction(mst2ss2, ss2_2mst);
                 check_equal(to_integer(unsigned(ss2_2mst.readData)), 16#14131211#);
-                mst2ss2 <= BUS_MST2SLV_IDLE;
-                wait for clk_period;
-                check(ss2_2mst.fault = '0');
-                check(ss2_2mst.ack = '0');
-                mst2ss2 <= bus_tb_mst2slv(address => 1, readEnable => '1');
-                wait for clk_period;
-                check(ss2_2mst.fault = '0');
-                check(ss2_2mst.ack = '1');
+                mst2ss2 <= bus_tb_mst2slv(address => 1, readReady => '1');
+                wait until rising_edge(clk) and read_transaction(mst2ss2, ss2_2mst);
                 check_equal(to_integer(unsigned(ss2_2mst.readData)), 16#141312#);
-                mst2ss2 <= BUS_MST2SLV_IDLE;
-                wait for clk_period;
-                check(ss2_2mst.fault = '0');
-                check(ss2_2mst.ack = '0');
-                mst2ss2 <= bus_tb_mst2slv(address => 2, readEnable => '1');
-                wait for clk_period;
-                check(ss2_2mst.fault = '0');
-                check(ss2_2mst.ack = '1');
+                mst2ss2 <= bus_tb_mst2slv(address => 2, readReady => '1');
+                wait until rising_edge(clk) and read_transaction(mst2ss2, ss2_2mst);
                 check_equal(to_integer(unsigned(ss2_2mst.readData)), 16#1413#);
-                mst2ss2 <= BUS_MST2SLV_IDLE;
-                wait for clk_period;
-                check(ss2_2mst.fault = '0');
-                check(ss2_2mst.ack = '0');
-                mst2ss2 <= bus_tb_mst2slv(address => 3, readEnable => '1');
-                wait for clk_period;
-                check(ss2_2mst.fault = '0');
-                check(ss2_2mst.ack = '1');
+                mst2ss2 <= bus_tb_mst2slv(address => 3, readReady => '1');
+                wait until rising_edge(clk) and read_transaction(mst2ss2, ss2_2mst);
                 check_equal(to_integer(unsigned(ss2_2mst.readData)), 16#14#);
-                mst2ss2 <= BUS_MST2SLV_IDLE;
             end if;
         end loop;
         wait until rising_edge(clk) or falling_edge(clk);

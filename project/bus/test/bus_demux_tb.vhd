@@ -55,11 +55,11 @@ begin
         test_runner_setup(runner, runner_cfg);
         while test_suite loop
             if run("Complete run") then
-                master2demux <= bus_tb_mst2slv(address => 10, readEnable => '1');
+                master2demux <= bus_tb_mst2slv(address => 10, readReady => '1');
                 wait for clk_period/4;
                 check(demux2secondSlave = BUS_MST2SLV_IDLE);
                 check(demux2firstSlave = master2demux);
-                firstSlave2demux.ack <= '1';
+                firstSlave2demux.readValid <= '1';
                 firstSlave2demux.readData <= std_logic_vector(to_unsigned(34, bus_data_type'length));
                 wait for clk_period/4;
                 check(demux2secondSlave = BUS_MST2SLV_IDLE);
@@ -73,8 +73,8 @@ begin
                 check(demux2master = BUS_SLV2MST_IDLE);
 
                 firstSlave2demux <= BUS_SLV2MST_IDLE;
-                master2demux <= bus_tb_mst2slv(address => 40, writeEnable => '1');
-                helper_master <= bus_tb_mst2slv(address => 8, writeEnable => '1');
+                master2demux <= bus_tb_mst2slv(address => 40, writeReady => '1');
+                helper_master <= bus_tb_mst2slv(address => 8, writeReady => '1');
                 wait for clk_period/4;
                 check(demux2firstSlave = BUS_MST2SLV_IDLE);
                 check(demux2secondSlave = helper_master);
@@ -95,14 +95,14 @@ begin
                 check(demux2master = BUS_SLV2MST_IDLE);
 
                 secondSlave2demux <= BUS_SLV2MST_IDLE;
-                master2demux <= bus_tb_mst2slv(address => 50, readEnable => '1');
-                helper_master <= bus_tb_mst2slv(address => 18, readEnable => '1');
+                master2demux <= bus_tb_mst2slv(address => 50, readReady => '1');
+                helper_master <= bus_tb_mst2slv(address => 18, readReady => '1');
                 wait for clk_period/4;
                 check(demux2firstSlave = BUS_MST2SLV_IDLE);
                 check(demux2secondSlave = helper_master);
                 check(demux2master = BUS_SLV2MST_IDLE);
 
-                secondSlave2demux.ack <= '1';
+                secondSlave2demux.readValid <= '1';
                 secondSlave2demux.readData <= std_logic_vector(to_unsigned(45, bus_data_type'length));
                 wait for clk_period/4;
                 check(demux2firstSlave = BUS_MST2SLV_IDLE);
@@ -116,7 +116,7 @@ begin
                 check(demux2secondSlave = BUS_MST2SLV_IDLE);
                 check(demux2master = BUS_SLV2MST_IDLE);
 
-                master2demux <= bus_tb_mst2slv(address => 20, readEnable => '1');
+                master2demux <= bus_tb_mst2slv(address => 20, readReady => '1');
                 wait for clk_period/4;
                 check(demux2firstSlave = BUS_MST2SLV_IDLE);
                 check(demux2secondSlave = BUS_MST2SLV_IDLE);

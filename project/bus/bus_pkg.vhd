@@ -4,11 +4,25 @@ use IEEE.numeric_std.all;
 
 package bus_pkg is
     -- General information on the bus:
-    -- The master initiates all communication. When readEnable or writeEnable become high (they must never be high at the same time) address and possibly writeData must be valid.
-    -- The master must now wait until ack becomes high. Ack has to remain high until readData/writeData is zero.
-    -- On read, the slave must keep readData valid until readEnable is low again.
-    -- This finishes the transaction.
-    -- A fault sets a faultcode on the WriteData bus and is handled similarly to an ack otherwise.
+    -- We follow AXI in the Ready/Valid handshake
+    -- The master initiates all communication. When readReady or writeReady become high (they must never be high at the same time) address and possibly writeData must be valid.
+    -- Transaction occurs if {read|write}Ready and either the related valid or fault are high at the same time during a rising_edge of the clock. This immidiately finishes the transaction.
+    -- A fault sets a faultcode on the readData.
+    -- It is allowed, but not required, to have fault and {read|write}Valid high at the same time. If multiple are high, fault takes precedence.
+    -- It is allowed to have both readValid and writeValid high at the same time.
+    -- A read transaction is defined as a moment where rising_edge(clk) AND readReady = '1' AND readValid = '1'
+    -- A write transaction is defined as a moment where rising_edge(clk) AND writeReady = '1' AND writeValid = '1'
+    -- A fault transaction is defined as a moment where rising_edge(clk) AND (readRedy = '1' OR writeReady = '1') AND fault = '1'
+    --
+    -- Note that this implies that a fast master/slave combo are allowed to, for example, keep writeReady and valid high all the time and transact data every rising edge of the clock.
+    -- If this is what you want, you should probably still use the burst flag. This works as the INCR mode of AXI and has to be respected by all parties in between the master and slave.
+    -- So if some arbiter controls the access of multiple masters to a bus, then without the burst flag the arbiter is allowed to give bus access to another party as soon as the transaction completes.
+    -- If the burst flag is high, then the arbiter must keep the selected master on the bus until burst is low.
+    --
+    -- When burst is active, multiple reads/writes can happen in quick succession.
+    -- The address must be increased (not decreased!) with exactly bus_bytes_per_word between two bursts, the slave does not have to check this.
+    -- The operation (read or write) must remain the same within a burst, the slave does not have to check this.
+    -- The master must keep burst high until the last transaction. When the Ready of the last transaction rises, the burst has to fall.
     --
     -- The bus is byte-adressable. The data width of the bus is called a word and is always a multiple of the amount of bytes.
 
@@ -20,10 +34,12 @@ package bus_pkg is
     constant bus_data_width_log2b : natural := 5;
 
     constant bus_byte_size    : natural := 2**bus_byte_size_log2b;
+    constant bus_fault_size   : natural := 4;
 
     subtype bus_address_type     is std_logic_vector(2**bus_address_width_log2b - 1 downto  0); -- Any bus address.
     subtype bus_data_type        is std_logic_vector(2**bus_data_width_log2b - 1 downto  0); -- Any data word.
     subtype bus_byte_type        is std_logic_vector(bus_byte_size - 1 downto 0);   -- A byte, lowest adressable unit
+    subtype bus_fault_type       is std_logic_vector(bus_fault_size - 1 downto 0); -- any bus fault word
 
     type bus_data_array is array (natural range <>) of bus_data_type;
     type bus_byte_array is array (natural range <>) of bus_byte_type;
@@ -32,6 +48,10 @@ package bus_pkg is
     constant bus_bytes_per_word_log2b : natural := bus_data_width_log2b - bus_byte_size_log2b;
 
     subtype bus_write_mask is std_logic_vector(bus_bytes_per_word - 1 downto 0);
+
+    -- Some predefined faults
+    constant bus_fault_unaligned_access : bus_fault_type := std_logic_vector(to_unsigned(0, bus_fault_type'length));
+    constant bus_fault_address_out_of_range : bus_fault_type := std_logic_vector(to_unsigned(1, bus_fault_type'length));
 
     -- The remapping logic.
     -- Any range of input can be placed at any range of output. Moreover, parts of the output can be set to 0 or 1.
@@ -45,12 +65,8 @@ package bus_pkg is
         address         : bus_address_type;
         writeData       : bus_data_type;
         writeMask       : bus_write_mask;
-        readEnable      : std_logic;
-        writeEnable     : std_logic;
-        -- When burst is active, multiple reads/writes can happen in quick succession.
-        -- The address must be increased (not decreased!) with exactly bus_bytes_per_word between two bursts, the slave does not have to check this.
-        -- The operation (read or write) must remain the same within a burst, the slave does not have to check this.
-        -- The master should leave burst high until the entire operation has been completed.
+        readReady       : std_logic;
+        writeReady      : std_logic;
         burst           : std_logic;
     end record;
 
@@ -58,8 +74,10 @@ package bus_pkg is
 
     type bus_slv2mst_type is record
         readData        : bus_data_type;
-        ack             : std_logic;
+        readValid       : std_logic;
+        writeValid      : std_logic;
         fault           : std_logic;
+        faultData       : bus_fault_type;
     end record;
 
     type bus_slv2mst_array is array (natural range <>) of bus_slv2mst_type;
@@ -77,28 +95,63 @@ package bus_pkg is
     type addr_range_and_mapping_array is array (natural range <>) of addr_range_and_mapping_type;
 
     constant BUS_MST2SLV_IDLE : bus_mst2slv_type := (
-        address => (others => '0'),
-        writeData => (others => '0'),
-        writeMask => (others => '0'),
-        readEnable => '0',
-        writeEnable => '0',
+        address => (others => 'X'),
+        writeData => (others => 'X'),
+        writeMask => (others => 'X'),
+        readReady => '0',
+        writeReady => '0',
         burst => '0'
     );
 
     constant BUS_SLV2MST_IDLE : bus_slv2mst_type := (
-        readData => (others => '0'),
-        ack => '0',
-        fault => '0'
+        readData => (others => 'X'),
+        readValid => '0',
+        writeValid => '0',
+        fault => '0',
+        faultData => (others => 'X')
     );
 
     -- Returns true when the specified master is requesting something.
     function bus_requesting(
         b     : bus_mst2slv_type
-    ) return std_logic;
+    ) return boolean;
 
-    function bus_slave_finished(
-        b     : bus_slv2mst_type
-    ) return std_logic;
+    pure function read_transaction(
+        mst  : bus_mst2slv_type;
+        slv  : bus_slv2mst_type
+    ) return boolean;
+
+    pure function write_transaction(
+        mst  : bus_mst2slv_type;
+        slv  : bus_slv2mst_type
+    ) return boolean;
+
+    pure function fault_transaction(
+        mst  : bus_mst2slv_type;
+        slv  : bus_slv2mst_type
+    ) return boolean;
+
+    pure function any_transaction(
+        mst : bus_mst2slv_type;
+        slv : bus_slv2mst_type
+    ) return boolean;
+
+    pure function no_transaction (
+        mst : bus_mst2slv_type;
+        slv : bus_slv2mst_type
+    ) return boolean;
+
+    pure function bus_mst2slv_read (
+        address : bus_address_type;
+        burst   : std_logic := '0'
+    ) return bus_mst2slv_type;
+
+    pure function bus_mst2slv_write (
+        address : bus_address_type;
+        write_data : bus_data_type;
+        write_mask : bus_write_mask;
+        burst   : std_logic := '0'
+    ) return bus_mst2slv_type;
 
     function bus_addr_in_range(
         addr        : bus_address_type;
@@ -133,17 +186,78 @@ package body bus_pkg is
 
     function bus_requesting(
         b   : bus_mst2slv_type
-    ) return std_logic is
+    ) return boolean is
     begin
-        return b.readEnable or b.writeEnable;
+        return b.readReady = '1' or b.writeReady = '1';
     end bus_requesting;
 
-    function bus_slave_finished(
-        b : bus_slv2mst_type
-    ) return std_logic is
+    pure function read_transaction(
+        mst  : bus_mst2slv_type;
+        slv  : bus_slv2mst_type
+    ) return boolean is
     begin
-        return b.ack or b.fault;
-    end bus_slave_finished;
+        return mst.readReady = '1' and slv.readValid = '1' and slv.fault /= '1';
+    end read_transaction;
+
+    pure function write_transaction(
+        mst  : bus_mst2slv_type;
+        slv  : bus_slv2mst_type
+    ) return boolean is
+    begin
+        return mst.writeReady = '1' and slv.writeValid = '1' and slv.fault /= '1';
+    end write_transaction;
+
+    pure function fault_transaction(
+        mst  : bus_mst2slv_type;
+        slv  : bus_slv2mst_type
+    ) return boolean is
+    begin
+        return (mst.readReady = '1' or mst.writeReady = '1') and slv.fault = '1';
+    end fault_transaction;
+
+    pure function any_transaction(
+        mst : bus_mst2slv_type;
+        slv : bus_slv2mst_type
+    ) return boolean is
+    begin
+        return write_transaction(mst, slv) or read_transaction(mst, slv) or fault_transaction(mst, slv);
+    end any_transaction;
+
+    pure function no_transaction (
+        mst : bus_mst2slv_type;
+        slv : bus_slv2mst_type
+    ) return boolean is
+    begin
+        return not any_transaction(mst, slv);
+    end no_transaction;
+
+    pure function bus_mst2slv_read (
+        address : bus_address_type;
+        burst   : std_logic := '0'
+    ) return bus_mst2slv_type is
+        variable ret_val : bus_mst2slv_type := BUS_MST2SLV_IDLE;
+    begin
+        ret_val.address := address;
+        ret_val.burst := burst;
+        ret_val.readReady := '1';
+        return ret_val;
+    end bus_mst2slv_read;
+
+    pure function bus_mst2slv_write (
+        address : bus_address_type;
+        write_data : bus_data_type;
+        write_mask : bus_write_mask;
+        burst   : std_logic := '0'
+    ) return bus_mst2slv_type is
+        variable ret_val : bus_mst2slv_type := BUS_MST2SLV_IDLE;
+    begin
+        ret_val.address := address;
+        ret_val.writeData := write_data;
+        ret_val.writeMask := write_mask;
+        ret_val.burst := burst;
+        ret_val.writeReady := '1';
+        return ret_val;
+    end bus_mst2slv_write;
 
     function bus_addr_in_range (
         addr        : bus_address_type;

@@ -36,7 +36,7 @@ begin
         none_selected := true;
         selected_slv := 0;
 
-        if rst /= '1' and bus_requesting(mst2demux) = '1' then
+        if rst /= '1' and bus_requesting(mst2demux) then
             for i in 0 to ADDRESS_MAP'high loop
                 if bus_addr_in_range(mst2demux.address, ADDRESS_MAP(i).addr_range) then
                     none_selected := false;

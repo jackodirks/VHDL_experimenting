@@ -64,10 +64,10 @@ begin
                 address := 0;
             else
                 if bus_active then
-                    if bus_slave_finished(slv2mst) = '1' then
+                    if any_transaction(mst2slv_out, slv2mst) then
                         bus_active := false;
-                        mst2slv_out.writeEnable <= '0';
-                        mst2slv_out.readEnable <= '0';
+                        mst2slv_out.writeReady <= '0';
+                        mst2slv_out.readReady <= '0';
                         mst2slv_out.address <= next_bus_address;
                         mst2slv_out.burst <= '0';
                         wait_dstb_finish := true;
@@ -101,7 +101,7 @@ begin
                                                         to_integer(unsigned(mst2slv_out.address)) + depp2bus_addr_reg_len,
                                                         next_bus_address'length));
                                     address := depp2bus_writeData_reg_start;
-                                    mst2slv_out.writeEnable <= '1';
+                                    mst2slv_out.writeReady <= '1';
                                     bus_active := true;
                                     wait_dstb_finish := false;
                                 end if;
@@ -114,11 +114,11 @@ begin
                             depp_mode := usb_db;
                         elsif address >= depp2bus_activation_register_start and address <= depp2bus_activation_register_end then
                             next_bus_address := mst2slv_out.address;
-                            mst2slv_out.writeEnable <= '1';
+                            mst2slv_out.writeReady <= '1';
                             for i in 0 to usb_db'high loop
                                 if usb_db(i) = '1' then
-                                    mst2slv_out.writeEnable <= '0';
-                                    mst2slv_out.readEnable <= '1';
+                                    mst2slv_out.writeReady <= '0';
+                                    mst2slv_out.readReady <= '1';
                                 end if;
                             end loop;
                             bus_active := true;
@@ -139,7 +139,7 @@ begin
                                     next_bus_address := std_logic_vector(to_unsigned(
                                                         to_integer(unsigned(mst2slv_out.address)) + depp2bus_addr_reg_len,
                                                         next_bus_address'length));
-                                    mst2slv_out.readEnable <= '1';
+                                    mst2slv_out.readReady <= '1';
                                     bus_active := true;
                                     wait_dstb_finish := false;
                                     reread := true;

@@ -102,6 +102,18 @@ package depp_tb_pkg is
         constant address : in bus_address_type
     );
 
+    procedure depp_tb_bus_set_write_mask (
+        signal clk : in std_logic;
+
+        signal usb_db : inout std_logic_vector(7 downto 0);
+        signal usb_write : out std_logic;
+        signal usb_astb : out std_logic;
+        signal usb_dstb : out std_logic;
+        signal usb_wait : in std_logic;
+
+        constant write_mask : in bus_write_mask
+    );
+
     procedure depp_tb_bus_prepare_write (
         signal clk : in std_logic;
 
@@ -352,6 +364,33 @@ package body depp_tb_pkg is
         end loop;
     end procedure;
 
+    procedure depp_tb_bus_set_write_mask (
+        signal clk : in std_logic;
+
+        signal usb_db : inout std_logic_vector(7 downto 0);
+        signal usb_write : out std_logic;
+        signal usb_astb : out std_logic;
+        signal usb_dstb : out std_logic;
+        signal usb_wait : in std_logic;
+
+        constant write_mask : in bus_write_mask
+    ) is
+        variable writeMaskReg : std_logic_vector(7 downto 0);
+    begin
+        writeMaskReg := (others => '0');
+        writeMaskReg(write_mask'range) := write_mask;
+        depp_tb_depp_write_to_address(
+            clk => clk,
+            usb_db => usb_db,
+            usb_write => usb_write,
+            usb_astb => usb_astb,
+            usb_dstb => usb_dstb,
+            usb_wait => usb_wait,
+            addr => std_logic_vector(to_unsigned(depp2bus_write_mask_reg_start, usb_db'length)),
+            data => writeMaskReg
+        );
+    end procedure;
+
     procedure depp_tb_bus_prepare_write (
         signal clk : in std_logic;
 
@@ -365,10 +404,7 @@ package body depp_tb_pkg is
         constant writeData : in bus_data_type;
         constant writeMask : in bus_write_mask
     ) is
-        variable writeMaskReg : std_logic_vector(7 downto 0);
     begin
-        writeMaskReg := (others => '0');
-        writeMaskReg(writeMask'range) := writeMask;
         -- Address
         depp_tb_bus_set_address(
             clk => clk,
@@ -392,15 +428,14 @@ package body depp_tb_pkg is
                 data => writeData((b+1)*8 - 1 downto b*8)
             );
         end loop;
-        depp_tb_depp_write_to_address(
+        depp_tb_bus_set_write_mask (
             clk => clk,
             usb_db => usb_db,
             usb_write => usb_write,
             usb_astb => usb_astb,
             usb_dstb => usb_dstb,
             usb_wait => usb_wait,
-            addr => std_logic_vector(to_unsigned(depp2bus_write_mask_reg_start, usb_db'length)),
-            data => writeMaskReg
+            write_mask => writeMask
         );
     end procedure;
 
