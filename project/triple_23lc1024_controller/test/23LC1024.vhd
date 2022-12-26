@@ -502,12 +502,12 @@ begin
         if falling_edge(cs_n) then
             assert cs_n'delayed'stable(CSDisableTime) report "Timing failure 4" severity error;
         end if;
-        if rising_edge(cs_n) then
+        if rising_edge(cs_n) and cs_n = '1' then
             assert now - last_sck_rise >= CSHoldTime report "Timing failure 3" severity error;
         end if;
         if (rising_edge(si_sio0) or falling_edge(si_sio0)) and last_sck_rise >= 0 ns then
             assert now - last_sck_rise >= DataHoldTime report "Timing failure 6" severity error;
-            assert now - last_sck_fall <= DataValidFromClockLow report "Timing failure 12" severity error;
+            assert now - last_sck_fall <= DataValidFromClockLow report "Timing failure 12 " & time'image(now - last_sck_fall) severity error;
         end if;
         if (rising_edge(so_sio1) or falling_edge(so_sio1)) and (ioMode = SdiMode or ioMode = SqiMode) and last_sck_rise >= 0 ns then
             assert now - last_sck_rise >= DataHoldTime report "Timing failure 6" severity error;
