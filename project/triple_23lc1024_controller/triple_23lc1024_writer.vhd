@@ -23,6 +23,7 @@ entity triple_23lc1024_writer is
         ready : in std_logic;
         valid : out std_logic;
         active : out boolean;
+        fault : in boolean;
 
         address : in bus_address_type;
         write_data : in bus_data_type;
@@ -127,7 +128,7 @@ begin
                     cs_set_internal := '0';
                     active <= true;
                     valid_interal := '0';
-                    if burst_internal = '1' and not burst_transaction_complete then
+                    if burst_internal = '1' and not burst_transaction_complete and not fault then
                         valid_interal := '1';
                         if ready = '1' then
                             transmitData := reorder_nibbles(write_data);
@@ -144,7 +145,7 @@ begin
                     cs_set_internal := '0';
                     active <= true;
                     valid_interal := '0';
-                    if burst_transaction_complete then
+                    if burst_transaction_complete and not fault then
                         burst_transaction_complete := false;
                         count := 16;
                         spi_sio <= transmitData(3 downto 0);

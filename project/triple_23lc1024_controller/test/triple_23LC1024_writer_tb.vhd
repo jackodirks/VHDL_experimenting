@@ -33,6 +33,7 @@ architecture tb of triple_23LC1024_writer_tb is
     signal active : boolean;
     signal ready :  std_logic := '0';
     signal valid : std_logic;
+    signal fault : boolean := false;
     signal address : bus_address_type := (others => '0');
     signal write_data : bus_data_type := (others => '0');
     signal burst : std_logic := '0';
@@ -217,6 +218,51 @@ begin
                 check_equal(read_data, std_logic_vector(to_unsigned(255, address'length)));
                 read_bus_word(net, actor, std_logic_vector(to_unsigned(4, 17)), read_data);
                 check_equal(read_data, std_logic_vector(to_unsigned(255, address'length)));
+            elsif run("Faults should end a burst") then
+                set_all_mode(SeqMode, SqiMode, actor, net);
+                write_bus_word(net, actor, std_logic_vector(to_unsigned(0, 17)), std_logic_vector(to_unsigned(0, bus_data_type'length)));
+                write_bus_word(net, actor, std_logic_vector(to_unsigned(4, 17)), std_logic_vector(to_unsigned(0, bus_data_type'length)));
+                address <= std_logic_vector(to_unsigned(0, address'length));
+                write_data <= std_logic_vector(to_unsigned(255, address'length));
+                rst <= '0';
+                ready <= '1';
+                burst <= '1';
+                fault <= false;
+                wait until rising_edge(clk) and valid = '1';
+                burst <= '0';
+                ready <= '0';
+                fault <= true;
+                wait until not active;
+            elsif run("Faults should end a burst after data was processed") then
+                set_all_mode(SeqMode, SqiMode, actor, net);
+                write_bus_word(net, actor, std_logic_vector(to_unsigned(0, 17)), std_logic_vector(to_unsigned(0, bus_data_type'length)));
+                write_bus_word(net, actor, std_logic_vector(to_unsigned(4, 17)), std_logic_vector(to_unsigned(0, bus_data_type'length)));
+                address <= std_logic_vector(to_unsigned(0, address'length));
+                write_data <= std_logic_vector(to_unsigned(255, address'length));
+                rst <= '0';
+                ready <= '1';
+                burst <= '1';
+                fault <= false;
+                check(not active);
+                wait until rising_edge(clk) and valid = '1';
+                burst <= '1';
+                ready <= '1';
+                check(active);
+                address <= std_logic_vector(to_unsigned(4, address'length));
+                write_data <= std_logic_vector(to_unsigned(255, address'length));
+                wait until rising_edge(clk) and valid = '1';
+                ready <= '0';
+                address <= (others => 'Z');
+                write_data <= (others => 'Z');
+                check(active);
+                wait until rising_edge(clk);
+                check_equal('0', valid);
+                fault <= true;
+                wait until not active;
+                read_bus_word(net, actor, std_logic_vector(to_unsigned(0, 17)), read_data);
+                check_equal(read_data, std_logic_vector(to_unsigned(255, address'length)));
+                read_bus_word(net, actor, std_logic_vector(to_unsigned(4, 17)), read_data);
+                check_equal(read_data, std_logic_vector(to_unsigned(255, address'length)));
             end if;
         end loop;
         wait for 2*clk_period;
@@ -264,6 +310,7 @@ begin
         ready => ready,
         valid => valid,
         active => active,
+        fault => fault,
         address => address,
         write_data => write_data,
         burst => burst

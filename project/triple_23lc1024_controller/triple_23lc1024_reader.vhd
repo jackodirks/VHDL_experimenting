@@ -23,6 +23,7 @@ entity triple_23lc1024_reader is
         ready : in std_logic;
         valid : out std_logic;
         active : out boolean;
+        fault : in boolean;
 
         address : in bus_address_type;
         read_data : out bus_data_type;
@@ -136,7 +137,7 @@ begin
                     if half_period_timer_done = '1' then
                         read_data_internal(read_data_internal'high downto read_data_internal'high - 3) := spi_sio;
                     end if;
-                    if not transaction_complete then
+                    if not transaction_complete and not fault then
                         if ready = '1' then
                             transaction_complete := true;
                             if burst = '1' then

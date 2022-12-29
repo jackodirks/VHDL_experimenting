@@ -33,6 +33,7 @@ architecture tb of triple_23LC1024_reader_tb is
     signal active : boolean;
     signal ready :  std_logic := '0';
     signal valid : std_logic;
+    signal fault : boolean := false;
     signal address : bus_address_type := (others => '0');
     signal read_data : bus_data_type := (others => '0');
     signal burst : std_logic := '0';
@@ -182,6 +183,17 @@ begin
                 address <= (others => 'Z');
                 check(active);
                 wait until not active;
+            elsif run("Faults should end burst") then
+                set_all_mode(SeqMode, SqiMode, actor, net);
+                address <= std_logic_vector(to_unsigned(0, address'length));
+                rst <= '0';
+                ready <= '1';
+                burst <= '1';
+                fault <= false;
+                wait until rising_edge(clk) and valid = '1';
+                ready <= '0';
+                fault <= true;
+                wait until not active;
             end if;
         end loop;
         wait for 2*clk_period;
@@ -229,6 +241,7 @@ begin
         ready => ready,
         valid => valid,
         active => active,
+        fault => fault,
         address => address,
         read_data => read_data,
         burst => burst
