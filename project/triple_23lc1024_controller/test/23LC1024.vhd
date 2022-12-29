@@ -42,7 +42,8 @@ architecture behavioral of M23LC1024 is
     type ByteArray is array (0 to 2**17 - 1) of std_logic_vector(7 downto 0);
 
     signal dataShifterI : std_logic_vector(7 downto 0) := (others => '0'); -- Serial input data shifter
-    signal dataShifterO : std_logic_vector(7 downto 0) := (others => '0'); -- Serial output data shifter
+    signal dataShifterO_mode : std_logic_vector(7 downto 0) := (others => '0'); -- Serial output data shifter
+    signal dataShifterO_data : std_logic_vector(7 downto 0) := (others => '0'); -- Serial output data shifter
     signal clockCounter : natural := 0; -- Serial input clock counter
     signal addrRegister : std_logic_vector(16 downto 0) := (others => '0'); -- Address register
 
@@ -176,7 +177,7 @@ begin
     begin
         if rising_edge(cs_n) then
             outputActive <= false;
-        elsif rising_edge(sck) and not hold and (activeInstr = InstructionRead or activeInstr = InstructionRDMR) then
+        elsif falling_edge(sck) and not hold and (activeInstr = InstructionRead or activeInstr = InstructionRDMR) then
             case ioMode is
                 when SpiMode =>
                     if (clockCounter >= 32) and (clockCounter mod 8 = 0) then
@@ -344,40 +345,41 @@ begin
                         address := incrementAddress(address, opMode);
                         end if;
                 end case;
-            elsif activeInstr = InstructionRead then
-                case ioMode is
-                    when SpiMode =>
-                        if clockCounter = 32 then
-                            address := addrRegister;
-                        end if;
-                        if (clockCounter >= 32) and (clockCounter mod 8 = 0) then
-                            dataShifterO <= memoryBlock(to_integer(unsigned(address)));
-                            address := incrementAddress(address, opMode);
-                        else
-                            dataShifterO <= std_logic_vector(shift_left(unsigned(dataShifterO), 1));
-                        end if;
-                    when SdiMode =>
-                        if clockCounter = 20 then
-                            address := addrRegister;
-                        end if;
-                        if (clockCounter >= 20) and (clockCounter mod 4 = 0) then
-                            dataShifterO <= memoryBlock(to_integer(unsigned(address)));
-                            address := incrementAddress(address, opMode);
-                        else
-                            dataShifterO <= std_logic_vector(shift_left(unsigned(dataShifterO), 2));
-                        end if;
-                    when SqiMode =>
-                        if clockCounter = 10 then
-                            address := addrRegister;
-                        end if;
-                        if (clockCounter >= 10) and (clockCounter mod 2 = 0) then
-                            dataShifterO <= memoryBlock(to_integer(unsigned(address)));
-                            address := incrementAddress(address, opMode);
-                        else
-                            dataShifterO <= std_logic_vector(shift_left(unsigned(dataShifterO), 4));
-                        end if;
-                end case;
             end if;
+        end if;
+        if falling_edge(sck) and not hold and activeInstr = InstructionRead then
+            case ioMode is
+                when SpiMode =>
+                    if clockCounter = 32 then
+                        address := addrRegister;
+                    end if;
+                    if (clockCounter >= 32) and (clockCounter mod 8 = 0) then
+                        dataShifterO_data <= memoryBlock(to_integer(unsigned(address)));
+                        address := incrementAddress(address, opMode);
+                    else
+                        dataShifterO_data <= std_logic_vector(shift_left(unsigned(dataShifterO_data), 1));
+                    end if;
+                when SdiMode =>
+                    if clockCounter = 20 then
+                        address := addrRegister;
+                    end if;
+                    if (clockCounter >= 20) and (clockCounter mod 4 = 0) then
+                        dataShifterO_data <= memoryBlock(to_integer(unsigned(address)));
+                        address := incrementAddress(address, opMode);
+                    else
+                        dataShifterO_data <= std_logic_vector(shift_left(unsigned(dataShifterO_data), 2));
+                    end if;
+                when SqiMode =>
+                    if clockCounter = 10 then
+                        address := addrRegister;
+                    end if;
+                    if (clockCounter >= 10) and (clockCounter mod 2 = 0) then
+                        dataShifterO_data <= memoryBlock(to_integer(unsigned(address)));
+                        address := incrementAddress(address, opMode);
+                    else
+                        dataShifterO_data <= std_logic_vector(shift_left(unsigned(dataShifterO_data), 4));
+                    end if;
+            end case;
         end if;
 
         if dbg_writeAddress'active then
@@ -397,21 +399,21 @@ begin
             case ioMode is
                 when SpiMode =>
                     if (clockCounter >= 32) and (clockCounter mod 8 = 0) then
-                        dataShifterO <= encodeModeRegister(opMode);
+                        dataShifterO_mode <= encodeModeRegister(opMode);
                     else
-                        dataShifterO <= std_logic_vector(shift_left(unsigned(dataShifterO), 1));
+                        dataShifterO_mode <= std_logic_vector(shift_left(unsigned(dataShifterO_mode), 1));
                     end if;
                 when SdiMode =>
                     if (clockCounter >= 20) and (clockCounter mod 4 = 0) then
-                        dataShifterO <= encodeModeRegister(opMode);
+                        dataShifterO_mode <= encodeModeRegister(opMode);
                     else
-                        dataShifterO <= std_logic_vector(shift_left(unsigned(dataShifterO), 2));
+                        dataShifterO_mode <= std_logic_vector(shift_left(unsigned(dataShifterO_mode), 2));
                     end if;
                 when SqiMode =>
                     if (clockCounter >= 10) and (clockCounter mod 2 = 0) then
-                        dataShifterO <= encodeModeRegister(opMode);
+                        dataShifterO_mode <= encodeModeRegister(opMode);
                     else
-                        dataShifterO <= std_logic_vector(shift_left(unsigned(dataShifterO), 4));
+                        dataShifterO_mode <= std_logic_vector(shift_left(unsigned(dataShifterO_mode), 4));
                     end if;
             end case;
         end if;
@@ -419,8 +421,14 @@ begin
 -- -------------------------------------------------------------------------------------------------------
 --      1.10:  Output Data Buffer
 -- -------------------------------------------------------------------------------------------------------
-    process(dataShifterO, cs_n)
+    process(dataShifterO_data, dataShifterO_mode, activeInstr, cs_n)
+        variable dataShifterO : std_logic_vector(7 downto 0) := (others => '0');
     begin
+        if activeInstr = InstructionRDMR then
+            dataShifterO := dataShifterO_mode;
+        else
+            dataShifterO := dataShifterO_data;
+        end if;
         if cs_n = '1' then
             si_sio0 <= 'Z';
             so_sio1 <= 'Z';
@@ -430,24 +438,24 @@ begin
             case ioMode is
                 when SpiMode =>
                     if outputActive then
-                        so_sio1 <= dataShifterO(0);
+                        so_sio1 <= dataShifterO(7);
                     else
                         so_sio1 <= 'Z';
                     end if;
                 when SdiMode =>
                     if outputActive then
-                        si_sio0 <= dataShifterO(0);
-                        so_sio1 <= dataShifterO(1);
+                        si_sio0 <= dataShifterO(6);
+                        so_sio1 <= dataShifterO(7);
                     else
                         si_sio0 <= 'Z';
                         so_sio1 <= 'Z';
                     end if;
                 when SqiMode =>
                     if outputActive then
-                        si_sio0 <= dataShifterO(0);
-                        so_sio1 <= dataShifterO(1);
-                        sio2 <= dataShifterO(2);
-                        HOLD_N_SIO3 <= dataShifterO(3);
+                        si_sio0 <= dataShifterO(4);
+                        so_sio1 <= dataShifterO(5);
+                        sio2 <= dataShifterO(6);
+                        HOLD_N_SIO3 <= dataShifterO(7);
                     else
                         si_sio0 <= 'Z';
                         so_sio1 <= 'Z';
