@@ -9,6 +9,7 @@ context vunit_lib.vc_context;
 library src;
 library tb;
 use tb.M23LC1024_pkg.all;
+use tb.triple_23lc1024_tb_pkg.all;
 
 entity triple_23LC1024_config_tb is
     generic (
@@ -41,30 +42,6 @@ architecture tb of triple_23LC1024_config_tb is
         actor_mem1,
         actor_mem2
     );
-
-    procedure check_all_mode(constant expOp : in OperationMode;
-                             constant expIo : in InoutMode;
-                             signal net : inout network_t) is
-        variable received_opmode : OperationMode;
-        variable received_iomode : InoutMode;
-    begin
-        for i in actors'range loop
-            read_operationMode(net, actors(i), received_opmode);
-            read_inoutMode(net, actors(i), received_iomode);
-            check(received_opmode = expOp);
-            check(received_iomode = expIo);
-        end loop;
-    end procedure;
-
-    procedure set_all_mode(constant expOp : in OperationMode;
-                             constant expIo : in InoutMode;
-                             signal net : inout network_t) is
-    begin
-        for i in actors'range loop
-            write_operationMode(net, actors(i), expOp);
-            write_inoutMode(net, actors(i), expIo);
-        end loop;
-    end procedure;
 begin
     clk <= not clk after (clk_period/2);
 
@@ -75,40 +52,40 @@ begin
         test_runner_setup(runner, runner_cfg);
         while test_suite loop
             if run("Config run when mode is (ByteMode, SpiMode) results in (SeqMode, SqiMode)") then
-                set_all_mode(ByteMode, SpiMode, net);
-                check_all_mode(ByteMode, SpiMode, net);
+                set_all_mode(ByteMode, SpiMode, actors, net);
+                check_all_mode(ByteMode, SpiMode, actors, net);
                 check(not config_done);
                 rst <= '0';
                 wait until config_done;
-                check_all_mode(SeqMode, SqiMode, net);
+                check_all_mode(SeqMode, SqiMode, actors, net);
             elsif run("Config run when mode is (PageMode, SdiMode) results in (SeqMode, SqiMode)") then
-                set_all_mode(PageMode, SdiMode, net);
-                check_all_mode(PageMode, SdiMode, net);
+                set_all_mode(PageMode, SdiMode, actors, net);
+                check_all_mode(PageMode, SdiMode, actors, net);
                 check(not config_done);
                 rst <= '0';
                 wait until config_done;
-                check_all_mode(SeqMode, SqiMode, net);
+                check_all_mode(SeqMode, SqiMode, actors, net);
             elsif run("Config run when mode is (SeqMode, SqiMode) results in (SeqMode, SqiMode)") then
-                set_all_mode(SeqMode, SqiMode, net);
-                check_all_mode(SeqMode, SqiMode, net);
+                set_all_mode(SeqMode, SqiMode, actors, net);
+                check_all_mode(SeqMode, SqiMode, actors, net);
                 check(not config_done);
                 rst <= '0';
                 wait until config_done;
-                check_all_mode(SeqMode, SqiMode, net);
+                check_all_mode(SeqMode, SqiMode, actors, net);
             elsif run("Config run repeats after rst cycle") then
-                set_all_mode(ByteMode, SpiMode, net);
-                check_all_mode(ByteMode, SpiMode, net);
+                set_all_mode(ByteMode, SpiMode, actors, net);
+                check_all_mode(ByteMode, SpiMode, actors, net);
                 check(not config_done);
                 rst <= '0';
                 wait until config_done;
-                check_all_mode(SeqMode, SqiMode, net);
-                set_all_mode(ByteMode, SpiMode, net);
+                check_all_mode(SeqMode, SqiMode, actors, net);
+                set_all_mode(ByteMode, SpiMode, actors, net);
                 rst <= '1';
                 wait for clk_period;
-                check_all_mode(ByteMode, SpiMode, net);
+                check_all_mode(ByteMode, SpiMode, actors, net);
                 rst <= '0';
                 wait until config_done;
-                check_all_mode(SeqMode, SqiMode, net);
+                check_all_mode(SeqMode, SqiMode, actors, net);
             end if;
         end loop;
         wait for 2*clk_period;

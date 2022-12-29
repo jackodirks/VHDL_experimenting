@@ -9,6 +9,7 @@ context vunit_lib.vc_context;
 library src;
 library tb;
 use tb.M23LC1024_pkg.all;
+use tb.triple_23lc1024_tb_pkg.all;
 use src.bus_pkg.all;
 
 entity triple_23LC1024_writer_tb is
@@ -40,45 +41,6 @@ architecture tb of triple_23LC1024_writer_tb is
 
     signal cs_set : std_logic;
     signal cs_state : std_logic;
-
-    procedure write_bus_word(
-              signal net : inout network_t;
-              constant actor : in actor_t;
-              constant start_address : in std_logic_vector(16 downto 0);
-              constant data : in bus_data_type) is
-        variable cur_address : std_logic_vector(16 downto 0) := start_address;
-        variable data_shifter : bus_data_type := data;
-    begin
-        for i in 0 to 2**(bus_data_width_log2b - 3) - 1 loop
-            info("cur_address " & to_hstring(cur_address));
-            write_to_address(net, actor, cur_address, data_shifter(7 downto 0));
-            cur_address := std_logic_vector(to_unsigned(to_integer(unsigned(cur_address)) + 1, cur_address'length));
-            data_shifter := std_logic_vector(shift_right(unsigned(data_shifter), 8));
-        end loop;
-    end;
-
-    procedure read_bus_word(
-            signal net : inout network_t;
-            constant actor : in actor_t;
-            constant start_address : in std_logic_vector(16 downto 0);
-            variable data : out bus_data_type) is
-        variable cur_address : std_logic_vector(16 downto 0) := start_address;
-    begin
-        for i in 0 to 2**(bus_data_width_log2b - 3) - 1 loop
-            info("cur_address " & to_hstring(cur_address));
-            read_from_address(net, actor, cur_address, data((i*8) + 7 downto (i*8)));
-            cur_address := std_logic_vector(to_unsigned(to_integer(unsigned(cur_address)) + 1, cur_address'length));
-        end loop;
-    end;
-
-    procedure set_all_mode(constant expOp : in OperationMode;
-                           constant expIo : in InoutMode;
-                           constant actor : in actor_t;
-                           signal net : inout network_t) is
-    begin
-        write_operationMode(net, actor, expOp);
-        write_inoutMode(net, actor, expIo);
-    end procedure;
 
 begin
     clk <= not clk after (clk_period/2);
