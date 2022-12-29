@@ -4,6 +4,7 @@ use IEEE.numeric_std.all;
 
 library work;
 use work.bus_pkg.all;
+use work.triple_23lc1024_pkg.all;
 
 entity triple_23lc1024_writer is
     generic (
@@ -40,7 +41,7 @@ begin
         variable count : natural := 0;
         variable valid_interal : std_logic := '0';
         variable cs_set_internal : std_logic := '1';
-        variable transmitdata : bus_data_type := (others => '0');
+        variable transmitData : bus_data_type := (others => '0');
         variable burst_internal : std_logic := '0';
         variable transmitCommandAndAddress : std_logic_vector(31 downto 0) := (others => '0');
         constant max_count : natural := 16 + 2**(bus_data_width_log2b - 2) * 2;
@@ -80,7 +81,7 @@ begin
                     if cs_set_internal = '1' and ready = '1' then
                         cs_set_internal := '0';
                         transmitCommandAndAddress := instructionWrite & "0000000" & address(16 downto 0);
-                        transmitdata := write_data;
+                        transmitData := reorder_nibbles(write_data);
                         burst_internal := burst;
                         active <= true;
                     end if;
@@ -129,7 +130,7 @@ begin
                     if burst_internal = '1' and not burst_transaction_complete then
                         valid_interal := '1';
                         if ready = '1' then
-                            transmitData := write_data;
+                            transmitData := reorder_nibbles(write_data);
                             burst_internal := burst;
                             burst_transaction_complete := true;
                         else
@@ -153,6 +154,7 @@ begin
                         spi_sio <= (others => 'Z');
                         if cs_state = '1' then
                             count := 0;
+                            active <= false;
                         end if;
                     end if;
                 end if;

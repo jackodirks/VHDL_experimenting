@@ -85,6 +85,7 @@ begin
     process
         constant actor : actor_t := find("M23LC1024.mem0");
         variable read_data : bus_data_type;
+        variable exp_data : bus_data_type;
     begin
         test_runner_setup(runner, runner_cfg);
         while test_suite loop
@@ -105,9 +106,28 @@ begin
                 address <= (others => 'Z');
                 write_data <= (others => 'Z');
                 check(active);
+                wait until rising_edge(clk);
+                check_equal('0', valid);
                 wait until not active;
                 read_bus_word(net, actor, std_logic_vector(to_unsigned(0, 17)), read_data);
                 check_equal(read_data, std_logic_vector(to_unsigned(255, address'length)));
+            elsif run("Write 0xFFFEFDFC to address zero results in 0xFFFEFDFC at address zero") then
+                exp_data := X"FFFEFDFC";
+                set_all_mode(SeqMode, SqiMode, actor, net);
+                write_bus_word(net, actor, std_logic_vector(to_unsigned(0, 17)), (others => '0'));
+                address <= std_logic_vector(to_unsigned(0, address'length));
+                write_data <= exp_data;
+                rst <= '0';
+                ready <= '1';
+                burst <= '0';
+                wait until rising_edge(clk) and valid = '1';
+                ready <= '0';
+                address <= (others => 'Z');
+                write_data <= (others => 'Z');
+                check(active);
+                wait until not active;
+                read_bus_word(net, actor, std_logic_vector(to_unsigned(0, 17)), read_data);
+                check_equal(read_data, exp_data);
             elsif run("Write 255 to address zero and address 4 results in 255 at address zero and address 4") then
                 set_all_mode(SeqMode, SqiMode, actor, net);
                 write_bus_word(net, actor, std_logic_vector(to_unsigned(0, 17)), std_logic_vector(to_unsigned(0, bus_data_type'length)));
@@ -128,6 +148,8 @@ begin
                 address <= (others => 'Z');
                 write_data <= (others => 'Z');
                 check(active);
+                wait until rising_edge(clk);
+                check_equal('0', valid);
                 wait until not active;
                 read_bus_word(net, actor, std_logic_vector(to_unsigned(0, 17)), read_data);
                 check_equal(read_data, std_logic_vector(to_unsigned(255, address'length)));
@@ -154,6 +176,8 @@ begin
                 address <= (others => 'Z');
                 write_data <= (others => 'Z');
                 check(active);
+                wait until rising_edge(clk);
+                check_equal('0', valid);
                 wait until not active;
                 read_bus_word(net, actor, std_logic_vector(to_unsigned(0, 17)), read_data);
                 check_equal(read_data, std_logic_vector(to_unsigned(255, address'length)));
@@ -244,7 +268,4 @@ begin
         write_data => write_data,
         burst => burst
     );
-
-
-
 end tb;
