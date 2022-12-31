@@ -43,8 +43,17 @@ architecture tb of triple_23LC1024_reader_tb is
     signal cs_set : std_logic;
     signal cs_state : std_logic;
 
+    signal spi_sio_in : std_logic_vector(3 downto 0);
+    signal spi_sio_out : std_logic_vector(3 downto 0);
+
 begin
     clk <= not clk after (clk_period/2);
+
+    spi_sio_in <= hold_n_sio3 & sio2 & so_sio1 & si_sio0;
+    si_sio0 <= spi_sio_out(0);
+    so_sio1 <= spi_sio_out(1);
+    sio2 <= spi_sio_out(2);
+    hold_n_sio3 <= spi_sio_out(3);
 
     process
         constant actor : actor_t := find("M23LC1024.mem0");
@@ -236,10 +245,8 @@ begin
         clk => clk,
         rst => rst,
         spi_clk => sck,
-        spi_sio(0) => si_sio0,
-        spi_sio(1) => so_sio1,
-        spi_sio(2) => sio2,
-        spi_sio(3) => hold_n_sio3,
+        spi_sio_in => spi_sio_in,
+        spi_sio_out => spi_sio_out,
         cs_set => cs_set,
         cs_state => cs_state,
         ready => ready,

@@ -12,7 +12,7 @@ entity triple_23lc1024_config is
         rst : in std_logic;
 
         spi_clk : out std_logic;
-        spi_sio : inout std_logic_vector(3 downto 0);
+        spi_sio : out std_logic_vector(3 downto 0);
         spi_cs : out std_logic_vector(2 downto 0);
 
         config_done : out boolean

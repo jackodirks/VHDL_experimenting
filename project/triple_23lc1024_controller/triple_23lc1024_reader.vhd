@@ -15,7 +15,8 @@ entity triple_23lc1024_reader is
         rst : in std_logic;
 
         spi_clk : out std_logic;
-        spi_sio : inout std_logic_vector(3 downto 0);
+        spi_sio_in : in std_logic_vector(3 downto 0);
+        spi_sio_out : out std_logic_vector(3 downto 0);
 
         cs_set : out std_logic;
         cs_state : in std_logic;
@@ -67,7 +68,7 @@ begin
         if rising_edge(clk) then
             if rst = '1' then
                 spi_clk <= '0';
-                spi_sio <= (others => 'Z');
+                spi_sio_out <= (others => 'Z');
                 cs_set_internal := '1';
                 valid <= '0';
                 active <= false;
@@ -93,7 +94,7 @@ begin
                 if count = 0 then
                     transaction_complete := false;
                     half_period_timer_rst <= '1';
-                    spi_sio <= (others => 'Z');
+                    spi_sio_out <= (others => 'Z');
                     valid <= '0';
                     if fault_internal = '1' then
                         fault_internal := '0';
@@ -104,7 +105,7 @@ begin
                             cs_set_internal := '0';
                         end if;
                     elsif cs_set_internal = '0' and cs_state = '0' then
-                        spi_sio <= transmitCommandAndAddress(transmitCommandAndAddress'high downto transmitCommandAndAddress'high - 3);
+                        spi_sio_out <= transmitCommandAndAddress(transmitCommandAndAddress'high downto transmitCommandAndAddress'high - 3);
                         half_period_timer_rst <= '0';
                     end if;
                 end if;
@@ -120,7 +121,7 @@ begin
                     if count mod 2 = 0 and half_period_timer_done = '1' then
                         transmitCommandAndAddress := std_logic_vector(shift_left(unsigned(transmitCommandAndAddress), 4));
                     end if;
-                    spi_sio <= transmitCommandAndAddress(transmitCommandAndAddress'high downto transmitCommandAndAddress'high - 3);
+                    spi_sio_out <= transmitCommandAndAddress(transmitCommandAndAddress'high downto transmitCommandAndAddress'high - 3);
                 end if;
 
                 if count > 15 then
@@ -128,7 +129,7 @@ begin
                     cs_set_internal := '0';
                     valid <= '0';
                     fault_internal := '0';
-                    spi_sio <= (others => 'Z');
+                    spi_sio_out <= (others => 'Z');
                 end if;
                 -- now we get a dummy byte. Also the point where we continue from when doing a burst.
                 if count >= 16 and count <= 20 then
@@ -138,7 +139,7 @@ begin
                 -- Now the incoming data, which we read on the rising edge (= when count is uneven)
                 if count > 20 and count < max_count - 1 then
                     if count mod 2 = 1 and half_period_timer_done = '1' then
-                        read_data_internal(read_data_internal'high downto read_data_internal'high - 3) := spi_sio;
+                        read_data_internal(read_data_internal'high downto read_data_internal'high - 3) := spi_sio_in;
                     end if;
                     if count mod 2 = 0 and half_period_timer_done = '1' then
                         read_data_internal := std_logic_vector(shift_right(unsigned(read_data_internal), 4));
@@ -147,7 +148,7 @@ begin
 
                 if count = max_count - 1 then
                     if half_period_timer_done = '1' then
-                        read_data_internal(read_data_internal'high downto read_data_internal'high - 3) := spi_sio;
+                        read_data_internal(read_data_internal'high downto read_data_internal'high - 3) := spi_sio_in;
                     end if;
                     if not transaction_complete then
                         if ready = '1' then

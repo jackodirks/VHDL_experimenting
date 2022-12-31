@@ -15,7 +15,7 @@ entity triple_23lc1024_writer is
         rst : in std_logic;
 
         spi_clk : out std_logic;
-        spi_sio : inout std_logic_vector(3 downto 0);
+        spi_sio : out std_logic_vector(3 downto 0);
 
         cs_set : out std_logic;
         cs_state : in std_logic;
