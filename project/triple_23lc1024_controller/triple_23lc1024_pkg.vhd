@@ -10,6 +10,10 @@ package triple_23lc1024_pkg is
         word_in : bus_data_type
     ) return bus_data_type;
 
+    pure function is_address_legal_for_burst (
+        address : bus_address_type
+    ) return boolean;
+
 end triple_23lc1024_pkg;
 
 package body triple_23lc1024_pkg is
@@ -25,4 +29,15 @@ package body triple_23lc1024_pkg is
         end loop;
         return ret_val;
     end reorder_nibbles;
+
+    pure function is_address_legal_for_burst (
+        address : bus_address_type
+    ) return boolean is
+        constant addr_num : natural := to_integer(unsigned(address));
+        variable new_addr : natural := addr_num + bus_bytes_per_word;
+        constant mask : natural := 16#1ffff#;
+    begin
+        return (addr_num mod mask) < (new_addr mod mask);
+    end is_address_legal_for_burst;
+
 end triple_23lc1024_pkg;

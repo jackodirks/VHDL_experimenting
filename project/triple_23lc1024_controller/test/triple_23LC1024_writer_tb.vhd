@@ -34,10 +34,12 @@ architecture tb of triple_23LC1024_writer_tb is
     signal active : boolean;
     signal ready :  std_logic := '0';
     signal valid : std_logic;
-    signal fault : boolean := false;
     signal address : bus_address_type := (others => '0');
     signal write_data : bus_data_type := (others => '0');
+    signal writeMask : bus_write_mask := (others => '1');
     signal burst : std_logic := '0';
+    signal fault : std_logic;
+    signal faultData : std_logic_vector(bus_fault_type'range);
 
     signal cs_set : std_logic;
     signal cs_state : std_logic;
@@ -66,11 +68,12 @@ begin
                 burst <= '0';
                 wait until rising_edge(clk) and valid = '1';
                 ready <= '0';
-                address <= (others => 'Z');
-                write_data <= (others => 'Z');
-                check(active);
+                address <= (others => 'X');
+                write_data <= (others => 'X');
+                check_equal(fault, '0');
                 wait until rising_edge(clk);
                 check_equal('0', valid);
+                check(active);
                 wait until not active;
                 read_bus_word(net, actor, std_logic_vector(to_unsigned(0, 17)), read_data);
                 check_equal(read_data, std_logic_vector(to_unsigned(255, address'length)));
@@ -85,10 +88,9 @@ begin
                 burst <= '0';
                 wait until rising_edge(clk) and valid = '1';
                 ready <= '0';
-                address <= (others => 'Z');
-                write_data <= (others => 'Z');
-                check(active);
-                wait until not active;
+                address <= (others => 'X');
+                write_data <= (others => 'X');
+                wait until rising_edge(cs_n(0));
                 read_bus_word(net, actor, std_logic_vector(to_unsigned(0, 17)), read_data);
                 check_equal(read_data, exp_data);
             elsif run("Write 255 to address zero and address 4 results in 255 at address zero and address 4") then
@@ -103,17 +105,13 @@ begin
                 check(not active);
                 wait until rising_edge(clk) and valid = '1';
                 ready <= '1';
-                check(active);
                 address <= std_logic_vector(to_unsigned(4, address'length));
                 write_data <= std_logic_vector(to_unsigned(255, address'length));
                 wait until rising_edge(clk) and valid = '1';
                 ready <= '0';
-                address <= (others => 'Z');
-                write_data <= (others => 'Z');
-                check(active);
-                wait until rising_edge(clk);
-                check_equal('0', valid);
-                wait until not active;
+                address <= (others => 'X');
+                write_data <= (others => 'X');
+                wait until rising_edge(cs_n(0));
                 read_bus_word(net, actor, std_logic_vector(to_unsigned(0, 17)), read_data);
                 check_equal(read_data, std_logic_vector(to_unsigned(255, address'length)));
                 read_bus_word(net, actor, std_logic_vector(to_unsigned(4, 17)), read_data);
@@ -131,17 +129,13 @@ begin
                 wait until rising_edge(clk) and valid = '1';
                 burst <= '0';
                 ready <= '1';
-                check(active);
                 address <= std_logic_vector(to_unsigned(4, address'length));
                 write_data <= std_logic_vector(to_unsigned(255, address'length));
                 wait until rising_edge(clk) and valid = '1';
                 ready <= '0';
-                address <= (others => 'Z');
-                write_data <= (others => 'Z');
-                check(active);
-                wait until rising_edge(clk);
-                check_equal('0', valid);
-                wait until not active;
+                address <= (others => 'X');
+                write_data <= (others => 'X');
+                wait until rising_edge(cs_n(0));
                 read_bus_word(net, actor, std_logic_vector(to_unsigned(0, 17)), read_data);
                 check_equal(read_data, std_logic_vector(to_unsigned(255, address'length)));
                 read_bus_word(net, actor, std_logic_vector(to_unsigned(4, 17)), read_data);
@@ -158,29 +152,48 @@ begin
                 check(not active);
                 wait until rising_edge(clk) and valid = '1';
                 ready <= '0';
-                address <= (others => 'Z');
-                write_data <= (others => 'Z');
-                -- Note that the following action is strictly speaking illegal,
-                -- since a master is not allowed to wait for a valid
-                wait until rising_edge(clk) and valid = '1';
-                check(active);
-                wait for 4*clk_period;
+                address <= (others => 'X');
+                write_data <= (others => 'X');
                 burst <= '0';
+                wait for 2 us;
+                wait until falling_edge(clk);
                 ready <= '1';
-                check(active);
                 address <= std_logic_vector(to_unsigned(4, address'length));
                 write_data <= std_logic_vector(to_unsigned(255, address'length));
                 wait until rising_edge(clk) and valid = '1';
                 ready <= '0';
-                address <= (others => 'Z');
-                write_data <= (others => 'Z');
+                address <= (others => 'X');
+                write_data <= (others => 'X');
                 check(active);
                 wait until not active;
                 read_bus_word(net, actor, std_logic_vector(to_unsigned(0, 17)), read_data);
                 check_equal(read_data, std_logic_vector(to_unsigned(255, address'length)));
                 read_bus_word(net, actor, std_logic_vector(to_unsigned(4, 17)), read_data);
                 check_equal(read_data, std_logic_vector(to_unsigned(255, address'length)));
-            elsif run("Faults should end a burst") then
+            elsif run("Illegal write mask error is detected") then
+                address <= std_logic_vector(to_unsigned(0, address'length));
+                write_data <= std_logic_vector(to_unsigned(255, address'length));
+                rst <= '0';
+                ready <= '1';
+                writeMask <= X"7";
+                wait until rising_edge(clk) and fault = '1';
+                check_equal(faultData, bus_fault_illegal_write_mask);
+            elsif run("Unaligned address error is detected") then
+                address <= std_logic_vector(to_unsigned(1, address'length));
+                write_data <= std_logic_vector(to_unsigned(255, address'length));
+                rst <= '0';
+                ready <= '1';
+                wait until rising_edge(clk) and fault = '1';
+                check_equal(faultData, bus_fault_unaligned_access);
+            elsif run("Illegal burst error is detected") then
+                address <= (others => '0');
+                address(16 downto 0) <= std_logic_vector(to_unsigned(16#1fffc#, 17));
+                burst <= '1';
+                ready <= '1';
+                rst <= '0';
+                wait until rising_edge(clk) and fault = '1';
+                check_equal(faultData, bus_fault_illegal_address_for_burst);
+            elsif run("Faulty request is fully ignored") then
                 set_all_mode(SeqMode, SqiMode, actor, net);
                 write_bus_word(net, actor, std_logic_vector(to_unsigned(0, 17)), std_logic_vector(to_unsigned(0, bus_data_type'length)));
                 write_bus_word(net, actor, std_logic_vector(to_unsigned(4, 17)), std_logic_vector(to_unsigned(0, bus_data_type'length)));
@@ -188,43 +201,86 @@ begin
                 write_data <= std_logic_vector(to_unsigned(255, address'length));
                 rst <= '0';
                 ready <= '1';
-                burst <= '1';
-                fault <= false;
-                wait until rising_edge(clk) and valid = '1';
-                burst <= '0';
-                ready <= '0';
-                fault <= true;
-                wait until not active;
-            elsif run("Faults should end a burst after data was processed") then
-                set_all_mode(SeqMode, SqiMode, actor, net);
-                write_bus_word(net, actor, std_logic_vector(to_unsigned(0, 17)), std_logic_vector(to_unsigned(0, bus_data_type'length)));
-                write_bus_word(net, actor, std_logic_vector(to_unsigned(4, 17)), std_logic_vector(to_unsigned(0, bus_data_type'length)));
-                address <= std_logic_vector(to_unsigned(0, address'length));
-                write_data <= std_logic_vector(to_unsigned(255, address'length));
-                rst <= '0';
-                ready <= '1';
-                burst <= '1';
-                fault <= false;
-                check(not active);
-                wait until rising_edge(clk) and valid = '1';
-                burst <= '1';
-                ready <= '1';
-                check(active);
+                writeMask <= X"7";
+                wait until rising_edge(clk) and fault = '1';
                 address <= std_logic_vector(to_unsigned(4, address'length));
                 write_data <= std_logic_vector(to_unsigned(255, address'length));
-                wait until rising_edge(clk) and valid = '1';
+                rst <= '0';
+                ready <= '1';
+                writeMask <= X"F";
+                wait until rising_edge(clk) and (valid = '1' or fault = '1');
+                check_equal('0', fault);
+                wait until rising_edge(cs_n(0));
+                read_bus_word(net, actor, std_logic_vector(to_unsigned(0, 17)), read_data);
+                check_equal(read_data, std_logic_vector(to_unsigned(0, read_data'length)));
+                read_bus_word(net, actor, std_logic_vector(to_unsigned(4, 17)), read_data);
+                check_equal(read_data, std_logic_vector(to_unsigned(255, read_data'length)));
+            elsif run("Faulty request during burst is fully ignored, while valid writes are fully respected") then
+                set_all_mode(SeqMode, SqiMode, actor, net);
+                write_bus_word(net, actor, std_logic_vector(to_unsigned(0, 17)), std_logic_vector(to_unsigned(0, bus_data_type'length)));
+                write_bus_word(net, actor, std_logic_vector(to_unsigned(4, 17)), std_logic_vector(to_unsigned(0, bus_data_type'length)));
+                write_bus_word(net, actor, std_logic_vector(to_unsigned(8, 17)), std_logic_vector(to_unsigned(0, bus_data_type'length)));
+                address <= std_logic_vector(to_unsigned(0, address'length));
+                write_data <= std_logic_vector(to_unsigned(255, address'length));
+                rst <= '0';
+                ready <= '1';
+                burst <= '1';
+                wait until rising_edge(clk) and (valid = '1' or fault = '1');
+                check_equal('0', fault);
+                address <= std_logic_vector(to_unsigned(4, address'length));
+                writeMask <= X"7";
+                wait until rising_edge(clk) and (valid = '1' or fault = '1');
+                check_equal('1', fault);
+                address <= std_logic_vector(to_unsigned(8, address'length));
+                writeMask <= X"F";
+                burst <= '0';
+                wait until rising_edge(clk) and (valid = '1' or fault = '1');
+                check_equal('0', fault);
+                wait until rising_edge(cs_n(0));
+                read_bus_word(net, actor, std_logic_vector(to_unsigned(0, 17)), read_data);
+                check_equal(read_data, std_logic_vector(to_unsigned(255, read_data'length)));
+                read_bus_word(net, actor, std_logic_vector(to_unsigned(4, 17)), read_data);
+                check_equal(read_data, std_logic_vector(to_unsigned(0, read_data'length)));
+                read_bus_word(net, actor, std_logic_vector(to_unsigned(8, 17)), read_data);
+                check_equal(read_data, std_logic_vector(to_unsigned(255, read_data'length)));
+            elsif run("A fault ends a burst") then
+                set_all_mode(SeqMode, SqiMode, actor, net);
+                write_bus_word(net, actor, std_logic_vector(to_unsigned(0, 17)), std_logic_vector(to_unsigned(0, bus_data_type'length)));
+                write_bus_word(net, actor, std_logic_vector(to_unsigned(4, 17)), std_logic_vector(to_unsigned(0, bus_data_type'length)));
+                address <= std_logic_vector(to_unsigned(0, address'length));
+                write_data <= std_logic_vector(to_unsigned(255, address'length));
+                rst <= '0';
+                ready <= '1';
+                burst <= '1';
+                wait until rising_edge(clk) and (valid = '1' or fault = '1');
+                check_equal('0', fault);
+                address <= std_logic_vector(to_unsigned(4, address'length));
+                writeMask <= X"7";
+                wait until rising_edge(clk) and (valid = '1' or fault = '1');
+                check_equal('1', fault);
                 ready <= '0';
-                address <= (others => 'Z');
-                write_data <= (others => 'Z');
-                check(active);
+                burst <= '0';
+                wait until rising_edge(cs_n(0));
+                read_bus_word(net, actor, std_logic_vector(to_unsigned(0, 17)), read_data);
+                check_equal(read_data, std_logic_vector(to_unsigned(255, read_data'length)));
+                read_bus_word(net, actor, std_logic_vector(to_unsigned(4, 17)), read_data);
+                check_equal(read_data, std_logic_vector(to_unsigned(0, read_data'length)));
+            elsif run("Active remains asserted until CS = 1") then
+                set_all_mode(SeqMode, SqiMode, actor, net);
+                address <= std_logic_vector(to_unsigned(0, address'length));
+                write_data <= std_logic_vector(to_unsigned(255, address'length));
+                rst <= '0';
+                ready <= '1';
+                burst <= '0';
+                wait until rising_edge(clk) and valid = '1';
                 wait until rising_edge(clk);
-                check_equal('0', valid);
-                fault <= true;
+                check_equal(active, true);
+                ready <= '0';
+                wait until not active or rising_edge(cs_n(0));
+                if cs_n(0) = '0' then
+                    check_equal(active, true);
+                end if;
                 wait until not active;
-                read_bus_word(net, actor, std_logic_vector(to_unsigned(0, 17)), read_data);
-                check_equal(read_data, std_logic_vector(to_unsigned(255, address'length)));
-                read_bus_word(net, actor, std_logic_vector(to_unsigned(4, 17)), read_data);
-                check_equal(read_data, std_logic_vector(to_unsigned(255, address'length)));
             end if;
         end loop;
         wait for 2*clk_period;
@@ -275,6 +331,8 @@ begin
         fault => fault,
         address => address,
         write_data => write_data,
-        burst => burst
+        writeMask => writeMask,
+        burst => burst,
+        faultData => faultData
     );
 end tb;

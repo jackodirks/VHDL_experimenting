@@ -23,11 +23,13 @@ entity triple_23lc1024_writer is
         ready : in std_logic;
         valid : out std_logic;
         active : out boolean;
-        fault : in boolean;
+        fault : out std_logic;
 
         address : in bus_address_type;
         write_data : in bus_data_type;
-        burst : in std_logic
+        writeMask : in bus_write_mask;
+        burst : in std_logic;
+        faultData : out bus_fault_type
     );
 end triple_23lc1024_writer;
 
@@ -36,15 +38,37 @@ architecture behavioral of triple_23lc1024_writer is
 
     signal half_period_timer_rst : std_logic := '1';
     signal half_period_timer_done : std_logic;
+
+    procedure detect_fault (
+        variable fault_internal : out std_logic;
+        signal faultData_internal : out std_logic_vector(faultData'range))
+    is
+        constant expWriteMask : bus_write_mask := (others => '1');
+        constant expBusAlignment : std_logic_vector(bus_bytes_per_word_log2b - 1 downto 0) := (others => '0');
+    begin
+        fault_internal := '0';
+        if writeMask /= expWriteMask then
+            fault_internal := '1';
+            faultData_internal <= bus_fault_illegal_write_mask;
+        elsif address(expBusAlignment'range) /= expBusAlignment then
+            fault_internal := '1';
+            faultData_internal <= bus_fault_unaligned_access;
+        elsif burst = '1' and not is_address_legal_for_burst(address) then
+            fault_internal := '1';
+            faultData_internal <= bus_fault_illegal_address_for_burst;
+        end if;
+    end detect_fault;
+
 begin
 
     process(rst, clk)
         variable count : natural := 0;
-        variable valid_interal : std_logic := '0';
+        variable valid_internal : std_logic := '0';
+        variable fault_internal : std_logic := '0';
         variable cs_set_internal : std_logic := '1';
-        variable transmitData : bus_data_type := (others => '0');
+        variable transmitData : bus_data_type := (others => 'X');
         variable burst_internal : std_logic := '0';
-        variable transmitCommandAndAddress : std_logic_vector(31 downto 0) := (others => '0');
+        variable transmitCommandAndAddress : std_logic_vector(31 downto 0) := (others => 'X');
         constant max_count : natural := 16 + 2**(bus_data_width_log2b - 2) * 2;
         variable burst_transaction_complete : boolean := false;
     begin
@@ -53,8 +77,7 @@ begin
                 spi_clk <= '0';
                 spi_sio <= (others => 'Z');
                 cs_set_internal := '1';
-                valid_interal := '0';
-                active <= false;
+                valid_internal := '0';
                 count := 0;
                 burst_transaction_complete := false;
             else
@@ -68,36 +91,42 @@ begin
                     spi_clk <= '1';
                 end if;
 
+                if cs_set_internal = '0' then
+                    active <= true;
+                else
+                    active <= false;
+                end if;
+
                 if count = 0 then
                     burst_transaction_complete := false;
                     half_period_timer_rst <= '1';
                     spi_sio <= (others => 'Z');
-                    if cs_set_internal = '1' then
-                        valid_interal := '1';
-                        active <= false;
-                    else
-                        active <= true;
-                        valid_interal := '0';
-                    end if;
-                    if cs_set_internal = '1' and ready = '1' then
-                        cs_set_internal := '0';
+                    valid_internal := '0';
+                    if fault_internal = '1' then
+                        fault_internal := '0';
+                    elsif cs_set_internal = '1' and ready = '1' then
+                        valid_internal := '1';
                         transmitCommandAndAddress := instructionWrite & "0000000" & address(16 downto 0);
                         transmitData := reorder_nibbles(write_data);
                         burst_internal := burst;
-                        active <= true;
-                    end if;
-                    if cs_set_internal = '0' and cs_state = '0' then
+                        detect_fault(fault_internal => fault_internal, faultData_internal => faultData);
+                        if fault_internal = '0' then
+                            cs_set_internal := '0';
+                        end if;
+                    elsif cs_set_internal = '0' and cs_state = '0' then
                         spi_sio <= transmitCommandAndAddress(transmitCommandAndAddress'high downto transmitCommandAndAddress'high - 3);
                         half_period_timer_rst <= '0';
-                        active <= true;
                     end if;
                 end if;
 
-                if count >= 1 and count <= 15 then
+                if count > 0 then
                     half_period_timer_rst <= '0';
                     cs_set_internal := '0';
-                    active <= true;
-                    valid_interal := '0';
+                    valid_internal := '0';
+                    fault_internal := '0';
+                end if;
+
+                if count >= 1 and count < 15 then
                     if count mod 2 = 0 and half_period_timer_done = '1' then
                         transmitCommandAndAddress := std_logic_vector(shift_left(unsigned(transmitCommandAndAddress), 4));
                     end if;
@@ -105,18 +134,10 @@ begin
                 end if;
 
                 if count = 16 then
-                    half_period_timer_rst <= '0';
-                    cs_set_internal := '0';
-                    active <= true;
-                    valid_interal := '0';
                     spi_sio <= transmitData(3 downto 0);
                 end if;
 
                 if count > 16 and count < max_count - 1 then
-                    half_period_timer_rst <= '0';
-                    cs_set_internal := '0';
-                    active <= true;
-                    valid_interal := '0';
                     if count mod 2 = 0 and half_period_timer_done = '1' then
                         transmitData := std_logic_vector(shift_right(unsigned(transmitData), 4));
                     end if;
@@ -124,16 +145,16 @@ begin
                 end if;
 
                 if count = max_count - 1 then
-                    half_period_timer_rst <= '0';
-                    cs_set_internal := '0';
-                    active <= true;
-                    valid_interal := '0';
-                    if burst_internal = '1' and not burst_transaction_complete and not fault then
-                        valid_interal := '1';
+                    if burst_internal = '1' and not burst_transaction_complete then
                         if ready = '1' then
                             transmitData := reorder_nibbles(write_data);
                             burst_internal := burst;
+                            valid_internal := '1';
                             burst_transaction_complete := true;
+                            detect_fault(fault_internal => fault_internal, faultData_internal => faultData);
+                            if fault_internal /= '1' then
+                                count := 15;
+                            end if;
                         else
                             half_period_timer_rst <= '1';
                         end if;
@@ -141,28 +162,19 @@ begin
                 end if;
 
                 if count = max_count then
-                    half_period_timer_rst <= '0';
-                    cs_set_internal := '0';
+                    half_period_timer_rst <= '1';
+                    cs_set_internal := '1';
+                    spi_sio <= (others => 'Z');
                     active <= true;
-                    valid_interal := '0';
-                    if burst_transaction_complete and not fault then
-                        burst_transaction_complete := false;
-                        count := 16;
-                        spi_sio <= transmitData(3 downto 0);
-                    else
-                        half_period_timer_rst <= '1';
-                        cs_set_internal := '1';
-                        spi_sio <= (others => 'Z');
-                        if cs_state = '1' then
-                            count := 0;
-                            active <= false;
-                        end if;
+                    if cs_state = '1' then
+                        count := 0;
                     end if;
                 end if;
             end if;
         end if;
         cs_set <= cs_set_internal;
-        valid <= valid_interal;
+        valid <= valid_internal;
+        fault <= fault_internal;
     end process;
 
     half_period_timer : entity work.simple_multishot_timer
