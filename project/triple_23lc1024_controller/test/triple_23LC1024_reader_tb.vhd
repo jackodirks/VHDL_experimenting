@@ -34,10 +34,11 @@ architecture tb of triple_23LC1024_reader_tb is
     signal active : boolean;
     signal ready :  std_logic := '0';
     signal valid : std_logic;
-    signal fault : boolean := false;
     signal address : bus_address_type := (others => '0');
     signal read_data : bus_data_type := (others => '0');
     signal burst : std_logic := '0';
+    signal fault : std_logic;
+    signal faultData : std_logic_vector(bus_fault_type'range);
 
     signal cs_set : std_logic;
     signal cs_state : std_logic;
@@ -64,7 +65,7 @@ begin
                 burst <= '0';
                 wait until rising_edge(clk) and valid = '1';
                 ready <= '0';
-                address <= (others => 'Z');
+                address <= (others => 'X');
                 check_equal(read_data, std_logic_vector(to_unsigned(255, bus_data_type'length)));
                 check(active);
                 wait until rising_edge(clk);
@@ -80,7 +81,7 @@ begin
                 burst <= '0';
                 wait until rising_edge(clk) and valid = '1';
                 ready <= '0';
-                address <= (others => 'Z');
+                address <= (others => 'X');
                 check_equal(read_data, exp_data);
                 check(active);
                 wait until rising_edge(clk);
@@ -101,7 +102,7 @@ begin
                 wait until rising_edge(clk) and valid = '1';
                 check_equal(read_data, std_logic_vector(to_unsigned(14, bus_data_type'length)));
                 ready <= '0';
-                address <= (others => 'Z');
+                address <= (others => 'X');
                 check(active);
                 wait until not active;
             elsif run("Burst read from address zero which contains 254 and address 4 which contains 14 results in 254, 14") then
@@ -120,7 +121,7 @@ begin
                 wait until rising_edge(clk) and valid = '1';
                 check_equal(read_data, std_logic_vector(to_unsigned(14, bus_data_type'length)));
                 ready <= '0';
-                address <= (others => 'Z');
+                address <= (others => 'X');
                 check(active);
                 wait until not active;
             elsif run("Paused burst read from address zero which contains 254 and address 4 which contains 14 results in 254, 14") then
@@ -136,25 +137,66 @@ begin
                 address <= std_logic_vector(to_unsigned(4, address'length));
                 burst <= '0';
                 ready <= '0';
-                wait until rising_edge(clk) and valid = '1';
-                wait for 20 * clk_period;
+                wait for 2 us;
+                wait until falling_edge(clk);
                 ready <= '1';
+                wait until rising_edge(clk) and valid = '1';
                 check_equal(read_data, std_logic_vector(to_unsigned(14, bus_data_type'length)));
-                wait until rising_edge(clk) and valid = '0';
                 ready <= '0';
-                address <= (others => 'Z');
+                address <= (others => 'X');
                 check(active);
                 wait until not active;
-            elsif run("Faults should end burst") then
+            elsif run("Unaligned address error is detected") then
+                address <= std_logic_vector(to_unsigned(1, address'length));
+                rst <= '0';
+                ready <= '1';
+                wait until rising_edge(clk) and fault = '1';
+                check_equal(faultData, bus_fault_unaligned_access);
+            elsif run("Illegal burst error is detected") then
+                address <= (others => '0');
+                address(16 downto 0) <= std_logic_vector(to_unsigned(16#1fffc#, 17));
+                burst <= '1';
+                ready <= '1';
+                rst <= '0';
+                wait until rising_edge(clk) and fault = '1';
+                check_equal(faultData, bus_fault_illegal_address_for_burst);
+            elsif run("Reader moves on after error") then
                 set_all_mode(SeqMode, SqiMode, actor, net);
+                write_bus_word(net, actor, std_logic_vector(to_unsigned(0, 17)), std_logic_vector(to_unsigned(254, bus_data_type'length)));
+                write_bus_word(net, actor, std_logic_vector(to_unsigned(4, 17)), std_logic_vector(to_unsigned(14, bus_data_type'length)));
+                address <= std_logic_vector(to_unsigned(1, address'length));
+                rst <= '0';
+                ready <= '1';
+                wait until rising_edge(clk) and fault = '1';
+                address <= std_logic_vector(to_unsigned(4, address'length));
+                wait until rising_edge(clk) and valid = '1';
+                check_equal(read_data, std_logic_vector(to_unsigned(14, bus_data_type'length)));
+            elsif run("Errors end burst") then
+                set_all_mode(SeqMode, SqiMode, actor, net);
+                write_bus_word(net, actor, std_logic_vector(to_unsigned(0, 17)), std_logic_vector(to_unsigned(254, bus_data_type'length)));
+                write_bus_word(net, actor, std_logic_vector(to_unsigned(4, 17)), std_logic_vector(to_unsigned(14, bus_data_type'length)));
                 address <= std_logic_vector(to_unsigned(0, address'length));
                 rst <= '0';
                 ready <= '1';
                 burst <= '1';
-                fault <= false;
                 wait until rising_edge(clk) and valid = '1';
+                address <= std_logic_vector(to_unsigned(1, address'length));
+                wait until rising_edge(clk) and fault = '1';
+                check_equal(faultData, bus_fault_unaligned_access);
+                wait until rising_edge(cs_n(0));
+            elsif run("Active remains asserted until CS = 1") then
+                set_all_mode(SeqMode, SqiMode, actor, net);
+                address <= std_logic_vector(to_unsigned(0, address'length));
+                rst <= '0';
+                ready <= '1';
+                wait until rising_edge(clk) and valid = '1';
+                wait until rising_edge(clk);
+                check_equal(active, true);
                 ready <= '0';
-                fault <= true;
+                wait until not active or rising_edge(cs_n(0));
+                if cs_n(0) = '0' then
+                    check_equal(active, true);
+                end if;
                 wait until not active;
             end if;
         end loop;
@@ -206,6 +248,7 @@ begin
         fault => fault,
         address => address,
         read_data => read_data,
-        burst => burst
+        burst => burst,
+        faultData => faultData
     );
 end tb;
