@@ -57,6 +57,8 @@ begin
 
     process
         variable expected_data : bus_pkg.bus_data_type := (others => '0');
+        variable read_data : bus_pkg.bus_data_type := (others => '0');
+        variable burst_size : natural := 0;
     begin
         test_runner_setup(runner, runner_cfg);
         while test_suite loop
@@ -78,6 +80,64 @@ begin
                 expected_data := X"F1F2F3F4";
                 wait until rising_edge(clk) and bus_pkg.read_transaction(mst2slv, slv2mst);
                 check_equal(slv2mst.readData, expected_data);
+            elsif run("Burst write works as intented") then
+                rst <= '0';
+                triple_23lc1024_tb_pkg.write_bus_word(net, actor_mem0, std_logic_vector(to_unsigned(0, 17)), (others => '0'));
+                triple_23lc1024_tb_pkg.write_bus_word(net, actor_mem0, std_logic_vector(to_unsigned(4, 17)), (others => '0'));
+                mst2slv <= bus_pkg.bus_mst2slv_write(std_logic_vector(to_unsigned(0, bus_pkg.bus_address_type'length)),
+                                                     X"01020304",
+                                                     X"F",
+                                                     '1');
+                wait until rising_edge(clk) and bus_pkg.write_transaction(mst2slv, slv2mst);
+                mst2slv <= bus_pkg.bus_mst2slv_write(std_logic_vector(to_unsigned(4, bus_pkg.bus_address_type'length)),
+                                                     X"F1F2F3F4",
+                                                     X"F",
+                                                     '0');
+                wait until rising_edge(clk) and bus_pkg.write_transaction(mst2slv, slv2mst);
+                mst2slv <= bus_pkg.BUS_MST2SLV_IDLE;
+                wait until rising_edge(cs_n(0));
+                expected_data := X"01020304";
+                triple_23lc1024_tb_pkg.read_bus_word(net, actor_mem0, std_logic_vector(to_unsigned(0, 17)), read_data);
+                check_equal(read_data, expected_data);
+                expected_data := X"F1F2F3F4";
+                triple_23lc1024_tb_pkg.read_bus_word(net, actor_mem0, std_logic_vector(to_unsigned(4, 17)), read_data);
+                check_equal(read_data, expected_data);
+            elsif run("Read faults happen when expected") then
+                rst <= '0';
+                mst2slv <= bus_pkg.bus_mst2slv_read(std_logic_vector(to_unsigned(1, bus_pkg.bus_address_type'length)), '0');
+                wait until rising_edge(clk) and bus_pkg.fault_transaction(mst2slv, slv2mst);
+                check_equal(slv2mst.faultData, bus_pkg.bus_fault_unaligned_access);
+            elsif run("Write faults happen when expected") then
+                rst <= '0';
+                mst2slv <= bus_pkg.bus_mst2slv_write(std_logic_vector(to_unsigned(1, bus_pkg.bus_address_type'length)),
+                                                     X"01020304",
+                                                     X"F",
+                                                     '1');
+                wait until rising_edge(clk) and bus_pkg.fault_transaction(mst2slv, slv2mst);
+                check_equal(slv2mst.faultData, bus_pkg.bus_fault_unaligned_access);
+            elsif run("Large bursted write-then-read works as expected") then
+                burst_size := 150;
+                rst <= '0';
+                for i in 0 to burst_size - 1 loop
+                    mst2slv <= bus_pkg.bus_mst2slv_write(std_logic_vector(to_unsigned(i*4, bus_pkg.bus_address_type'length)),
+                                                        std_logic_vector(to_unsigned(16#7FFFFFFF# - i, bus_pkg.bus_data_type'length)),
+                                                        X"F",
+                                                        '1');
+                    if i = burst_size - 1 then
+                        mst2slv.burst <= '0';
+                    end if;
+                    wait until rising_edge(clk) and bus_pkg.write_transaction(mst2slv, slv2mst);
+                end loop;
+                for i in 0 to burst_size - 1 loop
+                    mst2slv <= bus_pkg.bus_mst2slv_read(std_logic_vector(to_unsigned(i*4, bus_pkg.bus_address_type'length)), '1');
+                    if i = burst_size - 1 then
+                        mst2slv.burst <= '0';
+                    end if;
+                    wait until rising_edge(clk) and bus_pkg.read_transaction(mst2slv, slv2mst);
+                    expected_data := std_logic_vector(to_unsigned(16#7FFFFFFF# - i, bus_pkg.bus_data_type'length));
+                    check_equal(slv2mst.readData, expected_data);
+                end loop;
+                mst2slv <= bus_pkg.BUS_MST2SLV_IDLE;
             end if;
         end loop;
         wait for 2*clk_period;
@@ -85,7 +145,7 @@ begin
         wait;
     end process;
 
-    test_runner_watchdog(runner,  100 us);
+    test_runner_watchdog(runner, 1 ms);
 
     mem_pcb : entity tb.triple_M23LC1024
     port map (
