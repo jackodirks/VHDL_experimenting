@@ -44,6 +44,8 @@ architecture tb of triple_23LC1024_writer_tb is
     signal cs_set : std_logic;
     signal cs_state : std_logic;
 
+    signal cs_allowed_all_high : boolean := true;
+
 begin
     clk <= not clk after (clk_period/2);
 
@@ -140,6 +142,35 @@ begin
                 check_equal(read_data, std_logic_vector(to_unsigned(255, address'length)));
                 read_bus_word(net, actor, std_logic_vector(to_unsigned(4, 17)), read_data);
                 check_equal(read_data, std_logic_vector(to_unsigned(255, address'length)));
+            elsif run("Burst of size 50 works as intended") then
+                set_all_mode(SeqMode, SqiMode, actor, net);
+                rst <= '0';
+                for i in 0 to 49 loop
+                    write_bus_word(net, actor, std_logic_vector(to_unsigned(i*4, 17)), std_logic_vector(to_unsigned(0, bus_data_type'length)));
+                end loop;
+                for i in 0 to 49 loop
+                    address <= std_logic_vector(to_unsigned(i*4, address'length));
+                    write_data <= std_logic_vector(to_unsigned(i*17, write_data'length));
+                    ready <= '1';
+                    if i = 49 then
+                        burst <= '0';
+                    else
+                        burst <= '1';
+                    end if;
+                    if i = 0 then
+                        wait until falling_edge(cs_n(0));
+                        cs_allowed_all_high <= false;
+                    end if;
+                    wait until rising_edge(clk) and valid = '1';
+                    check_equal(fault, '0');
+                end loop;
+                ready <= '0';
+                cs_allowed_all_high <= true;
+                wait until rising_edge(cs_n(0));
+                for i in 0 to 49 loop
+                    read_bus_word(net, actor, std_logic_vector(to_unsigned(i*4, 17)), read_data);
+                    check_equal(read_data, std_logic_vector(to_unsigned(i*17, address'length)));
+                end loop;
             elsif run("Paused burst write 255 to address zero and address 4 results in 255 at address zero and address 4") then
                 set_all_mode(SeqMode, SqiMode, actor, net);
                 write_bus_word(net, actor, std_logic_vector(to_unsigned(0, 17)), std_logic_vector(to_unsigned(0, bus_data_type'length)));
@@ -296,6 +327,13 @@ begin
         else
             cs_n(0) <= cs_set after cs_wait_time;
             cs_state <= cs_set after cs_wait_time;
+        end if;
+    end process;
+
+    process(cs_n, cs_allowed_all_high)
+    begin
+        if not cs_allowed_all_high then
+            check(cs_n /= "111");
         end if;
     end process;
 

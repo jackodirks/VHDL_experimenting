@@ -70,7 +70,7 @@ begin
         variable burst_internal : std_logic := '0';
         variable transmitCommandAndAddress : std_logic_vector(31 downto 0) := (others => 'X');
         constant max_count : natural := 16 + 2**(bus_data_width_log2b - 2) * 2;
-        variable burst_transaction_complete : boolean := false;
+        variable burst_transaction_faulty : boolean := false;
     begin
         if rising_edge(clk) then
             if rst = '1' then
@@ -79,7 +79,7 @@ begin
                 cs_set_internal := '1';
                 valid_internal := '0';
                 count := 0;
-                burst_transaction_complete := false;
+                burst_transaction_faulty := false;
             else
                 if half_period_timer_done = '1' then
                     count := count + 1;
@@ -98,7 +98,7 @@ begin
                 end if;
 
                 if count = 0 then
-                    burst_transaction_complete := false;
+                    burst_transaction_faulty := false;
                     half_period_timer_rst <= '1';
                     spi_sio <= (others => 'Z');
                     valid_internal := '0';
@@ -145,15 +145,17 @@ begin
                 end if;
 
                 if count = max_count - 1 then
-                    if burst_internal = '1' and not burst_transaction_complete then
+                    if burst_internal = '1' and not burst_transaction_faulty then
                         if ready = '1' then
                             transmitData := reorder_nibbles(write_data);
                             burst_internal := burst;
                             valid_internal := '1';
-                            burst_transaction_complete := true;
                             detect_fault(fault_internal => fault_internal, faultData_internal => faultData);
                             if fault_internal /= '1' then
+                                burst_transaction_faulty := false;
                                 count := 15;
+                            else
+                                burst_transaction_faulty := true;
                             end if;
                         else
                             half_period_timer_rst <= '1';
@@ -162,6 +164,7 @@ begin
                 end if;
 
                 if count = max_count then
+                    burst_transaction_faulty := false;
                     half_period_timer_rst <= '1';
                     cs_set_internal := '1';
                     spi_sio <= (others => 'Z');
