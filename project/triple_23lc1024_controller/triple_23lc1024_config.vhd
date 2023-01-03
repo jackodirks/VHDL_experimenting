@@ -155,7 +155,7 @@ begin
                 transmission_request <= false;
                 cs_timer_rst <= '0';
                 spi_cs <= (others => '0');
-                if cs_timer_done then
+                if cs_timer_done = '1' then
                     next_state <= transmission_state;
                end if;
            when transmission_state =>
@@ -171,7 +171,7 @@ begin
                 transmission_request <= false;
                 cs_timer_rst <= '0';
                 spi_cs <= (others => '1');
-                if cs_timer_done then
+                if cs_timer_done = '1' then
                     if cur_active_operation = quad_reset_operation then
                         next_state <= configure_done_state;
                     else
