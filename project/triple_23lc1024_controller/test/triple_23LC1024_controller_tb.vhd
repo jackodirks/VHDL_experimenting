@@ -19,9 +19,6 @@ end entity;
 
 architecture tb of triple_23LC1024_controller_tb is
     constant clk_period : time := 20 ns;
-    constant min_spi_clock_period : time := 50 ns;
-    constant min_spi_cs_setup : time := 25 ns;
-    constant min_spi_cs_hold : time := 50 ns;
     signal clk : std_logic := '0';
     signal rst : std_logic := '1';
 
@@ -158,12 +155,7 @@ begin
     );
 
     controller : entity src.triple_23lc1024_controller
-    generic map (
-        system_clock_period => clk_period,
-        min_spi_clock_period => min_spi_clock_period,
-        min_spi_cs_setup => min_spi_cs_setup,
-        min_spi_cs_hold => min_spi_cs_hold
-    ) port map (
+    port map (
         clk => clk,
         rst => rst,
         spi_clk => sck,
