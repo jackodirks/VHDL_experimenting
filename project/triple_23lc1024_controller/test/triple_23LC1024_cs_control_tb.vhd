@@ -7,6 +7,7 @@ context vunit_lib.vunit_context;
 
 library tb;
 library src;
+use src.triple_23lc1024_pkg.all;
 
 entity triple_23LC1024_cs_control_tb is
     generic (
@@ -21,7 +22,7 @@ architecture tb of triple_23LC1024_cs_control_tb is
     signal clk : std_logic := '0';
     signal cs_set : std_logic := '1';
     signal cs_state : std_logic;
-    signal cs_n_requested : std_logic_vector(1 downto 0) := (others => '0');
+    signal cs_requested : cs_request_type;
     signal spi_cs_n : std_logic_vector(2 downto 0);
 begin
     clk <= not clk after (clk_period/2);
@@ -35,14 +36,14 @@ begin
                 check_equal(cs_state, '1');
                 exp_cs_n := (others => '1');
                 check_equal(spi_cs_n, exp_cs_n);
-            elsif run("Input 00 gives output 110") then
-                cs_n_requested <= (others => '0');
+            elsif run("Input request_zero gives output 110") then
+                cs_requested <= request_zero;
                 cs_set <= '0';
                 wait until rising_edge(clk) and cs_state = '0';
                 exp_cs_n := "110";
                 check_equal(spi_cs_n, exp_cs_n);
             elsif run("Device cycles back to 111") then
-                cs_n_requested <= "01";
+                cs_requested <= request_one;
                 cs_set <= '0';
                 wait until rising_edge(clk) and cs_state = '0';
                 exp_cs_n := "101";
@@ -58,7 +59,7 @@ begin
         wait;
     end process;
 
-    test_runner_watchdog(runner,  100 us);
+    test_runner_watchdog(runner, 100 us);
 
     mem_pcb : entity tb.triple_M23LC1024
     port map (
@@ -74,8 +75,7 @@ begin
         clk => clk,
         cs_set => cs_set,
         cs_state => cs_state,
-        cs_n_requested => cs_n_requested,
+        cs_requested => cs_requested,
         spi_cs_n => spi_cs_n
     );
-    
 end architecture;

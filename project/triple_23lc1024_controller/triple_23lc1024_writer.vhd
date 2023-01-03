@@ -18,6 +18,7 @@ entity triple_23lc1024_writer is
         spi_sio : out std_logic_vector(3 downto 0);
 
         cs_set : out std_logic;
+        cs_request : out cs_request_type;
         cs_state : in std_logic;
 
         ready : in std_logic;
@@ -71,6 +72,7 @@ begin
         variable burst_internal : std_logic := '0';
         variable transmitCommandAndAddress : std_logic_vector(31 downto 0) := (others => 'X');
         variable burst_transaction_faulty : boolean := false;
+        variable cs_request_internal : cs_request_type := request_none;
     begin
         if rising_edge(clk) then
             if rst = '1' then
@@ -104,7 +106,8 @@ begin
                         fault_internal := '0';
                     elsif cs_set_internal = '1' and ready = '1' then
                         valid_internal := '1';
-                        transmitCommandAndAddress := instructionWrite & "0000000" & address(16 downto 0);
+                        transmitCommandAndAddress := instructionWrite & "000" & address(17) &"000" & address(16 downto 0);
+                        cs_request_internal := encode_cs_request_type(address);
                         transmitData := reorder_nibbles(write_data);
                         burst_internal := burst;
                         detect_fault(fault_internal => fault_internal, faultData_internal => faultData);
@@ -175,6 +178,7 @@ begin
         cs_set <= cs_set_internal;
         valid <= valid_internal;
         fault <= fault_internal;
+        cs_request <= cs_request_internal;
     end process;
 
     half_period_timer : entity work.simple_multishot_timer

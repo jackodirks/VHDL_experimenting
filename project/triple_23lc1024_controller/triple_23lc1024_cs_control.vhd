@@ -2,6 +2,9 @@ library IEEE;
 use IEEE.std_logic_1164.all;
 use IEEE.numeric_std.all;
 
+library work;
+use work.triple_23lc1024_pkg.all;
+
 entity triple_23lc1024_cs_control is
     generic (
         spi_cs_setup_ticks : natural;
@@ -13,7 +16,7 @@ entity triple_23lc1024_cs_control is
         cs_set : in std_logic;
         cs_state : out std_logic;
 
-        cs_n_requested : in std_logic_vector(1 downto 0);
+        cs_requested : in cs_request_type;
         spi_cs_n : out std_logic_vector(2 downto 0)
     );
 end triple_23lc1024_cs_control;
@@ -33,12 +36,12 @@ begin
         variable spi_cs_n_decoded : std_logic_vector(spi_cs_n'range) := (others => '1');
     begin
         if rising_edge(clk) then
-            case cs_n_requested is
-                when "00" =>
+            case cs_requested is
+                when request_zero =>
                     spi_cs_n_decoded := "110";
-                when "01" =>
+                when request_one =>
                     spi_cs_n_decoded := "101";
-                when "10" =>
+                when request_two =>
                     spi_cs_n_decoded := "011";
                 when others =>
                     spi_cs_n_decoded := "111";

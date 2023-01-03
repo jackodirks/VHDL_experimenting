@@ -135,6 +135,50 @@ begin
                     check_equal(slv2mst.readData, expected_data);
                 end loop;
                 mst2slv <= bus_pkg.BUS_MST2SLV_IDLE;
+            elsif run ("Writing then reading over all three memories") then
+                rst <= '0';
+                burst_size := 16;
+                for i in 0 to burst_size - 1 loop
+                    mst2slv <= bus_pkg.bus_mst2slv_write(std_logic_vector(to_unsigned(i*4, bus_pkg.bus_address_type'length)),
+                                                        std_logic_vector(to_unsigned(i, bus_pkg.bus_data_type'length)),
+                                                        X"F",
+                                                        '0');
+                    wait until rising_edge(clk) and bus_pkg.write_transaction(mst2slv, slv2mst);
+                end loop;
+                for i in 0 to burst_size - 1 loop
+                    mst2slv <= bus_pkg.bus_mst2slv_write(std_logic_vector(to_unsigned(16#20000# + i*4, bus_pkg.bus_address_type'length)),
+                                                        std_logic_vector(to_unsigned(i + burst_size, bus_pkg.bus_data_type'length)),
+                                                        X"F",
+                                                        '0');
+                    wait until rising_edge(clk) and bus_pkg.write_transaction(mst2slv, slv2mst);
+                end loop;
+                for i in 0 to burst_size - 1 loop
+                    mst2slv <= bus_pkg.bus_mst2slv_write(std_logic_vector(to_unsigned(16#40000# + i*4, bus_pkg.bus_address_type'length)),
+                                                        std_logic_vector(to_unsigned(i + burst_size + burst_size, bus_pkg.bus_data_type'length)),
+                                                        X"F",
+                                                        '0');
+                    wait until rising_edge(clk) and bus_pkg.write_transaction(mst2slv, slv2mst);
+                end loop;
+                -- Now read it back
+                for i in 0 to burst_size - 1 loop
+                    mst2slv <= bus_pkg.bus_mst2slv_read(std_logic_vector(to_unsigned(i*4, bus_pkg.bus_address_type'length)), '0');
+                    wait until rising_edge(clk) and bus_pkg.read_transaction(mst2slv, slv2mst);
+                    expected_data := std_logic_vector(to_unsigned(i, bus_pkg.bus_data_type'length));
+                    check_equal(slv2mst.readData, expected_data);
+                end loop;
+                for i in 0 to burst_size - 1 loop
+                    mst2slv <= bus_pkg.bus_mst2slv_read(std_logic_vector(to_unsigned(16#20000# + i*4, bus_pkg.bus_address_type'length)), '0');
+                    wait until rising_edge(clk) and bus_pkg.read_transaction(mst2slv, slv2mst);
+                    expected_data := std_logic_vector(to_unsigned(i + burst_size, bus_pkg.bus_data_type'length));
+                    check_equal(slv2mst.readData, expected_data);
+                end loop;
+                for i in 0 to burst_size - 1 loop
+                    mst2slv <= bus_pkg.bus_mst2slv_read(std_logic_vector(to_unsigned(16#40000# + i*4, bus_pkg.bus_address_type'length)), '0');
+                    wait until rising_edge(clk) and bus_pkg.read_transaction(mst2slv, slv2mst);
+                    expected_data := std_logic_vector(to_unsigned(i + burst_size + burst_size, bus_pkg.bus_data_type'length));
+                    check_equal(slv2mst.readData, expected_data);
+                end loop;
+
             end if;
         end loop;
         wait for 2*clk_period;

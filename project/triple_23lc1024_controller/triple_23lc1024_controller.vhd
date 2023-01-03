@@ -5,6 +5,7 @@ use IEEE.numeric_std.all;
 
 library work;
 use work.bus_pkg.all;
+use work.triple_23lc1024_pkg.all;
 
 entity triple_23lc1024_controller is
     generic (
@@ -39,6 +40,7 @@ architecture behavioral of triple_23lc1024_controller is
     signal spi_sio_read_in : std_logic_vector(3 downto 0);
     signal spi_sio_read_out : std_logic_vector(3 downto 0);
     signal cs_set_read  : std_logic;
+    signal cs_request_read : cs_request_type;
     signal ready_read : std_logic;
     signal valid_read : std_logic;
     signal fault_read : std_logic;
@@ -50,6 +52,7 @@ architecture behavioral of triple_23lc1024_controller is
     signal spi_clk_write : std_logic;
     signal spi_sio_write_out : std_logic_vector(3 downto 0);
     signal cs_set_write  : std_logic;
+    signal cs_request_write : cs_request_type;
     signal ready_write : std_logic;
     signal valid_write : std_logic;
     signal fault_write : std_logic;
@@ -57,7 +60,7 @@ architecture behavioral of triple_23lc1024_controller is
 
     -- CS control signals
     signal spi_cs_internal : std_logic_vector(2 downto 0);
-    signal cs_n_requested : std_logic_vector(1 downto 0);
+    signal cs_requested : cs_request_type;
     signal cs_state : std_logic;
     signal cs_set : std_logic;
 
@@ -71,11 +74,7 @@ architecture behavioral of triple_23lc1024_controller is
     signal burst : std_logic;
 begin
 
-    bus_data_handling : process(mst2slv, readData)
-    begin
-    end process;
-
-    bus_handling : process(mst2slv, valid_read, fault_read, faultData_read, config_done, write_active, read_active, fault_write, valid_write, faultData_write)
+    bus_handling : process(mst2slv, valid_read, fault_read, faultData_read, config_done, write_active, read_active, fault_write, valid_write, faultData_write, readData)
     begin
         slv2mst <= BUS_SLV2MST_IDLE;
         -- data
@@ -95,6 +94,7 @@ begin
             if not read_active then
                 ready_write <= mst2slv.writeReady;
             end if;
+
             if mst2slv.readReady = '1' then
                 slv2mst.fault <= fault_read;
                 slv2mst.readValid <= valid_read;
@@ -107,15 +107,17 @@ begin
         end if;
     end process;
 
-    cs_control_handling : process(mst2slv, read_active, write_active, cs_set_read, cs_set_write)
+    cs_control_handling : process(read_active, write_active, cs_set_read, cs_set_write, cs_request_read, cs_request_write)
     begin
-        cs_n_requested <= mst2slv.address(18 downto 17);
         if read_active then
             cs_set <= cs_set_read;
+            cs_requested <= cs_request_read;
         elsif write_active then
             cs_set <= cs_set_write;
+            cs_requested <= cs_request_write;
         else
             cs_set <= '1';
+            cs_requested <= request_none;
         end if;
     end process;
 
@@ -176,6 +178,7 @@ begin
         spi_sio_in => spi_sio_read_in,
         spi_sio_out => spi_sio_read_out,
         cs_set => cs_set_read,
+        cs_request => cs_request_read,
         cs_state => cs_state,
         ready => ready_read,
         valid => valid_read,
@@ -198,6 +201,7 @@ begin
         spi_clk => spi_clk_write,
         spi_sio => spi_sio_write_out,
         cs_set => cs_set_write,
+        cs_request => cs_request_write,
         cs_state => cs_state,
         ready => ready_write,
         valid => valid_write,
@@ -218,7 +222,7 @@ begin
         clk => clk,
         cs_set => cs_set,
         cs_state => cs_state,
-        cs_n_requested => cs_n_requested,
+        cs_requested => cs_requested,
         spi_cs_n => spi_cs_internal
     );
 end behavioral;

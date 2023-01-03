@@ -19,6 +19,7 @@ entity triple_23lc1024_reader is
         spi_sio_out : out std_logic_vector(3 downto 0);
 
         cs_set : out std_logic;
+        cs_request : out cs_request_type;
         cs_state : in std_logic;
 
         ready : in std_logic;
@@ -65,6 +66,7 @@ begin
         variable read_data_internal : bus_data_type := (others => '0');
         variable transmitCommandAndAddress : std_logic_vector(31 downto 0) := (others => '0');
         variable transaction_complete : boolean := false;
+        variable cs_request_internal : cs_request_type := request_none;
     begin
         if rising_edge(clk) then
             if rst = '1' then
@@ -100,6 +102,7 @@ begin
                         fault_internal := '0';
                     elsif cs_set_internal = '1' and ready = '1' then
                         transmitCommandAndAddress := instructionRead & "0000000" & address(16 downto 0);
+                        cs_request_internal := encode_cs_request_type(address);
                         detect_fault(fault_internal => fault_internal, faultData_internal => faultData);
                         if fault_internal = '0' then
                             cs_set_internal := '0';
@@ -178,6 +181,7 @@ begin
         cs_set <= cs_set_internal;
         read_data <= reorder_nibbles(read_data_internal);
         fault <= fault_internal;
+        cs_request <= cs_request_internal;
     end process;
 
     half_period_timer : entity work.simple_multishot_timer
