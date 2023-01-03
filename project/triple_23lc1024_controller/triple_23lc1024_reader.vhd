@@ -57,12 +57,12 @@ architecture behavioral of triple_23lc1024_reader is
 begin
 
     process(clk)
-        variable count : natural := 0;
+        constant max_count : natural := 20 + 2**(bus_data_width_log2b - 2) * 2;
+        variable count : natural range 0 to max_count := 0;
         variable cs_set_internal : std_logic := '1';
         variable fault_internal : std_logic := '0';
         variable read_data_internal : bus_data_type := (others => '0');
         variable transmitCommandAndAddress : std_logic_vector(31 downto 0) := (others => '0');
-        constant max_count : natural := 20 + 2**(bus_data_width_log2b - 2) * 2;
         variable transaction_complete : boolean := false;
     begin
         if rising_edge(clk) then
