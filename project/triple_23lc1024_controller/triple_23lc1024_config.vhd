@@ -67,7 +67,7 @@ architecture behavioral of triple_23lc1024_config is
     pure function get_spi_sio(operation : active_operation_type;
                               index: natural)
                               return std_logic_vector is
-        variable ret_val : std_logic_vector(3 downto 0) := (others => 'Z');
+        variable ret_val : std_logic_vector(3 downto 0) := (others => '0');
     begin
         case operation is
             when quad_reset_operation =>
@@ -75,17 +75,17 @@ architecture behavioral of triple_23lc1024_config is
             when dual_reset_operation =>
                 -- ret_val(3) is the hold pin, active low
                 ret_val(3) := '1';
-                ret_val(2) := 'Z';
+                ret_val(2) := '0';
                 ret_val(1 downto 0) := reset_dual_quad_access_instruction(index*2 + 1 downto index*2);
             when spi_configure_operation =>
                 ret_val(3) := '1';
-                ret_val(2) := 'Z';
-                ret_val(1) := 'Z';
+                ret_val(2) := '0';
+                ret_val(1) := '0';
                 ret_val(0) := configure_page_mode_instruction(index);
             when spi_enter_quad_operation =>
                 ret_val(3) := '1';
-                ret_val(2) := 'Z';
-                ret_val(1) := 'Z';
+                ret_val(2) := '0';
+                ret_val(1) := '0';
                 ret_val(0) := enter_quad_access_instruction(index);
         end case;
         return ret_val;
@@ -192,7 +192,7 @@ begin
                 transmission_complete <= false;
                 half_period_timer_rst <= '1';
                 spi_clk <= '0';
-                spi_sio <= (others => 'Z');
+                spi_sio <= (others => '0');
                 if transmission_request then
                     next_transmission_state <= transmission_low_state;
                 end if;
@@ -220,7 +220,7 @@ begin
                 transmission_complete <= true;
                 half_period_timer_rst <= '1';
                 spi_clk <= '0';
-                spi_sio <= (others => 'Z');
+                spi_sio <= (others => '0');
                 if not transmission_request then
                     next_transmission_state <= transmission_waiting_state;
                 end if;

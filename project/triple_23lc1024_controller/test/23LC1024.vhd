@@ -421,7 +421,7 @@ begin
 -- -------------------------------------------------------------------------------------------------------
 --      1.10:  Output Data Buffer
 -- -------------------------------------------------------------------------------------------------------
-    process(dataShifterO_data, dataShifterO_mode, activeInstr, cs_n)
+    process(dataShifterO_data, dataShifterO_mode, activeInstr, cs_n, outputActive)
         variable dataShifterO : std_logic_vector(7 downto 0) := (others => '0');
     begin
         if activeInstr = InstructionRDMR then
@@ -480,6 +480,7 @@ begin
     process(sck, cs_n, si_sio0, so_sio1, sio2, hold_n_sio3)
         variable last_sck_rise : time := 0 ns;
         variable last_sck_fall : time := 0 ns;
+        variable last_cs_fall : time := 0 ns;
     begin
         if rising_edge(sck) then
             last_sck_rise := now;
@@ -508,26 +509,30 @@ begin
             assert sck'delayed'stable(ClkHighTime) report "Timing failure 10" severity error;
         end if;
         if falling_edge(cs_n) then
+            last_cs_fall := now;
             assert cs_n'delayed'stable(CSDisableTime) report "Timing failure 4" severity error;
+            assert sck = '0' report "sck must be zero when CS is asserted!" severity error;
         end if;
         if rising_edge(cs_n) and cs_n = '1' then
             assert now - last_sck_rise >= CSHoldTime report "Timing failure 3" severity error;
         end if;
-        if (rising_edge(si_sio0) or falling_edge(si_sio0)) and last_sck_rise >= 0 ns then
-            assert now - last_sck_rise >= DataHoldTime report "Timing failure 6" severity error;
-            assert now - last_sck_fall <= DataValidFromClockLow report "Timing failure 12 " & time'image(now - last_sck_fall) severity error;
-        end if;
-        if (rising_edge(so_sio1) or falling_edge(so_sio1)) and (ioMode = SdiMode or ioMode = SqiMode) and last_sck_rise >= 0 ns then
-            assert now - last_sck_rise >= DataHoldTime report "Timing failure 6" severity error;
-            assert now - last_sck_fall <= DataValidFromClockLow report "Timing failure 12" severity error;
-        end if;
-        if (rising_edge(sio2) or falling_edge(sio2)) and ioMode = SqiMode and last_sck_rise >= 0 ns then
-            assert now - last_sck_rise >= DataHoldTime report "Timing failure 6" severity error;
-            assert now - last_sck_fall <= DataValidFromClockLow report "Timing failure 12" severity error;
-        end if;
-        if (rising_edge(hold_n_sio3) or falling_edge(hold_n_sio3)) and ioMode = SqiMode and last_sck_rise >= 0 ns then
-            assert now - last_sck_rise >= DataHoldTime report "Timing failure 6" severity error;
-            assert now - last_sck_fall <= DataValidFromClockLow report "Timing failure 12" severity error;
+        if last_cs_fall < last_sck_rise and cs_n = '0' then
+            if (rising_edge(si_sio0) or falling_edge(si_sio0)) and last_sck_rise >= 0 ns and last_sck_fall >= 0 ns then
+                assert now - last_sck_rise >= DataHoldTime report "Timing failure 6" severity error;
+                assert now - last_sck_fall <= DataValidFromClockLow report "Timing failure 12 " & time'image(now - last_sck_fall) severity error;
+            end if;
+            if (rising_edge(so_sio1) or falling_edge(so_sio1)) and (ioMode = SdiMode or ioMode = SqiMode) and last_sck_rise >= 0 ns and last_sck_fall >= 0 ns then
+                assert now - last_sck_rise >= DataHoldTime report "Timing failure 6" severity error;
+                assert now - last_sck_fall <= DataValidFromClockLow report "Timing failure 12" severity error;
+            end if;
+            if (rising_edge(sio2) or falling_edge(sio2)) and ioMode = SqiMode and last_sck_rise >= 0 ns and last_sck_fall >= 0 ns then
+                assert now - last_sck_rise >= DataHoldTime report "Timing failure 6" severity error;
+                assert now - last_sck_fall <= DataValidFromClockLow report "Timing failure 12 " & time'image(last_cs_fall) & " " & time'image(last_sck_rise) severity error;
+            end if;
+            if (rising_edge(hold_n_sio3) or falling_edge(hold_n_sio3)) and ioMode = SqiMode and last_sck_rise >= 0 ns and last_sck_fall >= 0 ns then
+                assert now - last_sck_rise >= DataHoldTime report "Timing failure 6" severity error;
+                assert now - last_sck_fall <= DataValidFromClockLow report "Timing failure 12" severity error;
+            end if;
         end if;
 
     end process;

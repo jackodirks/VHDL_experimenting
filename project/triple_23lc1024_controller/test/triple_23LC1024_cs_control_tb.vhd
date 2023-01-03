@@ -63,7 +63,7 @@ begin
     mem_pcb : entity tb.triple_M23LC1024
     port map (
         cs_n => spi_cs_n,
-        sck => 'Z'
+        sck => '0'
     );
 
     cs_control : entity src.triple_23lc1024_cs_control

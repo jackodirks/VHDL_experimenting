@@ -75,7 +75,6 @@ begin
         if rising_edge(clk) then
             if rst = '1' then
                 spi_clk <= '0';
-                spi_sio <= (others => 'Z');
                 cs_set_internal := '1';
                 valid_internal := '0';
                 count := 0;
@@ -100,7 +99,6 @@ begin
                 if count = 0 then
                     burst_transaction_faulty := false;
                     half_period_timer_rst <= '1';
-                    spi_sio <= (others => 'Z');
                     valid_internal := '0';
                     if fault_internal = '1' then
                         fault_internal := '0';
@@ -167,7 +165,6 @@ begin
                     burst_transaction_faulty := false;
                     half_period_timer_rst <= '1';
                     cs_set_internal := '1';
-                    spi_sio <= (others => 'Z');
                     active <= true;
                     if cs_state = '1' then
                         count := 0;

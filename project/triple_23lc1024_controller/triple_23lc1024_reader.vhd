@@ -25,6 +25,7 @@ entity triple_23lc1024_reader is
         valid : out std_logic;
         active : out boolean;
         fault : out std_logic;
+        reading : out boolean;
 
         address : in bus_address_type;
         read_data : out bus_data_type;
@@ -68,7 +69,6 @@ begin
         if rising_edge(clk) then
             if rst = '1' then
                 spi_clk <= '0';
-                spi_sio_out <= (others => 'Z');
                 cs_set_internal := '1';
                 valid <= '0';
                 active <= false;
@@ -92,9 +92,9 @@ begin
                 end if;
 
                 if count = 0 then
+                    reading <= false;
                     transaction_complete := false;
                     half_period_timer_rst <= '1';
-                    spi_sio_out <= (others => 'Z');
                     valid <= '0';
                     if fault_internal = '1' then
                         fault_internal := '0';
@@ -129,11 +129,11 @@ begin
                     cs_set_internal := '0';
                     valid <= '0';
                     fault_internal := '0';
-                    spi_sio_out <= (others => 'Z');
                 end if;
                 -- now we get a dummy byte. Also the point where we continue from when doing a burst.
                 if count >= 16 and count <= 20 then
                     transaction_complete := false;
+                    reading <= true;
                 end if;
 
                 -- Now the incoming data, which we read on the rising edge (= when count is uneven)

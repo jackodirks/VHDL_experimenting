@@ -43,6 +43,7 @@ architecture behavioral of triple_23lc1024_controller is
     signal valid_read : std_logic;
     signal fault_read : std_logic;
     signal faultData_read : bus_fault_type;
+    signal reading : boolean;
 
     -- Write specific signals
     signal write_active : boolean := false;
@@ -127,14 +128,19 @@ begin
         end if;
     end process;
 
-    other_spi_mux : process(config_done, read_active, write_active, spi_clk_config, spi_sio_config, spi_clk_read, spi_sio_read_out, spi_sio_in, spi_clk_write, spi_sio_write_out)
+    other_spi_mux : process(reading, config_done, read_active, write_active, spi_clk_config, spi_sio_config, spi_clk_read, spi_sio_read_out, spi_sio_in, spi_clk_write, spi_sio_write_out)
     begin
+        spi_sio_read_in <= (others => 'X');
         if not config_done then
             spi_clk <= spi_clk_config;
             spi_sio_out <= spi_sio_config;
         elsif read_active then
             spi_clk <= spi_clk_read;
-            spi_sio_out <= spi_sio_read_out;
+            if not reading then
+                spi_sio_out <= spi_sio_read_out;
+            else
+                spi_sio_out <= (others => 'Z');
+            end if;
             spi_sio_read_in <= spi_sio_in;
         elsif write_active then
             spi_clk <= spi_clk_write;
@@ -175,6 +181,7 @@ begin
         valid => valid_read,
         active => read_active,
         fault => fault_read,
+        reading => reading,
         address => address,
         read_data => readData,
         burst => burst,
