@@ -288,9 +288,13 @@ package body bus_pkg is
         variable res : bitMapping_array(count-1 downto 0);
     begin
         if value = '1' then
-            res := (others => -2); -- Code for '1'.
+            for i in 0 to count - 1 loop
+                res(i) := -2; -- Code for '1'.
+            end loop;
         else
-            res := (others => -1); -- Code for '0'.
+            for i in 0 to count - 1 loop
+                res(i) := -1; -- Code for '0'.
+            end loop;
         end if;
         return res;
     end bus_map_constant;
