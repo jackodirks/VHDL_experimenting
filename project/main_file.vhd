@@ -7,8 +7,8 @@ use work.bus_pkg.all;
 
 entity main_file is
     Port (
-        --JA_gpio : inout  STD_LOGIC_VECTOR (3 downto 0);
-        --JB_gpio : inout  STD_LOGIC_VECTOR (3 downto 0);
+        JA_gpio : inout  STD_LOGIC_VECTOR (3 downto 0);
+        JB_gpio : out  STD_LOGIC_VECTOR (3 downto 0);
         --JC_gpio : inout  STD_LOGIC_VECTOR (3 downto 0);
         --JD_gpio : inout  STD_LOGIC_VECTOR (3 downto 0);
         slide_switch : in  STD_LOGIC_VECTOR (7 downto 0);
@@ -28,29 +28,51 @@ end main_file;
 
 architecture Behavioral of main_file is
 
-        constant address_map : addr_range_and_mapping_array := (
-            address_range_and_map(
-                low => std_logic_vector(to_unsigned(0, bus_address_type'length)),
-                high => std_logic_vector(to_unsigned(3, bus_address_type'length))
-            ),
-            address_range_and_map(
-                low => std_logic_vector(to_unsigned(4, bus_address_type'length))
-            ));
+    constant address_map : addr_range_and_mapping_array := (
+        address_range_and_map(
+            low => std_logic_vector(to_unsigned(16#0#, bus_address_type'length)),
+            high => std_logic_vector(to_unsigned(16#4# - 1, bus_address_type'length)),
+            mapping => bus_map_constant(bus_address_type'high - 1, '0') & bus_map_range(1, 0)
+        ),
+        address_range_and_map(
+            low => std_logic_vector(to_unsigned(16#1000#, bus_address_type'length)),
+            high => std_logic_vector(to_unsigned(16#1800# - 1, bus_address_type'length)),
+            mapping => bus_map_constant(bus_address_type'high - 10, '0') & bus_map_range(10, 0)
+        ),
+        address_range_and_map(
+            low => std_logic_vector(to_unsigned(16#100000#, bus_address_type'length)),
+            high => std_logic_vector(to_unsigned(16#160000# - 1, bus_address_type'length)),
+            mapping => bus_map_constant(bus_address_type'high - 18, '0') & bus_map_range(18, 0)
+        )
+    );
 
-        signal rst          : STD_LOGIC;
+    signal rst          : STD_LOGIC;
 
-        signal depp2demux : bus_mst2slv_type := BUS_MST2SLV_IDLE;
-        signal demux2depp : bus_slv2mst_type := BUS_SLV2MST_IDLE;
+    signal depp2demux : bus_mst2slv_type := BUS_MST2SLV_IDLE;
+    signal demux2depp : bus_slv2mst_type := BUS_SLV2MST_IDLE;
 
-        signal demux2ss   : bus_mst2slv_type := BUS_MST2SLV_IDLE;
-        signal ss2demux   : bus_slv2mst_type := BUS_SLV2MST_IDLE;
+    signal demux2ss   : bus_mst2slv_type := BUS_MST2SLV_IDLE;
+    signal ss2demux   : bus_slv2mst_type := BUS_SLV2MST_IDLE;
 
-        signal demux2mem  : bus_mst2slv_type := BUS_MST2SLV_IDLE;
-        signal mem2demux  : bus_slv2mst_type := BUS_SLV2MST_IDLE;
+    signal demux2mem  : bus_mst2slv_type := BUS_MST2SLV_IDLE;
+    signal mem2demux  : bus_slv2mst_type := BUS_SLV2MST_IDLE;
+
+    signal demux2spimem : bus_mst2slv_type := BUS_MST2SLV_IDLE;
+    signal spimem2demux : bus_slv2mst_type := BUS_SLV2MST_IDLE;
+
+    signal mem_spi_sio_out : std_logic_vector(3 downto 0);
+    signal mem_spi_sio_in : std_logic_vector(3 downto 0);
+    signal mem_spi_cs_n : std_logic_vector(2 downto 0);
+    signal mem_spi_clk : std_logic;
 
 begin
 
     rst <= '0';
+
+    mem_spi_sio_in <= JA_gpio;
+    JA_gpio <= mem_spi_sio_out;
+    JB_gpio(3 downto 1) <= mem_spi_cs_n;
+    JB_gpio(0) <= mem_spi_clk;
 
     concurrent : process(slide_switch)
     begin
@@ -73,7 +95,8 @@ begin
 
     demux : entity work.bus_demux
     generic map (
-        ADDRESS_MAP => address_map
+        ADDRESS_MAP => address_map,
+        OOR_FAULT_CODE => (others => '0')
     )
     port map (
         rst => rst,
@@ -81,8 +104,10 @@ begin
         demux2mst => demux2depp,
         demux2slv(0) => demux2ss,
         demux2slv(1) => demux2mem,
+        demux2slv(2) => demux2spimem,
         slv2demux(0) => ss2demux,
-        slv2demux(1) => mem2demux
+        slv2demux(1) => mem2demux,
+        slv2demux(2) => spimem2demux
     );
 
 
@@ -110,5 +135,22 @@ begin
         mst2mem => demux2mem,
         mem2mst => mem2demux
     );
+
+    spimem : entity work.triple_23lc1024_controller
+    generic map (
+        spi_clk_half_period_ticks => 2,
+        spi_cs_setup_ticks => 2,
+        spi_cs_hold_ticks => 3
+    ) port map (
+        clk => clk,
+        rst => rst,
+        spi_clk => mem_spi_clk,
+        spi_sio_in => mem_spi_sio_in,
+        spi_sio_out => mem_spi_sio_out,
+        spi_cs => mem_spi_cs_n,
+        mst2slv => demux2spimem,
+        slv2mst => spimem2demux
+    );
+
 
 end Behavioral;
