@@ -85,7 +85,7 @@ begin
                 mst2ss1 <= bus_tb_mst2slv(address => 0, writeData => 16#10#,  writeReady => '1', writeMask => 1);
                 wait until rising_edge(clk) and write_transaction(mst2ss1, ss1_2mst);
                 mst2ss1 <= BUS_MST2SLV_IDLE;
-                wait for clk_period;
+                wait for 2*clk_period;
                 check(ss1_digit_anodes(0) = '0');
                 check(ss1_kathode = "01000000");
             end if;
@@ -127,7 +127,7 @@ begin
                 mst2ss2 <= bus_tb_mst2slv(address => 0, writeData => 16#14131211#,  writeReady => '1', writeMask => 15);
                 wait until rising_edge(clk) and write_transaction(mst2ss2, ss2_2mst);
                 mst2ss2 <= BUS_MST2SLV_IDLE;
-                wait for clk_period;
+                wait for 2*clk_period;
                 -- Check the actual outputs. We expect digit 1 to be active right now
                 check(ss2_digit_anodes = "1110");
                 check(ss2_kathode = "01111001");
