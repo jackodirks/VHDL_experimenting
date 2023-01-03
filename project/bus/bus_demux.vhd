@@ -26,7 +26,6 @@ begin
 
     combinatoral : process(mst2demux, slv2demux, rst)
         variable none_selected  : boolean := true;
-        variable selected_slv   : natural range 0 to ADDRESS_MAP'high := 0;
     begin
         demux2mst <= BUS_SLV2MST_IDLE;
         for i in 0 to ADDRESS_MAP'high loop
@@ -34,23 +33,20 @@ begin
         end loop;
 
         none_selected := true;
-        selected_slv := 0;
 
         if rst /= '1' and bus_requesting(mst2demux) then
             for i in 0 to ADDRESS_MAP'high loop
                 if bus_addr_in_range(mst2demux.address, ADDRESS_MAP(i).addr_range) then
                     none_selected := false;
-                    selected_slv := i;
+                    demux2slv(i) <= mst2demux;
+                    demux2slv(i).address <= bus_apply_addr_map(mst2demux.address, ADDRESS_MAP(i).mapping);
+                    demux2mst <= slv2demux(i);
                 end if;
             end loop;
 
             if none_selected then
                 demux2mst.fault <= '1';
                 demux2mst.readData <= OOR_FAULT_CODE;
-            else
-                demux2slv(selected_slv) <= mst2demux;
-                demux2slv(selected_slv).address <= bus_apply_addr_map(mst2demux.address, ADDRESS_MAP(selected_slv).mapping);
-                demux2mst <= slv2demux(selected_slv);
             end if;
         end if;
     end process;
