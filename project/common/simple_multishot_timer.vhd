@@ -15,25 +15,19 @@ entity simple_multishot_timer is
 end simple_multishot_timer;
 
 architecture behavioral of simple_multishot_timer is
-    function check_timer_match(X : UNSIGNED; Y: natural) return boolean is
-    begin
-        return to_integer(X) = Y;
-    end check_timer_match;
-
-    constant count_bits_count : integer := (integer(ceil(log2(real(match_val)))));
-    signal timer_value : UNSIGNED(count_bits_count DOWNTO 0) := (others => '0');
 begin
-    process (clk, rst)
+    process (clk)
+        variable timer_value : natural range 0 to match_val := 0;
     begin
-        if (rst = '1') then
-                timer_value <= to_unsigned(0, timer_value'length);
-                done <= '0';
-        elsif rising_edge(clk) then
-            if check_timer_match(timer_value, match_val) then
-                done <= '1';
-                timer_value <= to_unsigned(1, timer_value'length);
+        if rising_edge(clk) then
+            if (rst = '1') then
+                    timer_value := 0;
+                    done <= '0';
+            elsif timer_value >= match_val then
+                    done <= '1';
+                    timer_value := 1;
             else
-                timer_value <= timer_value + 1;
+                timer_value := timer_value + 1;
                 done <= '0';
             end if;
         end if;
