@@ -27,7 +27,7 @@ architecture Behavioral of bus_singleport_ram is
     signal fault : boolean := false;
 begin
 
-    sequential: process(clk, rst, mst2mem) is
+    sequential: process(clk) is
         variable b : natural range 0 to bus_bytes_per_word - 1 := 0;
         variable active : boolean := false;
         variable ramb_addr : std_logic_vector(DEPTH_LOG2B - 1 downto 0) := (others => '0');
