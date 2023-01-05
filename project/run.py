@@ -12,6 +12,8 @@ SRC_PATH = Path(__file__).parent
 src_library = VU.add_library("src")
 tb_library = VU.add_library("tb")
 
+src_library.add_source_files(SRC_PATH / "main_file.vhd")
+
 src_library.add_source_files(SRC_PATH / "bus" / "*.vhd")
 tb_library.add_source_files(SRC_PATH / "bus" / "test" / "*.vhd")
 
