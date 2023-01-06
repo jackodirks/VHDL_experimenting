@@ -12,7 +12,7 @@ package bus_pkg is
     -- It is allowed to have both readValid and writeValid high at the same time.
     -- A read transaction is defined as a moment where rising_edge(clk) AND readReady = '1' AND readValid = '1'
     -- A write transaction is defined as a moment where rising_edge(clk) AND writeReady = '1' AND writeValid = '1'
-    -- A fault transaction is defined as a moment where rising_edge(clk) AND (readRedy = '1' OR writeReady = '1') AND fault = '1'
+    -- A fault transaction is defined as a moment where rising_edge(clk) AND (readReady = '1' OR writeReady = '1') AND fault = '1'
     --
     -- Note that this implies that a fast master/slave combo are allowed to, for example, keep writeReady and valid high all the time and transact data every rising edge of the clock.
     -- If this is what you want, you should probably still use the burst flag. This works as the INCR mode of AXI and has to be respected by all parties in between the master and slave.
@@ -160,6 +160,10 @@ package bus_pkg is
         addr_range  : addr_range_type
     ) return boolean;
 
+    pure function bus_addr_is_aligned_to_bus(
+        addr : bus_address_type
+    ) return boolean;
+
     -- Mapping functions
     function bus_map_range(
         high      : natural;
@@ -268,6 +272,18 @@ package body bus_pkg is
     begin
         return unsigned(addr) >= unsigned(addr_range.low) and unsigned(addr) <= unsigned(addr_range.high);
     end bus_addr_in_range;
+
+    pure function bus_addr_is_aligned_to_bus (
+        addr : bus_address_type
+    ) return boolean is
+    begin
+        for i in 0 to bus_bytes_per_word_log2b - 1 loop
+            if addr(i) = '1' then
+                return false;
+            end if;
+        end loop;
+        return true;
+    end function;
 
     function bus_map_range(
         high      : natural;
