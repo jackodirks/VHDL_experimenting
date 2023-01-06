@@ -19,7 +19,6 @@ end bus_singleport_ram;
 
 architecture Behavioral of bus_singleport_ram is
 
-    constant word_count : natural := 2**(DEPTH_LOG2B - bus_bytes_per_word_log2b);
     constant byte_count : natural := 2**DEPTH_LOG2B;
 
     signal ram : bus_byte_array(0 to byte_count - 1);
