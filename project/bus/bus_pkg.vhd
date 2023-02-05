@@ -115,7 +115,7 @@ package bus_pkg is
     );
 
     -- Returns true when the specified master is requesting something.
-    function bus_requesting(
+    pure function bus_requesting(
         b     : bus_mst2slv_type
     ) return boolean;
 
@@ -187,11 +187,15 @@ package bus_pkg is
         addrMap   : addrMapping_type
     ) return bus_address_type;
 
+    pure function bus_mst_active (
+        mst : bus_mst2slv_type
+    ) return boolean;
+
 end bus_pkg;
 
 package body bus_pkg is
 
-    function bus_requesting(
+    pure function bus_requesting(
         b   : bus_mst2slv_type
     ) return boolean is
     begin
@@ -348,4 +352,11 @@ package body bus_pkg is
         end loop;
         return res;
     end bus_apply_addr_map;
+
+    pure function bus_mst_active (
+        mst : bus_mst2slv_type
+    ) return boolean is
+    begin
+        return bus_requesting(mst) or mst.burst = '1';
+    end function;
 end bus_pkg;
