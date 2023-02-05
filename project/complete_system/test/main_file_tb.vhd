@@ -41,6 +41,8 @@ architecture tb of main_file_tb is
     signal slide_switch : std_logic_vector(7 downto 0) := (others => '0');
     -- Leds
     signal led : std_logic_vector(7 downto 0);
+    -- Button
+    signal push_button : std_logic := '0';
 begin
     clk <= not clk after (clk_period/2);
     process
@@ -159,6 +161,7 @@ begin
         JB_gpio(3 downto 1) => cs_n,
         JB_gpio(0) => sck,
         slide_switch => slide_switch,
+        push_button => push_button,
         led => led,
         seven_seg_kath => seven_segment_kath,
         seven_seg_an => seven_segment_an,

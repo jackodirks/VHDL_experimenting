@@ -13,6 +13,7 @@ entity main_file is
         --JD_gpio : inout  STD_LOGIC_VECTOR (3 downto 0);
         slide_switch : in  STD_LOGIC_VECTOR (7 downto 0);
         --push_button : in  STD_LOGIC_VECTOR (3 downto 0);
+        push_button : in  STD_LOGIC;
         led : out  STD_LOGIC_VECTOR (7 downto 0);
         seven_seg_kath : out  STD_LOGIC_VECTOR (7 downto 0);
         seven_seg_an : out  STD_LOGIC_VECTOR (3 downto 0);
@@ -67,7 +68,7 @@ architecture Behavioral of main_file is
 
 begin
 
-    rst <= '0';
+    rst <= push_button;
 
     mem_spi_sio_in <= JA_gpio;
     JA_gpio <= mem_spi_sio_out;
