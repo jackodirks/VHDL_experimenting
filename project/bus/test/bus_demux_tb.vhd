@@ -42,93 +42,90 @@ architecture tb of bus_demux_tb is
     signal demux2master : bus_slv2mst_type := BUS_SLV2MST_IDLE;
     signal master2demux : bus_mst2slv_type := BUS_MST2SLV_IDLE;
     signal clk : std_logic := '0';
-    signal rst : std_logic := '0';
 
     signal helper_master : bus_mst2slv_type := BUS_MST2SLV_IDLE;
+
+    function busMasterIsIdle(master: bus_mst2slv_type) return boolean is
+    begin
+        return master.readReady = '0' and master.writeReady = '0' and master.burst = '0';
+    end function;
 
 begin
 
     clk <= not clk after (clk_period/2);
 
     main : process
+        variable actualAddress : std_logic_vector(bus_address_type'range);
+        variable expectedAddress : std_logic_vector(bus_address_type'range);
     begin
         test_runner_setup(runner, runner_cfg);
         while test_suite loop
-            if run("Complete run") then
-                master2demux <= bus_tb_mst2slv(address => 10, readReady => '1');
-                wait for clk_period/4;
-                check(demux2secondSlave = BUS_MST2SLV_IDLE);
-                check(demux2firstSlave = master2demux);
-                firstSlave2demux.readValid <= '1';
-                firstSlave2demux.readData <= std_logic_vector(to_unsigned(34, bus_data_type'length));
-                wait for clk_period/4;
-                check(demux2secondSlave = BUS_MST2SLV_IDLE);
-                check(demux2firstSlave = master2demux);
-                check(demux2master = firstSlave2demux);
-
-                master2demux <= BUS_MST2SLV_IDLE;
-                wait for clk_period/4;
-                check(demux2firstSlave = BUS_MST2SLV_IDLE);
-                check(demux2secondSlave = BUS_MST2SLV_IDLE);
-                check(demux2master = BUS_SLV2MST_IDLE);
-
-                firstSlave2demux <= BUS_SLV2MST_IDLE;
-                master2demux <= bus_tb_mst2slv(address => 40, writeReady => '1');
-                helper_master <= bus_tb_mst2slv(address => 8, writeReady => '1');
-                wait for clk_period/4;
-                check(demux2firstSlave = BUS_MST2SLV_IDLE);
-                check(demux2secondSlave = helper_master);
-                check(demux2master = BUS_SLV2MST_IDLE);
-
-                secondSlave2demux.fault <= '1';
-                secondSlave2demux.readData <= std_logic_vector(to_unsigned(14, bus_data_type'length));
-                wait for clk_period/4;
-                check(demux2firstSlave = BUS_MST2SLV_IDLE);
-                check(demux2secondSlave = helper_master);
-                check(demux2master = secondSlave2demux);
-
-                master2demux <= BUS_MST2SLV_IDLE;
-                helper_master <= BUS_MST2SLV_IDLE;
-                wait for clk_period/4;
-                check(demux2firstSlave = BUS_MST2SLV_IDLE);
-                check(demux2secondSlave = BUS_MST2SLV_IDLE);
-                check(demux2master = BUS_SLV2MST_IDLE);
-
-                secondSlave2demux <= BUS_SLV2MST_IDLE;
-                master2demux <= bus_tb_mst2slv(address => 50, readReady => '1');
-                helper_master <= bus_tb_mst2slv(address => 18, readReady => '1');
-                wait for clk_period/4;
-                check(demux2firstSlave = BUS_MST2SLV_IDLE);
-                check(demux2secondSlave = helper_master);
-                check(demux2master = BUS_SLV2MST_IDLE);
-
-                secondSlave2demux.readValid <= '1';
-                secondSlave2demux.readData <= std_logic_vector(to_unsigned(45, bus_data_type'length));
-                wait for clk_period/4;
-                check(demux2firstSlave = BUS_MST2SLV_IDLE);
-                check(demux2secondSlave = helper_master);
-                check(demux2master = secondSlave2demux);
-
-                master2demux <= BUS_MST2SLV_IDLE;
-                helper_master <= BUS_MST2SLV_IDLE;
-                wait for clk_period/4;
-                check(demux2firstSlave = BUS_MST2SLV_IDLE);
-                check(demux2secondSlave = BUS_MST2SLV_IDLE);
-                check(demux2master = BUS_SLV2MST_IDLE);
-
-                master2demux <= bus_tb_mst2slv(address => 20, readReady => '1');
-                wait for clk_period/4;
-                check(demux2firstSlave = BUS_MST2SLV_IDLE);
-                check(demux2secondSlave = BUS_MST2SLV_IDLE);
+            if run("Hit first slave without remapping") then
+                actualAddress := std_logic_vector(to_unsigned(4, bus_address_type'length));
+                expectedAddress := actualAddress;
+                master2demux <= bus_mst2slv_read(address => actualAddress);
+                wait until rising_edge(clk);
+                check(demux2firstSlave.readReady = '1');
+                check_equal(demux2firstSlave.address, expectedAddress);
+            elsif run("Second slave is idle if first slave is addressed") then
+                actualAddress := std_logic_vector(to_unsigned(4, bus_address_type'length));
+                expectedAddress := actualAddress;
+                master2demux <= bus_mst2slv_read(address => actualAddress);
+                wait until rising_edge(clk);
+                check(busMasterIsIdle(demux2secondSlave));
+            elsif run("Hit second slave with remapping") then
+                actualAddress := std_logic_vector(to_unsigned(36, bus_address_type'length));
+                expectedAddress := std_logic_vector(to_unsigned(4, bus_address_type'length));
+                master2demux <= bus_mst2slv_read(address => actualAddress);
+                wait until rising_edge(clk);
+                check(demux2secondSlave.readReady = '1');
+                check_equal(demux2secondSlave.address, expectedAddress);
+            elsif run("Out of range results in correct error") then
+                actualAddress := std_logic_vector(to_unsigned(64, bus_address_type'length));
+                master2demux <= bus_mst2slv_read(address => actualAddress);
+                wait until rising_edge(clk);
                 check(demux2master.fault = '1');
-                for i in bus_address_type'range loop
-                    check(demux2master.readData(i) = '1');
-                end loop;
-                rst <= '1';
-                wait for clk_period/4;
-                check(demux2firstSlave = BUS_MST2SLV_IDLE);
-                check(demux2secondSlave = BUS_MST2SLV_IDLE);
-                check(demux2master = BUS_SLV2MST_IDLE);
+                check(demux2master.faultData = bus_fault_address_out_of_range);
+            elsif run("No slave is addressed on out of range error") then
+                actualAddress := std_logic_vector(to_unsigned(64, bus_address_type'length));
+                master2demux <= bus_mst2slv_read(address => actualAddress);
+                wait until rising_edge(clk);
+                check(busMasterIsIdle(demux2firstSlave));
+                check(busMasterIsIdle(demux2secondSlave));
+            elsif run("Answer from correct slave is passed on") then
+                actualAddress := std_logic_vector(to_unsigned(4, bus_address_type'length));
+                master2demux <= bus_mst2slv_read(address => actualAddress);
+                secondSlave2demux.writeValid <= '1';
+                secondSlave2demux.fault <= '1';
+                secondSlave2demux.readData <= X"000000FF";
+                secondSlave2demux.faultData <= bus_fault_address_out_of_range;
+
+                firstSlave2demux.readValid <= '1';
+                firstSlave2demux.readData <= X"000000AA";
+                firstSlave2demux.faultData <= bus_fault_no_fault;
+                wait until rising_edge(clk);
+                check(demux2master.writeValid = '0');
+                check(demux2master.readValid = '1');
+                check(demux2master.fault = '0');
+                check(demux2master.readData = X"000000AA");
+                check(demux2master.faultData = bus_fault_no_fault);
+            elsif run("Burst causes selection") then
+                actualAddress := std_logic_vector(to_unsigned(4, bus_address_type'length));
+                expectedAddress := actualAddress;
+                master2demux <= bus_mst2slv_read(address => actualAddress, burst => '1');
+                master2demux.readReady <= '0';
+                wait until rising_edge(clk);
+                check(demux2firstSlave.burst = '1');
+                check_equal(demux2firstSlave.address, expectedAddress);
+            elsif run("An idle master selects nothing") then
+                actualAddress := std_logic_vector(to_unsigned(4, bus_address_type'length));
+                expectedAddress := (others => 'X');
+                master2demux.address <= actualAddress;
+                wait until rising_edge(clk);
+                check_equal(demux2firstSlave.address, expectedAddress);
+                check_equal(demux2secondSlave.address, expectedAddress);
+                check(busMasterIsIdle(demux2firstSlave));
+                check(busMasterIsIdle(demux2secondSlave));
             end if;
         end loop;
         wait until rising_edge(clk) or falling_edge(clk);
@@ -142,7 +139,6 @@ begin
         ADDRESS_MAP(1) => secondRange
     )
     port map (
-        rst => rst,
         mst2demux => master2demux,
         demux2mst => demux2master,
         demux2slv(0) => demux2firstSlave,

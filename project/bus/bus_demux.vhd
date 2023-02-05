@@ -7,12 +7,9 @@ use work.bus_pkg.all;
 
 entity bus_demux is
     generic (
-        ADDRESS_MAP         :  addr_range_and_mapping_array;
-        OOR_FAULT_CODE      :  bus_data_type := (others => '1')
+        ADDRESS_MAP         :  addr_range_and_mapping_array
     );
     port (
-        rst                 : in std_logic;
-
         mst2demux           : in bus_mst2slv_type;
         demux2mst           : out bus_slv2mst_type;
 
@@ -24,7 +21,7 @@ end bus_demux;
 architecture behaviourial of bus_demux is
 begin
 
-    combinatoral : process(mst2demux, slv2demux, rst)
+    combinatoral : process(mst2demux, slv2demux)
         variable none_selected  : boolean := true;
     begin
         demux2mst <= BUS_SLV2MST_IDLE;
@@ -34,7 +31,7 @@ begin
 
         none_selected := true;
 
-        if rst /= '1' and bus_requesting(mst2demux) then
+        if bus_requesting(mst2demux) or mst2demux.burst = '1' then
             for i in 0 to ADDRESS_MAP'high loop
                 if bus_addr_in_range(mst2demux.address, ADDRESS_MAP(i).addr_range) then
                     none_selected := false;
@@ -46,7 +43,7 @@ begin
 
             if none_selected then
                 demux2mst.fault <= '1';
-                demux2mst.readData <= OOR_FAULT_CODE;
+                demux2mst.faultData <= bus_fault_address_out_of_range;
             end if;
         end if;
     end process;

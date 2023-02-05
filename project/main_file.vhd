@@ -95,11 +95,9 @@ begin
 
     demux : entity work.bus_demux
     generic map (
-        ADDRESS_MAP => address_map,
-        OOR_FAULT_CODE => (others => '0')
+        ADDRESS_MAP => address_map
     )
     port map (
-        rst => rst,
         mst2demux => depp2demux,
         demux2mst => demux2depp,
         demux2slv(0) => demux2ss,
