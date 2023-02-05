@@ -4,79 +4,90 @@ use IEEE.numeric_std.all;
 use ieee.math_real.all;
 
 library work;
-use work.bus_pkg.all;
+use work.bus_pkg;
+-- TODO
+-- Remove the fast read/write stuff and have it default enabled. Also remove the activation register
+-- Add a fault register and a fault_address register (make sure that there is a NO_FAULT fault)
+-- Add a burst register, length of 255 seems plenty
+-- Overlay writeData and readData
+-- Make a slide: writeMask -> burst -> busAddress -> read/write. Make it so that any read/write updates the internal depp address unless we are in the read/write register
+-- This way, operations will be wayy cheaper since deppAddress will only ever be set once. For any operation.
+-- Make another slide: faultData -> faultAddress put it in front of writeMask.
 
 package depp_pkg is
 
     subtype depp_address_type is std_logic_vector(7 downto 0);
     subtype depp_data_type is std_logic_vector(7 downto 0);
 
-    constant depp2bus_write_mask_length_ceil : natural := natural(ceil(real(bus_write_mask'length)/real(8)));
+    type selected_request_register_type is (reqReg_none, reqReg_faultData, reqReg_faultAddress, reqReg_writeMask, reqReg_burstLength, reqReg_address, reqReg_readWrite);
+
+    constant depp_words_per_bus_word : natural := bus_pkg.bus_data_type'length / depp_pkg.depp_data_type'length;
+    constant depp_words_per_bus_address : natural := bus_pkg.bus_address_type'length / depp_pkg.depp_data_type'length;
+    constant depp_data_type_size : natural := depp_data_type'length;
+
     -- All registers are defined as inclusive start, inclusive end.
-    -- First the common registers, addr and data are available to both read and write
-    constant depp2bus_addr_reg_start : natural := 0;
-    constant depp2bus_addr_reg_len : natural := bus_address_type'length/8;
-    constant depp2bus_addr_reg_end : natural := depp2bus_addr_reg_start + depp2bus_addr_reg_len - 1;
-    constant depp2bus_writeData_reg_start : natural := depp2bus_addr_reg_start + depp2bus_addr_reg_len;
-    constant depp2bus_writeData_reg_len : natural := bus_data_type'length/8;
-    constant depp2bus_writeData_reg_end : natural := depp2bus_writeData_reg_start + depp2bus_writeData_reg_len - 1;
-    -- Writing to the readData register has no effect
-    constant depp2bus_readData_reg_start : natural := depp2bus_writeData_reg_end + 1;
-    constant depp2bus_readData_reg_len : natural := bus_data_type'length/8;
-    constant depp2bus_readData_reg_end : natural := depp2bus_readData_reg_start + depp2bus_readData_reg_len - 1;
-    constant depp2bus_write_mask_reg_start : natural := depp2bus_readData_reg_end + 1;
-    constant depp2bus_write_mask_reg_len : natural := depp2bus_write_mask_length_ceil;
-    constant depp2bus_write_mask_reg_end : natural := depp2bus_write_mask_reg_start + depp2bus_write_mask_reg_len - 1;
-    constant depp2bus_mode_register_start : natural := depp2bus_write_mask_reg_end + 1;
-    constant depp2bus_mode_register_end : natural := depp2bus_mode_register_start;
-    -- Writing to the fault register has no effect
-    constant depp2bus_fault_register_start : natural := depp2bus_mode_register_end + 1;
-    constant depp2bus_fault_register_end : natural := depp2bus_fault_register_start;
-    -- Reading from this register always returns 0
-    constant depp2bus_activation_register_start : natural := depp2bus_fault_register_end + 1;
-    constant depp2bus_activation_register_end : natural := depp2bus_activation_register_start;
+    constant depp2bus_faultData_reg_start : natural := 0;
+    constant depp2bus_faultData_reg_end : natural := depp2bus_faultData_reg_start;
+    constant depp2bus_faultAddress_reg_start : natural := depp2bus_faultData_reg_end + 1;
+    constant depp2bus_faultAddress_reg_end : natural := depp2bus_faultAddress_reg_start + depp_words_per_bus_address - 1;
+    constant depp2bus_writeMask_reg_start : natural := depp2bus_faultAddress_reg_end + 1;
+    constant depp2bus_writeMask_reg_end : natural := depp2bus_writeMask_reg_start;
+    constant depp2bus_burstLength_reg_start : natural := depp2bus_writeMask_reg_end + 1;
+    constant depp2bus_burstLength_reg_end : natural := depp2bus_burstLength_reg_start;
+    constant depp2bus_address_reg_start : natural := depp2bus_burstLength_reg_end + 1;
+    constant depp2bus_address_reg_end : natural := depp2bus_address_reg_start + depp_words_per_bus_address - 1;
+    constant depp2bus_readWrite_reg_start : natural := depp2bus_address_reg_end + 1;
+    constant depp2bus_readWrite_reg_end : natural := depp2bus_readWrite_reg_start + depp_words_per_bus_word - 1;
 
-    -- The possible modes of the depp2bus device. This is about address increment rules (both depp and bus)
-    --
-    -- With fast write enabled, a write to depp2bus_writeData_reg_end will first execute normally and then trigger a write action on the bus.
-    -- After the write action, the bus address will be incremented by depp2bus_writeData_reg_len.
-    -- Moreover, any write to the writeData_reg will cause the depp address to increase by one, wrapping around to start when required.
-    -- One should set the start bus address and the writemask, then set the depp address to depp2bus_writeData_start and
-    -- then just keep writing the dstb.
-    constant depp_mode_fast_write_bit : natural := 0;
+    procedure decode_request_register (
+        constant address : natural range 0 to 255;
+        variable selected_request_register : out selected_request_register_type;
+        variable relative_address : out natural range 0 to 255
+    );
 
-    -- When fast read is enabled:
-    -- Any read from the readData reg will increment the depp address with wraparound after the read is completed.
-    -- Any read from readData_reg_start will first cause a bus read before executing the read.
-    -- The bus address is incremented by depp2bus_readData_reg_len after such an automatic read.
-    --
-    -- One should set the bus address, set the depp address to depp2bus_readData_reg_start and then keep on reading for as long as required.
-    constant depp_mode_fast_read_bit : natural := 1;
+    pure function incremented_bus_address(
+        address : bus_pkg.bus_address_type
+    ) return bus_pkg.bus_address_type;
 
-    function depp_mode_fast_write_active(
-        depp_mode   :   depp_data_type
-    ) return boolean;
-
-    function depp_mode_fast_read_active(
-        depp_mode   :   depp_data_type
-    ) return boolean;
-
-end depp_pkg;
+end package;
 
 package body depp_pkg is
-
-    function depp_mode_fast_write_active(
-        depp_mode   :   depp_data_type
-    ) return boolean is
+    procedure decode_request_register (
+        constant address : natural range 0 to 255;
+        variable selected_request_register : out selected_request_register_type;
+        variable relative_address : out natural range 0 to 255
+    ) is
     begin
-        return depp_mode(depp_mode_fast_write_bit) = '1';
-    end function;
+        if address >= depp2bus_faultData_reg_start and address <= depp2bus_faultData_reg_end then
+            selected_request_register := reqReg_faultData;
+            relative_address := address - depp2bus_faultData_reg_start;
+        elsif address >= depp2bus_faultAddress_reg_start and address <= depp2bus_faultAddress_reg_end then
+            selected_request_register := reqReg_faultAddress;
+            relative_address := address - depp2bus_faultAddress_reg_start;
+        elsif address >= depp2bus_writeMask_reg_start and address <= depp2bus_writeMask_reg_end then
+            selected_request_register := reqReg_writeMask;
+            relative_address := address - depp2bus_writeMask_reg_start;
+        elsif address >= depp2bus_burstLength_reg_start and address <= depp2bus_burstLength_reg_end then
+            selected_request_register := reqReg_burstLength;
+            relative_address := address - depp2bus_burstLength_reg_start;
+        elsif address >= depp2bus_address_reg_start and address <= depp2bus_address_reg_end then
+            selected_request_register := reqReg_address;
+            relative_address := address - depp2bus_address_reg_start;
+        elsif address >= depp2bus_readWrite_reg_start and address <= depp2bus_readWrite_reg_end then
+            selected_request_register := reqReg_readWrite;
+            relative_address := address - depp2bus_readWrite_reg_start;
+        else
+            selected_request_register := reqReg_none;
+            relative_address := 0;
+        end if;
+    end procedure;
 
-    function depp_mode_fast_read_active(
-        depp_mode   :   depp_data_type
-    ) return boolean is
+    pure function incremented_bus_address(
+        address : bus_pkg.bus_address_type
+    ) return bus_pkg.bus_address_type is
+        variable addr : natural;
     begin
-        return depp_mode(depp_mode_fast_read_bit) = '1';
+        addr := to_integer(unsigned(address));
+        return std_logic_vector(to_unsigned(addr + depp_words_per_bus_address, address'length));
     end function;
-
 end package body;

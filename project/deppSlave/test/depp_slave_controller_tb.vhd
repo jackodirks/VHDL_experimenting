@@ -7,11 +7,12 @@ context vunit_lib.vunit_context;
 context vunit_lib.vc_context;
 
 library src;
-use src.bus_pkg.all;
-use src.depp_pkg.all;
+use src.bus_pkg;
+use src.depp_pkg;
 
 library tb;
-use tb.depp_tb_pkg.all;
+use tb.simulated_bus_memory_pkg;
+use tb.simulated_depp_master_pkg;
 
 entity depp_slave_controller_tb is
     generic (
@@ -20,453 +21,247 @@ end entity;
 
 architecture tb of depp_slave_controller_tb is
     constant clk_period : time := 20 ns;
+    constant slaveActor : actor_t := new_actor("slave");
+    constant deppMasterActor : actor_t := new_actor("Depp Master");
 
     signal clk : std_logic := '0';
     signal rst : std_logic := '0';
 
-    signal depp_db : std_logic_vector(7 downto 0) := (others => '0');
-    signal depp_write : std_logic := '1';
-    signal depp_astb : std_logic := '1';
-    signal depp_dstb : std_logic := '1';
-    signal depp_wait : std_logic;
+    signal usb_db : std_logic_vector(7 downto 0) := (others => '0');
+    signal usb_write : std_logic := '1';
+    signal usb_astb : std_logic := '1';
+    signal usb_dstb : std_logic := '1';
+    signal usb_wait : std_logic;
 
-    signal mst2slv : bus_mst2slv_type := BUS_MST2SLV_IDLE;
-    signal slv2mst : bus_slv2mst_type := BUS_SLV2MST_IDLE;
+    signal mst2slv : bus_pkg.bus_mst2slv_type;
+    signal slv2mst : bus_pkg.bus_slv2mst_type;
 
 begin
-
     clk <= not clk after (clk_period/2);
-
     main : process
-        variable address : bus_address_type;
-        variable writeData : bus_data_type;
-        variable readData : bus_data_type;
-        variable faultData : bus_fault_type;
-        variable readData_out : bus_data_type;
-        variable writeMask : bus_write_mask;
-        variable deppMode : depp_data_type;
-        variable deppAddr : depp_address_type;
-        variable expectedState : depp_slave_state_type := DEPP_SLAVE_STATE_TYPE_IDLE;
-        variable actualState : depp_slave_state_type := DEPP_SLAVE_STATE_TYPE_IDLE;
+        variable address : bus_pkg.bus_address_type;
+        variable writeMask : bus_pkg.bus_write_mask;
+        variable writeData : bus_pkg.bus_data_type;
+        variable readData : bus_pkg.bus_data_type;
+        variable faultData : bus_pkg.bus_fault_type;
+        variable faultAddress : bus_pkg.bus_address_type;
+        variable writeDataArray : bus_pkg.bus_data_array(300 downto 0);
+        variable readDataArray : bus_pkg.bus_data_array(300 downto 0);
     begin
         test_runner_setup(runner, runner_cfg);
         while test_suite loop
-            if run("Simple write") then
-                slv2mst <= BUS_SLV2MST_IDLE;
-                depp_db <= (others => 'Z');
-                -- Initial situation:
-                wait for clk_period;
-                check_equal('0', depp_wait);
-                wait until falling_edge(clk);
-                -- Start setting the output
-                address := std_logic_vector(to_unsigned(125, address'length));
-                writeData := std_logic_vector(to_unsigned(14, writeData'length));
+            if run("Single write") then
+                address := std_logic_vector(to_unsigned(0, address'length));
                 writeMask := (others => '1');
-                depp_tb_bus_prepare_write(
-                    clk => clk,
-                    usb_db => depp_db,
-                    usb_write => depp_write,
-                    usb_astb => depp_astb,
-                    usb_dstb => depp_dstb,
-                    usb_wait => depp_wait,
-                    address => address,
-                    writeData => writeData,
-                    writeMask => writeMask
-                );
-                -- Start the write
-                depp_tb_bus_start_transaction(
-                    clk => clk,
-                    usb_db => depp_db,
-                    usb_write => depp_write,
-                    usb_astb => depp_astb,
-                    usb_dstb => depp_dstb,
-                    usb_wait => depp_wait,
-                    doRead => false
-                );
-                wait until rising_edge(clk) and bus_requesting(mst2slv);
-                check_equal(mst2slv.address, address);
-                check_equal(mst2slv.writeData, writeData);
-                check_equal(mst2slv.writeMask, writeMask);
-                check_equal(mst2slv.writeReady, '1');
-                check_equal(mst2slv.readReady, '0');
-                check_equal(depp_wait, '0');
-                -- Wait a while, then finish normally
-                wait for 26*clk_period;
-                wait until falling_edge(clk);
-                slv2mst.writeValid <= '1';
-                wait until rising_edge(clk) and any_transaction(mst2slv, slv2mst);
-                slv2mst.writeValid <= '0';
-                wait until rising_edge(clk);
-                check_equal(mst2slv.writeReady, '0');
-                check_equal(mst2slv.readReady, '0');
-                check_equal(depp_wait, '1');
-                depp_tb_bus_finish_write_transaction(
-                    clk => clk,
-                    usb_db => depp_db,
-                    usb_write => depp_write,
-                    usb_astb => depp_astb,
-                    usb_dstb => depp_dstb,
-                    usb_wait => depp_wait
-                );
-                expectedState.address := address;
-                expectedState.writeData := writeData;
-                expectedState.writeMask := writeMask;
-                depp_tb_slave_check_state (
-                    clk => clk,
-                    usb_db => depp_db,
-                    usb_write => depp_write,
-                    usb_astb => depp_astb,
-                    usb_dstb => depp_dstb,
-                    usb_wait => depp_wait,
-                    actualState => actualState
-                );
-                check(actualState.address = expectedState.address);
-                check(actualState.writeData = expectedState.writeData);
-                check(actualState.writeMask = expectedState.writeMask);
-                check(actualState.deppMode = expectedState.deppMode);
-                check(actualState.fault = false);
-            end if;
-            if run("Simple read") then
-                slv2mst <= BUS_SLV2MST_IDLE;
-                depp_db <= (others => 'Z');
-                -- Initial situation:
-                wait for clk_period;
-                check_equal('0', depp_wait);
-                wait until falling_edge(clk);
-                -- Start setting the output
-                address := std_logic_vector(to_unsigned(35, address'length));
-                writeData := (others => '0');
-                writeMask := (others => '0');
-                readData := std_logic_vector(to_unsigned(149, writeData'length));
-                depp_tb_bus_prepare_read(
-                    clk => clk,
-                    usb_db => depp_db,
-                    usb_write => depp_write,
-                    usb_astb => depp_astb,
-                    usb_dstb => depp_dstb,
-                    usb_wait => depp_wait,
-                    address => address
-                );
-                -- Start the read
-                depp_tb_bus_start_transaction(
-                    clk => clk,
-                    usb_db => depp_db,
-                    usb_write => depp_write,
-                    usb_astb => depp_astb,
-                    usb_dstb => depp_dstb,
-                    usb_wait => depp_wait,
-                    doRead => true
-                );
-                wait until rising_edge(clk) and bus_requesting(mst2slv);
-                check_equal(mst2slv.address, address);
-                check_equal(mst2slv.writeReady, '0');
-                check_equal(mst2slv.readReady, '1');
-                check_equal(depp_wait, '0');
-                wait for 26*clk_period;
-                wait until falling_edge(clk);
-                slv2mst.readValid <= '1';
-                slv2mst.readData <= readData;
-                wait until rising_edge(clk) and any_transaction(mst2slv, slv2mst);
-                slv2mst.readValid <= '0';
-                wait until rising_edge(clk);
-                check_equal(mst2slv.writeReady, '0');
-                check_equal(mst2slv.readReady, '0');
-                check_equal(depp_wait, '1');
-                depp_tb_bus_finish_write_transaction(
-                    clk => clk,
-                    usb_db => depp_db,
-                    usb_write => depp_write,
-                    usb_astb => depp_astb,
-                    usb_dstb => depp_dstb,
-                    usb_wait => depp_wait
-                );
-                expectedState.address := address;
-                expectedState.readData := readData;
-                depp_tb_slave_check_state (
-                    clk => clk,
-                    usb_db => depp_db,
-                    usb_write => depp_write,
-                    usb_astb => depp_astb,
-                    usb_dstb => depp_dstb,
-                    usb_wait => depp_wait,
-                    actualState => actualState
-                );
-                check(actualState.address = expectedState.address);
-                check(actualState.readData = expectedState.readData);
-                check(actualState.deppMode = expectedState.deppMode);
-                check(actualState.fault = false);
-            end if;
-            if run("Write returns error") then
-                slv2mst <= BUS_SLV2MST_IDLE;
-                depp_db <= (others => 'Z');
-                -- Initial situation:
-                wait for clk_period;
-                check_equal('0', depp_wait);
-                wait until falling_edge(clk);
-                -- Start setting the output
-                address := std_logic_vector(to_unsigned(114, address'length));
-                writeData := std_logic_vector(to_unsigned(25, writeData'length));
-                faultData := (others => '1');
+                writeData := std_logic_vector(to_unsigned(512, writeData'length));
+                simulated_depp_master_pkg.write_to_address(
+                    net => net,
+                    actor => deppMasterActor,
+                    addr => address,
+                    mask => writeMask,
+                    data => writeData);
+                simulated_bus_memory_pkg.read_from_address(
+                    net => net,
+                    actor => slaveActor,
+                    addr => address,
+                    data => readData);
+                check_equal(readData, writeData);
+            elsif run("Partial write") then
+                address := std_logic_vector(to_unsigned(0, address'length));
                 writeMask := (others => '1');
-                depp_tb_bus_prepare_write(
-                    clk => clk,
-                    usb_db => depp_db,
-                    usb_write => depp_write,
-                    usb_astb => depp_astb,
-                    usb_dstb => depp_dstb,
-                    usb_wait => depp_wait,
-                    address => address,
-                    writeData => writeData,
-                    writeMask => writeMask
-                );
-                -- Start the write
-                depp_tb_bus_start_transaction(
-                    clk => clk,
-                    usb_db => depp_db,
-                    usb_write => depp_write,
-                    usb_astb => depp_astb,
-                    usb_dstb => depp_dstb,
-                    usb_wait => depp_wait,
-                    doRead => false
-                );
-                wait until rising_edge(clk) and bus_requesting(mst2slv);
-                check_equal(mst2slv.address, address);
-                check_equal(mst2slv.writeData, writeData);
-                check_equal(mst2slv.writeMask, writeMask);
-                check_equal(mst2slv.writeReady, '1');
-                check_equal(mst2slv.readReady, '0');
-                check_equal(depp_wait, '0');
-                -- Wait a while, then finish normally
-                wait for 26*clk_period;
-                wait until falling_edge(clk);
-                slv2mst.fault <= '1';
-                slv2mst.faultData <= faultData;
-                wait until rising_edge(clk) and any_transaction(mst2slv, slv2mst);
-                slv2mst.fault <= '0';
-                wait until rising_edge(clk);
-                check_equal(mst2slv.writeReady, '0');
-                check_equal(mst2slv.readReady, '0');
-                check_equal(depp_wait, '1');
-                depp_tb_bus_finish_write_transaction(
-                    clk => clk,
-                    usb_db => depp_db,
-                    usb_write => depp_write,
-                    usb_astb => depp_astb,
-                    usb_dstb => depp_dstb,
-                    usb_wait => depp_wait
-                );
-                expectedState.address := address;
-                depp_tb_slave_check_state (
-                    clk => clk,
-                    usb_db => depp_db,
-                    usb_write => depp_write,
-                    usb_astb => depp_astb,
-                    usb_dstb => depp_dstb,
-                    usb_wait => depp_wait,
-                    actualState => actualState
-                );
-                check(actualState.address = expectedState.address);
-                check(actualState.deppMode = expectedState.deppMode);
-                check(actualState.fault = true);
-            end if;
-            if run("Sequential write mode") then
-                slv2mst <= BUS_SLV2MST_IDLE;
-                address := (others => '0');
                 writeData := (others => '0');
-                readData := (others => '0');
-                writeMask := (others => '0');
-                deppMode := (others => '0');
-                deppMode(depp_mode_fast_write_bit) := '1';
-                deppAddr := std_logic_vector(to_unsigned(depp2bus_mode_register_start, deppAddr'length));
-                -- Initial situation:
-                wait for clk_period;
-                check_equal('0', depp_wait);
-                -- Enable sequential write mode
-                depp_tb_depp_write_to_address(
-                    clk => clk,
-                    usb_db => depp_db,
-                    usb_write => depp_write,
-                    usb_astb => depp_astb,
-                    usb_dstb => depp_dstb,
-                    usb_wait => depp_wait,
-                    addr => deppAddr,
-                    data => deppMode
-                );
-                -- Set the start address
-                depp_tb_bus_set_address (
-                    clk => clk,
-                    usb_db => depp_db,
-                    usb_write => depp_write,
-                    usb_astb => depp_astb,
-                    usb_dstb => depp_dstb,
-                    usb_wait => depp_wait,
-                    address => address
-                );
-                depp_tb_bus_set_write_mask (
-                    clk => clk,
-                    usb_db => depp_db,
-                    usb_write => depp_write,
-                    usb_astb => depp_astb,
-                    usb_dstb => depp_dstb,
-                    usb_wait => depp_wait,
-                    write_mask => writeMask
-                );
-                deppAddr := std_logic_vector(to_unsigned(depp2bus_writeData_reg_start, deppAddr'length));
-                depp_tb_depp_set_address (
-                    clk => clk,
-                    usb_db => depp_db,
-                    usb_write => depp_write,
-                    usb_astb => depp_astb,
-                    usb_dstb => depp_dstb,
-                    usb_wait => depp_wait,
-                    addr => deppAddr
-                );
-                for i in 0 to 20 loop
-                    writeData := std_logic_vector(to_unsigned(i, writeData'length));
-                    address := std_logic_vector(to_unsigned(i*depp2bus_writeData_reg_len, address'length));
-                    for j in 0 to depp2bus_writeData_reg_len - 1 loop
-                        depp_tb_depp_set_data(
-                            clk => clk,
-                            usb_db => depp_db,
-                            usb_write => depp_write,
-                            usb_astb => depp_astb,
-                            usb_dstb => depp_dstb,
-                            usb_wait => depp_wait,
-                            data => writeData((j+1)*8 - 1 downto j*8),
-                            expect_completion => (j /= depp2bus_writeData_reg_len - 1)
-                        );
-                    end loop;
-                    wait until rising_edge(clk) and bus_requesting(mst2slv);
-                    check_equal(mst2slv.writeReady, '1');
-                    check_equal(mst2slv.address, address);
-                    check_equal(mst2slv.writeData, writeData);
-                    check_equal(mst2slv.writeMask, writeMask);
-                    check_equal(mst2slv.readReady, '0');
-                    check_equal(depp_wait, '0');
-                    slv2mst.writeValid <= '1';
-                    wait until rising_edge(clk) and any_transaction(mst2slv, slv2mst);
-                    slv2mst.writeValid <= '0';
-                    depp_tb_bus_finish_write_transaction(
-                        clk => clk,
-                        usb_db => depp_db,
-                        usb_write => depp_write,
-                        usb_astb => depp_astb,
-                        usb_dstb => depp_dstb,
-                        usb_wait => depp_wait
-                    );
+                simulated_depp_master_pkg.write_to_address(
+                    net => net,
+                    actor => deppMasterActor,
+                    addr => address,
+                    mask => writeMask,
+                    data => writeData);
+                address := std_logic_vector(to_unsigned(0, address'length));
+                writeMask := "1010";
+                writeData := (others => '1');
+                simulated_depp_master_pkg.write_to_address(
+                    net => net,
+                    actor => deppMasterActor,
+                    addr => address,
+                    mask => writeMask,
+                    data => writeData);
+                simulated_bus_memory_pkg.read_from_address(
+                    net => net,
+                    actor => slaveActor,
+                    addr => address,
+                    data => readData);
+                writeData := X"FF00FF00";
+                check_equal(readData, writeData);
+            elsif run("Single read") then
+                address := std_logic_vector(to_unsigned(0, address'length));
+                writeMask := (others => '1');
+                writeData := std_logic_vector(to_unsigned(512, writeData'length));
+                simulated_bus_memory_pkg.write_to_address(
+                    net => net,
+                    actor => slaveActor,
+                    addr => address,
+                    mask => writeMask,
+                    data => writeData);
+                simulated_depp_master_pkg.read_from_address(
+                    net => net,
+                    actor => deppMasterActor,
+                    addr => address,
+                    data => readData);
+                check_equal(readData, writeData);
+            elsif run("Single faulty write") then
+                address := std_logic_vector(to_unsigned(16#800#, address'length));
+                writeMask := (others => '1');
+                writeData := std_logic_vector(to_unsigned(512, writeData'length));
+                simulated_depp_master_pkg.write_to_address_expecting_fault(
+                    net => net,
+                    actor => deppMasterActor,
+                    addr => address,
+                    mask => writeMask,
+                    data => writeData,
+                    faultData => faultData,
+                    faultAddress => faultAddress);
+                check_equal(faultData, bus_pkg.bus_fault_address_out_of_range);
+                check_equal(faultAddress, address);
+            elsif run("Single faulty read") then
+                address := std_logic_vector(to_unsigned(16#800#, address'length));
+                simulated_depp_master_pkg.read_from_address_expecting_fault(
+                    net => net,
+                    actor => deppMasterActor,
+                    addr => address,
+                    data => readData,
+                    faultData => faultData,
+                    faultAddress => faultAddress);
+                check_equal(faultData, bus_pkg.bus_fault_address_out_of_range);
+                check_equal(faultAddress, address);
+            elsif run("Large write transaction") then
+                address := std_logic_vector(to_unsigned(0, address'length));
+                writeMask := (others => '1');
+                for i in 0 to writeDataArray'length - 1 loop
+                    writeDataArray(i) := std_logic_vector(to_unsigned(i, writeDataArray(i)'length));
                 end loop;
-            end if;
-            if run("Sequential read mode") then
-                slv2mst <= BUS_SLV2MST_IDLE;
-                address := (others => '0');
-                writeData := (others => '0');
-                readData := (others => '0');
-                writeMask := (others => '0');
-                deppMode := (others => '0');
-                deppMode(depp_mode_fast_read_bit) := '1';
-                deppAddr := std_logic_vector(to_unsigned(depp2bus_mode_register_start, deppAddr'length));
-                -- Initial situation:
-                wait for clk_period;
-                check_equal('0', depp_wait);
-                -- Enable sequential read mode
-                depp_tb_depp_write_to_address(
-                    clk => clk,
-                    usb_db => depp_db,
-                    usb_write => depp_write,
-                    usb_astb => depp_astb,
-                    usb_dstb => depp_dstb,
-                    usb_wait => depp_wait,
-                    addr => deppAddr,
-                    data => deppMode
-                );
-                -- Set the start address
-                depp_tb_bus_set_address (
-                    clk => clk,
-                    usb_db => depp_db,
-                    usb_write => depp_write,
-                    usb_astb => depp_astb,
-                    usb_dstb => depp_dstb,
-                    usb_wait => depp_wait,
-                    address => address
-                );
-                -- Set the depp address
-                deppAddr := std_logic_vector(to_unsigned(depp2bus_readData_reg_start, deppAddr'length));
-                depp_tb_depp_set_address (
-                    clk => clk,
-                    usb_db => depp_db,
-                    usb_write => depp_write,
-                    usb_astb => depp_astb,
-                    usb_dstb => depp_dstb,
-                    usb_wait => depp_wait,
-                    addr => deppAddr
-                );
-                -- Now start reading
-                for i in 0 to 20 loop
-                    readData := std_logic_vector(to_unsigned(i, writeData'length));
-                    address := std_logic_vector(to_unsigned(i*depp2bus_readData_reg_len, address'length));
-                    depp_tb_depp_get_data(
-                        clk => clk,
-                        usb_db => depp_db,
-                        usb_write => depp_write,
-                        usb_astb => depp_astb,
-                        usb_dstb => depp_dstb,
-                        usb_wait => depp_wait,
-                        data => readData_out(7 downto 0),
-                        expect_completion => false
-                    );
-                    wait until mst2slv.readReady = '1';
-                    check_equal(mst2slv.address, address);
-                    check_equal(mst2slv.writeReady, '0');
-                    check_equal(mst2slv.readReady, '1');
-                    check_equal(depp_wait, '0');
-                    slv2mst.readData <= readData;
-                    slv2mst.readValid <= '1';
-                    wait until rising_edge(clk) and any_transaction(mst2slv, slv2mst);
-                    slv2mst.readValid <= '0';
-                    depp_tb_bus_finish_read_transaction(
-                        clk => clk,
-                        usb_db => depp_db,
-                        usb_write => depp_write,
-                        usb_astb => depp_astb,
-                        usb_dstb => depp_dstb,
-                        usb_wait => depp_wait,
-                        data => readData_out(7 downto 0)
-                    );
-
-                    for j in 1 to depp2bus_readData_reg_len - 1 loop
-                        depp_tb_depp_get_data(
-                            clk => clk,
-                            usb_db => depp_db,
-                            usb_write => depp_write,
-                            usb_astb => depp_astb,
-                            usb_dstb => depp_dstb,
-                            usb_wait => depp_wait,
-                            data => readData_out((j+1)*8 - 1 downto j*8),
-                            expect_completion => true
-                        );
-                    end loop;
-                    check_equal(readData, readData_out);
+                simulated_depp_master_pkg.write_to_address(
+                    net => net,
+                    actor => deppMasterActor,
+                    addr => address,
+                    mask => writeMask,
+                    data => writeDataArray);
+                simulated_bus_memory_pkg.read_from_address(
+                    net => net,
+                    actor => slaveActor,
+                    addr => address,
+                    data => readDataArray);
+                for i in 0 to writeDataArray'length - 1 loop
+                    check_equal(readDataArray(i), writeDataArray(i), "At index " & natural'image(i));
+                end loop;
+            elsif run("Large faulty write transaction") then
+                address := std_logic_vector(to_unsigned(1448, address'length));
+                writeMask := (others => '1');
+                for i in 0 to writeDataArray'length - 1 loop
+                    writeDataArray(i) := std_logic_vector(to_unsigned(i, writeDataArray(i)'length));
+                end loop;
+                simulated_depp_master_pkg.write_to_address_expecting_fault(
+                    net => net,
+                    actor => deppMasterActor,
+                    addr => address,
+                    mask => writeMask,
+                    data => writeDataArray,
+                    faultData => faultData,
+                    faultAddress => faultAddress);
+                check_equal(faultData, bus_pkg.bus_fault_address_out_of_range);
+                address := std_logic_vector(to_unsigned(2648, address'length));
+                check_equal(faultAddress, address);
+                address := std_logic_vector(to_unsigned(844, address'length));
+                simulated_bus_memory_pkg.read_from_address(
+                    net => net,
+                    actor => slaveActor,
+                    addr => address,
+                    data => readDataArray);
+                for i in 151 to writeDataArray'length - 1 loop
+                    check_equal(readDataArray(i), writeDataArray(i - 151), "At index " & natural'image(i));
+                end loop;
+            elsif run("Large read transaction") then
+                address := std_logic_vector(to_unsigned(0, address'length));
+                writeMask := (others => '1');
+                for i in 0 to writeDataArray'length - 1 loop
+                    writeDataArray(i) := std_logic_vector(to_unsigned(i, writeDataArray(i)'length));
+                end loop;
+                simulated_bus_memory_pkg.write_to_address(
+                    net => net,
+                    actor => slaveActor,
+                    addr => address,
+                    mask => writeMask,
+                    data => writeDataArray);
+                simulated_depp_master_pkg.read_from_address(
+                    net => net,
+                    actor => deppMasterActor,
+                    addr => address,
+                    data => readDataArray);
+                for i in 0 to writeDataArray'length - 1 loop
+                    check_equal(readDataArray(i), writeDataArray(i), "At index " & natural'image(i));
+                end loop;
+            elsif run("Large write transaction then large read transaction") then
+                address := std_logic_vector(to_unsigned(0, address'length));
+                writeMask := (others => '1');
+                for i in 0 to writeDataArray'length - 1 loop
+                    writeDataArray(i) := std_logic_vector(to_unsigned(i, writeDataArray(i)'length));
+                end loop;
+                simulated_depp_master_pkg.write_to_address(
+                    net => net,
+                    actor => deppMasterActor,
+                    addr => address,
+                    mask => writeMask,
+                    data => writeDataArray);
+                simulated_depp_master_pkg.read_from_address(
+                    net => net,
+                    actor => deppMasterActor,
+                    addr => address,
+                    data => readDataArray);
+                for i in 0 to writeDataArray'length - 1 loop
+                    check_equal(readDataArray(i), writeDataArray(i), "At index " & natural'image(i));
                 end loop;
             end if;
         end loop;
-        wait until rising_edge(clk) or falling_edge(clk);
+        wait for 2*clk_period;
         test_runner_cleanup(runner);
         wait;
     end process;
 
     test_runner_watchdog(runner, 10 ms);
 
-    controller : entity src.depp_slave_controller
+    depp_slave : entity src.depp_slave_controller
     port map (
         rst => rst,
         clk => clk,
         mst2slv => mst2slv,
         slv2mst => slv2mst,
-        USB_DB => depp_db,
-        USB_WRITE => depp_write,
-        USB_ASTB => depp_astb,
-        USB_DSTB => depp_dstb,
-        USB_WAIT => depp_wait
+        USB_DB => usb_db,
+        USB_WRITE => usb_write,
+        USB_ASTB => usb_astb,
+        USB_DSTB => usb_dstb,
+        USB_WAIT => usb_wait
     );
 
-end tb;
+    bus_slave : entity tb.simulated_bus_memory
+    generic map (
+        depth_log2b => 11,
+        allow_unaligned_access => true,
+        actor => slaveActor,
+        read_delay => 5,
+        write_delay => 5
+    ) port map (
+        clk => clk,
+        mst2mem => mst2slv,
+        mem2mst => slv2mst
+    );
+
+    depp_master : entity tb.simulated_depp_master
+    generic map (
+        actor => deppMasterActor
+    ) port map (
+        usb_db => usb_db,
+        usb_write => usb_write,
+        usb_astb => usb_astb,
+        usb_dstb => usb_dstb,
+        usb_wait => usb_wait
+    );
+end architecture;

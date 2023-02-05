@@ -16,171 +16,178 @@ entity depp_slave_controller is
         mst2slv : out bus_mst2slv_type;
 
         -- Physical USB/DEPP connection
-        USB_DB        : inout STD_LOGIC_VECTOR(7 DOWNTO 0);
-        USB_WRITE     : in STD_LOGIC;
-        USB_ASTB      : in STD_LOGIC;
-        USB_DSTB      : in STD_LOGIC;
-        USB_WAIT      : out STD_LOGIC
+        usb_db        : inout std_logic_vector(7 downto 0);
+        usb_write     : in std_logic;
+        usb_astb      : in std_logic;
+        usb_dstb      : in std_logic;
+        usb_wait      : out std_logic
     );
 end depp_slave_controller;
 
 architecture behaviourial of depp_slave_controller is
-    signal usb_astb_delayed : std_logic;
-    signal usb_dstb_delayed : std_logic;
-    signal mst2slv_out : bus_mst2slv_type := BUS_MST2SLV_IDLE;
+    signal address_request : boolean := false;
+    signal data_request : boolean := false;
 begin
 
-    sequential : process(clk)
-        variable wait_dstb_finish : boolean := false;
-        variable address : natural range 0 to 2**8 - 1;
-        variable address_tmp : natural range 0 to 2**8 - 1;
-        variable read_latch : depp_data_type := (others => '0');
-
-        variable bus_active : boolean := false;
-        variable reread : boolean := false;
-        variable write_mask_reg : std_logic_vector(depp2bus_write_mask_length_ceil*8 - 1 downto 0) := (others => '0');
-        variable slv2mst_cpy : bus_slv2mst_type := BUS_SLV2MST_IDLE;
-
-        variable depp_mode : depp_data_type := (others => '0');
-
-        variable next_bus_address : bus_address_type := (others => '0');
+    delay_request : process(clk)
     begin
+        -- We are crossing clock domains. Therefore, if either of these is high, other signals might still be settling.
+        -- Therefore, delay these by one cycle so that by the time interpretation starts, everything has settled.
         if rising_edge(clk) then
-
-            -- We are crossing clock domains. Therefore, if either of these is high, other signals might still be settling.
-            -- Therefore, delay these by one cycle so that by the time interpretation starts, everything has settled.
-            usb_astb_delayed <= USB_ASTB;
-            usb_dstb_delayed <= USB_DSTB;
-
-            USB_WAIT <= '0';
-            USB_DB <= (others => 'Z');
-            if rst = '1' then
-                USB_WAIT <= '1';
-                wait_dstb_finish := false;
-                mst2slv_out <= BUS_MST2SLV_IDLE;
-                slv2mst_cpy := BUS_SLV2MST_IDLE;
-                write_mask_reg := (others => '0');
-                bus_active := false;
-                address := 0;
+            if usb_astb = '0' then
+                address_request <= true;
             else
-                if bus_active then
-                    if any_transaction(mst2slv_out, slv2mst) then
-                        bus_active := false;
-                        mst2slv_out.writeReady <= '0';
-                        mst2slv_out.readReady <= '0';
-                        mst2slv_out.address <= next_bus_address;
-                        mst2slv_out.burst <= '0';
-                        wait_dstb_finish := true;
-                        slv2mst_cpy := slv2mst;
-                        if reread then
-                            read_latch := slv2mst_cpy.readData(7 downto 0);
-                            reread := false;
-                        end if;
-                    end if;
-                elsif usb_astb_delayed = '0' then
-                    USB_WAIT <= '1';
-                    if USB_WRITE = '0' then
-                        address := to_integer(unsigned(USB_DB));
-                    elsif USB_WRITE = '1' then
-                        USB_DB <= std_logic_vector(to_unsigned(address, usb_db'length));
-                    end if;
-                elsif usb_dstb_delayed = '0' and wait_dstb_finish = false then
-                    wait_dstb_finish := true;
-
-                    if USB_WRITE = '0' then
-                        if address >= depp2bus_addr_reg_start and address <= depp2bus_addr_reg_end then
-                            address_tmp := address - depp2bus_addr_reg_start;
-                            mst2slv_out.address(8*(address_tmp + 1) - 1 downto 8*address_tmp) <= usb_db;
-                        elsif address >= depp2bus_writeData_reg_start and address <= depp2bus_writeData_reg_end then
-                            address_tmp := address - depp2bus_writeData_reg_start;
-                            mst2slv_out.writeData(8*(address_tmp + 1) - 1 downto 8*address_tmp) <= usb_db;
-                            if depp_mode_fast_write_active(depp_mode) then
-                                address := address + 1;
-                                if address > depp2bus_writeData_reg_end then
-                                    next_bus_address := std_logic_vector(to_unsigned(
-                                                        to_integer(unsigned(mst2slv_out.address)) + depp2bus_addr_reg_len,
-                                                        next_bus_address'length));
-                                    address := depp2bus_writeData_reg_start;
-                                    mst2slv_out.writeReady <= '1';
-                                    bus_active := true;
-                                    wait_dstb_finish := false;
-                                end if;
-                            end if;
-                        elsif address >= depp2bus_write_mask_reg_start and address <= depp2bus_write_mask_reg_end then
-                            address_tmp := address - depp2bus_write_mask_reg_start;
-                            write_mask_reg(8*(address_tmp + 1) - 1 downto 8*address_tmp) := usb_db;
-                            mst2slv_out.writeMask <= write_mask_reg(mst2slv_out.writeMask'range);
-                        elsif address >= depp2bus_mode_register_start and address <= depp2bus_mode_register_end then
-                            depp_mode := usb_db;
-                        elsif address >= depp2bus_activation_register_start and address <= depp2bus_activation_register_end then
-                            next_bus_address := mst2slv_out.address;
-                            mst2slv_out.writeReady <= '1';
-                            for i in 0 to usb_db'high loop
-                                if usb_db(i) = '1' then
-                                    mst2slv_out.writeReady <= '0';
-                                    mst2slv_out.readReady <= '1';
-                                end if;
-                            end loop;
-                            bus_active := true;
-                            wait_dstb_finish := false;
-                        end if;
-                    elsif USB_WRITE = '1' then
-                        read_latch := (others => '0');
-                        if address >= depp2bus_addr_reg_start and address <= depp2bus_addr_reg_end then
-                            address_tmp := address - depp2bus_addr_reg_start;
-                            read_latch := mst2slv_out.address(8*address_tmp + 7 downto 8*address_tmp);
-                        elsif address >= depp2bus_writeData_reg_start and address <= depp2bus_writeData_reg_end then
-                            address_tmp := address - depp2bus_writeData_reg_start;
-                            read_latch := mst2slv_out.writeData(8*address_tmp + 7 downto 8*address_tmp);
-                        elsif address >= depp2bus_readData_reg_start and address <= depp2bus_readData_reg_end then
-                            address_tmp := address - depp2bus_readData_reg_start;
-                            if depp_mode_fast_read_active(depp_mode) then
-                                if address = depp2bus_readData_reg_start then
-                                    next_bus_address := std_logic_vector(to_unsigned(
-                                                        to_integer(unsigned(mst2slv_out.address)) + depp2bus_addr_reg_len,
-                                                        next_bus_address'length));
-                                    mst2slv_out.readReady <= '1';
-                                    bus_active := true;
-                                    wait_dstb_finish := false;
-                                    reread := true;
-                                end if;
-                                address := address + 1;
-                                if address > depp2bus_readData_reg_end then
-                                    address := depp2bus_readData_reg_start;
-                                end if;
-                            end if;
-                            read_latch := slv2mst_cpy.readData(8*address_tmp + 7 downto 8*address_tmp);
-                        elsif address >= depp2bus_write_mask_reg_start and address <= depp2bus_write_mask_reg_end then
-                            address_tmp := address - depp2bus_write_mask_reg_start;
-                            read_latch := write_mask_reg(8*(address_tmp + 1) - 1 downto 8*address_tmp);
-                        elsif address >= depp2bus_mode_register_start and address <= depp2bus_mode_register_end then
-                            read_latch := depp_mode;
-                        elsif address >= depp2bus_fault_register_start and address <= depp2bus_fault_register_end then
-                            read_latch := (others => '0');
-                            read_latch(0) := slv2mst_cpy.fault;
-                        end if;
-                    end if;
-                end if;
-
-                if usb_dstb_delayed = '0' and usb_write = '1' then
-                    usb_db <= read_latch;
-                end if;
-
-                if wait_dstb_finish then
-                    if usb_dstb_delayed = '1' then
-                        wait_dstb_finish := false;
-                    else
-                        USB_WAIT <= '1';
-                    end if;
-                end if;
+                address_request <= false;
+            end if;
+            if usb_dstb = '0' then
+                data_request <= true;
+            else
+                data_request <= false;
             end if;
         end if;
     end process;
 
+    process(clk)
+        variable usb_wait_internal : std_logic := '1';
+        variable usb_db_internal : std_logic_vector(usb_db'range) := (others => 'Z');
+        variable mst2slv_internal : bus_mst2slv_type := BUS_MST2SLV_IDLE;
 
-    concurrent : process(mst2slv_out)
+        variable wait_for_deppMaster_completion : boolean := true;
+        variable prevent_deppSlave_completion : boolean := false;
+        variable depp_write_request : boolean := false;
+        variable depp_address : natural range 0 to 255 := 0;
+        variable depp_selected_register : selected_request_register_type := reqReg_none;
+        variable depp_address_relative : natural range 0 to 255 := 0;
+
+        variable burstActive : boolean := false;
+        variable faultData : bus_fault_type := bus_fault_no_fault;
+        variable faultAddress : bus_address_type := (others => '0');
+        variable readData : bus_data_type := (others => '0');
+        variable writeData : bus_data_type := (others => '0');
+        variable writeMask : bus_write_mask := (others => '0');
+        variable burstLength : natural range 0 to 255 := 0;
+        variable bus_address : bus_address_type := (others => '0');
     begin
-        mst2slv <= mst2slv_out;
-    end process;
+        if rising_edge(clk) then
+            if usb_write = '0' then
+                depp_write_request := true;
+            else
+                depp_write_request := false;
+            end if;
 
+            if rst = '1' then
+                usb_wait_internal := '0';
+                usb_db_internal := (others => 'Z');
+                mst2slv_internal := BUS_MST2SLV_IDLE;
+            elsif bus_requesting(mst2slv_internal) then
+                if fault_transaction(mst2slv_internal, slv2mst) then
+                    faultData := slv2mst.faultData;
+                    faultAddress := mst2slv_internal.address;
+                    mst2slv_internal := BUS_MST2SLV_IDLE;
+                elsif read_transaction(mst2slv_internal, slv2mst) then
+                    readData := slv2mst.readData;
+                    mst2slv_internal := BUS_MST2SLV_IDLE;
+                    if burstActive then
+                        mst2slv_internal.burst := '1';
+                    end if;
+                elsif write_transaction(mst2slv_internal, slv2mst) then
+                    mst2slv_internal := BUS_MST2SLV_IDLE;
+                    if burstActive then
+                        mst2slv_internal.burst := '1';
+                    end if;
+                end if;
+            elsif wait_for_deppMaster_completion then
+                usb_wait_internal := '1';
+                if not address_request and not data_request then
+                    usb_wait_internal := '0';
+                    wait_for_deppMaster_completion := false;
+                    usb_db_internal := (others => 'Z');
+                end if;
+            elsif address_request then
+                if depp_write_request then
+                    depp_address := to_integer(unsigned(usb_db));
+                    decode_request_register(depp_address, depp_selected_register, depp_address_relative);
+                else
+                    usb_db_internal := std_logic_vector(to_unsigned(depp_address, usb_db_internal'length));
+                end if;
+                usb_wait_internal := '1';
+                wait_for_deppMaster_completion := true;
+            elsif data_request then
+                if depp_write_request then
+                    case depp_selected_register is
+                        when reqReg_faultData =>
+                            faultData := usb_db(faultData'range);
+                        when reqReg_faultAddress =>
+                            faultAddress((depp_address_relative + 1)*depp_data_type'length - 1 downto depp_address_relative*depp_data_type'length) := usb_db;
+                        when reqReg_writeMask =>
+                            writeMask := usb_db(writeMask'range);
+                        when reqReg_burstLength =>
+                            burstLength := to_integer(unsigned(usb_db));
+                        when reqReg_address =>
+                            bus_address((depp_address_relative + 1)*depp_data_type'length - 1 downto depp_address_relative*depp_data_type'length) := usb_db;
+                        when reqReg_readWrite =>
+                            writeData((depp_address_relative + 1)*depp_data_type'length - 1 downto depp_address_relative*depp_data_type'length) := usb_db;
+                            if depp_address_relative = depp_words_per_bus_word - 1 then
+                                mst2slv_internal := bus_mst2slv_write(address => bus_address,
+                                                                      write_data => writeData,
+                                                                      write_mask => writeMask);
+                                if burstLength > 0 then
+                                    burstActive := true;
+                                    mst2slv_internal.burst := '1';
+                                    burstLength := burstLength - 1;
+                                else
+                                    burstActive := false;
+                                end if;
+                               bus_address := incremented_bus_address(bus_address);
+                            end if;
+                        when reqReg_none =>
+                    end case;
+                else
+                    usb_db_internal := (others => '0');
+                    case depp_selected_register is
+                        when reqReg_faultData =>
+                            usb_db_internal(faultData'range) := faultData;
+                        when reqReg_faultAddress =>
+                            usb_db_internal := faultAddress(depp_address_relative*depp_data_type'length + (depp_data_type'length - 1) downto depp_address_relative*depp_data_type'length);
+                        when reqReg_writeMask =>
+                            usb_db_internal(writeMask'range) := writeMask;
+                        when reqReg_burstLength =>
+                            usb_db_internal := std_logic_vector(to_unsigned(burstLength, usb_db_internal'length));
+                        when reqReg_address =>
+                            usb_db_internal := bus_address(depp_address_relative*depp_data_type'length + (depp_data_type'length - 1) downto depp_address_relative*depp_data_type'length);
+                        when reqReg_readWrite =>
+                            if depp_address_relative = 0 and not prevent_deppSlave_completion then
+                                mst2slv_internal := bus_mst2slv_read(address => bus_address);
+                                if burstLength > 0 then
+                                    burstActive := true;
+                                    mst2slv_internal.burst := '1';
+                                    burstLength := burstLength - 1;
+                                else
+                                    burstActive := false;
+                                end if;
+                                prevent_deppSlave_completion := true;
+                                bus_address := incremented_bus_address(bus_address);
+                            else
+                                prevent_deppSlave_completion := false;
+                                usb_db_internal := readData(depp_address_relative*depp_data_type'length + (depp_data_type'length - 1) downto depp_address_relative*depp_data_type'length);
+                            end if;
+                        when reqReg_none =>
+                    end case;
+                end if;
+                if not prevent_deppSlave_completion then
+                    usb_wait_internal := '1';
+                    wait_for_deppMaster_completion := true;
+                    if depp_address = depp2bus_readWrite_reg_end then
+                        depp_address := depp2bus_readWrite_reg_start;
+                    elsif depp_selected_register /= reqReg_none then
+                        depp_address := depp_address + 1;
+                    end if;
+                    decode_request_register(depp_address, depp_selected_register, depp_address_relative);
+                end if;
+            end if;
+        end if;
+        usb_wait <= usb_wait_internal;
+        usb_db <= usb_db_internal;
+        mst2slv <= mst2slv_internal;
+    end process;
 end behaviourial;

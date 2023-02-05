@@ -83,6 +83,7 @@ begin
             vcom_request_write <= '1';
             wait for 1 fs;
             vcom_request_write <= '0';
+            wait for 1 fs;
         else
             unexpected_msg_type(msg_type);
         end if;
@@ -101,6 +102,10 @@ begin
             elsif address > ram'high then
                 mem2mst_internal.fault <= '1';
                 mem2mst_internal.faultData <= bus_fault_address_out_of_range;
+            end if;
+
+            if mem2mst_internal.fault = '1' then
+                info(logger, "Fault transaction for address " & to_hstring(mst2mem.address) & " fault is " & to_hstring(mem2mst_internal.faultData));
             end if;
 
             if mst2mem.readReady = '1' and read_delay_left = 0 then
@@ -180,7 +185,9 @@ begin
                     burst_was_active := false;
                 end if;
             elsif burst_was_active then
-                check(checker, mst2mem.burst /= '1', "Master can only drop burst whenever a request comes in!");
+                check(checker, mst2mem.burst = '1', "Master can only drop burst whenever a request comes in!");
+            elsif not burst_was_active then
+                check(checker, mst2mem.burst /= '1', "Master can only raise burst whenever a request comes in!");
             end if;
         end if;
     end process;

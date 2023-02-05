@@ -43,12 +43,15 @@ begin
     msg_handler : process is
         variable request_msg, reply_msg : msg_t;
         variable msg_type : msg_type_t;
-        variable first_run : boolean := false;
+        variable first_run : boolean := true;
         variable writeAddress : bus_pkg.bus_address_type;
         variable writeData : bus_pkg.bus_data_type;
         variable writeMask : bus_pkg.bus_write_mask;
         variable readAddress : bus_pkg.bus_address_type;
         variable readData : bus_pkg.bus_data_type;
+        variable faultData : bus_pkg.bus_fault_type;
+        variable faultAddress : bus_pkg.bus_address_type;
+        variable requestSize : natural;
         procedure write_depp_address (
             constant address : depp_pkg.depp_address_type
         ) is
@@ -95,53 +98,86 @@ begin
             usb_dstb <= '1';
         end procedure;
 
-        procedure setup_fast_rw is
+        procedure prepare_first_run is
             variable address : depp_pkg.depp_address_type;
             variable data : depp_pkg.depp_data_type;
+            variable expData : depp_pkg.depp_data_type;
         begin
-            address := std_logic_vector(to_unsigned(depp_pkg.depp2bus_mode_register_start, address'length));
-            data := (others => '0');
-            data(depp_pkg.depp_mode_fast_write_bit) := '1';
-            data(depp_pkg.depp_mode_fast_read_bit) := '1';
+            address := std_logic_vector(to_unsigned(depp_pkg.depp2bus_faultData_reg_start, address'length));
             write_depp_address(address);
+            data := (others => '0');
             write_depp_data(data);
-        end procedure;
-
-        procedure write_bus_address (
-            bus_address : bus_pkg.bus_address_type
-        ) is
-            variable address : depp_pkg.depp_address_type;
-            variable data : depp_pkg.depp_data_type;
-        begin
             for i in 0 to depp_words_per_bus_address - 1 loop
-                address := std_logic_vector(to_unsigned(depp_pkg.depp2bus_addr_reg_start + i, address'length));
-                data := bus_address(((i+1)*depp_pkg.depp_data_type'length) - 1 downto (i)*depp_pkg.depp_data_type'length);
-                write_depp_address(address);
                 write_depp_data(data);
             end loop;
         end procedure;
 
-        procedure write_bus_mask (
-            bus_mask : bus_pkg.bus_write_mask
+        procedure set_depp_addres_to_writeMask_start is
+            variable address : depp_pkg.depp_address_type;
+        begin
+            address := std_logic_vector(to_unsigned(depp_pkg.depp2bus_writeMask_reg_start, address'length));
+            write_depp_address(address);
+        end procedure;
+
+        procedure prepare_bus_transaction (
+            constant bus_mask : bus_pkg.bus_write_mask;
+            constant bus_address : bus_pkg.bus_address_type;
+            constant burstLength : natural range 0 to 255
+        ) is
+            variable data : depp_pkg.depp_data_type := (others => '0');
+        begin
+            data := (others => '0');
+            data(bus_mask'high downto 0) := bus_mask;
+            write_depp_data(data);
+            data := std_logic_vector(to_unsigned(burstLength, data'length));
+            write_depp_data(data);
+            for i in 0 to depp_words_per_bus_address - 1 loop
+                data := bus_address(((i+1)*depp_pkg.depp_data_type'length) - 1 downto (i)*depp_pkg.depp_data_type'length);
+                write_depp_data(data);
+            end loop;
+        end procedure;
+
+        procedure update_burstLength_move_to_rw (
+            constant burstLength : natural range 0 to 255
         ) is
             variable address : depp_pkg.depp_address_type;
             variable data : depp_pkg.depp_data_type;
         begin
-            address := std_logic_vector(to_unsigned(depp_pkg.depp2bus_write_mask_reg_start, address'length));
-            data := (others => '0');
-            data(bus_mask'high downto 0) := bus_mask;
+            address := std_logic_vector(to_unsigned(depp_pkg.depp2bus_burstLength_reg_start, address'length));
             write_depp_address(address);
+            data := std_logic_vector(to_unsigned(0, data'length));
             write_depp_data(data);
+            address := std_logic_vector(to_unsigned(depp_pkg.depp2bus_readWrite_reg_start, address'length));
+            write_depp_address(address);
+        end procedure;
+
+        procedure transaction_epilogue (
+            variable bus_faultData : out bus_pkg.bus_fault_type;
+            variable bus_faultAddress : out bus_pkg.bus_address_type
+        ) is
+            variable faultData_internal : bus_pkg.bus_fault_type := (others => '0');
+            variable data : depp_pkg.depp_data_type := (others => '0');
+            variable address : depp_pkg.depp_address_type := (others => '0');
+        begin
+            address := std_logic_vector(to_unsigned(depp_pkg.depp2bus_faultData_reg_start, address'length));
+            write_depp_address(address);
+            read_depp_data(data);
+            faultData_internal := data(faultData_internal'range);
+            bus_faultData := faultData_internal;
+            for i in 0 to depp_words_per_bus_address - 1 loop
+                read_depp_data(data);
+                bus_faultAddress(((i+1)*depp_pkg.depp_data_type'length) - 1 downto (i)*depp_pkg.depp_data_type'length) := data;
+            end loop;
+            if faultData_internal /= bus_pkg.bus_fault_no_fault then
+                prepare_first_run;
+            end if;
         end procedure;
 
         procedure write_bus_data (
-            bus_data : bus_pkg.bus_data_type
+            constant bus_data : bus_pkg.bus_data_type
         ) is
-            variable address : depp_pkg.depp_address_type;
             variable data : depp_pkg.depp_data_type;
         begin
-            address := std_logic_vector(to_unsigned(depp_pkg.depp2bus_writeData_reg_start, address'length));
-            write_depp_address(address);
             for i in 0 to depp_words_per_bus_word - 1 loop
                 data := bus_data(((i+1)*depp_pkg.depp_data_type'length) - 1 downto (i)*depp_pkg.depp_data_type'length);
                 write_depp_data(data);
@@ -151,11 +187,8 @@ begin
         procedure read_bus_data (
             variable bus_data : out bus_pkg.bus_data_type
         ) is
-            variable address : depp_pkg.depp_address_type;
             variable data : depp_pkg.depp_data_type;
         begin
-            address := std_logic_vector(to_unsigned(depp_pkg.depp2bus_readData_reg_start, address'length));
-            write_depp_address(address);
             for i in 0 to depp_words_per_bus_word - 1 loop
                 read_depp_data(data);
                 bus_data(((i+1)*depp_pkg.depp_data_type'length) - 1 downto (i)*depp_pkg.depp_data_type'length) := data;
@@ -167,9 +200,9 @@ begin
         usb_write <= '1';
         usb_astb <= '1';
         usb_dstb <= '1';
-        if not first_run then
-            first_run := true;
-            setup_fast_rw;
+        if first_run then
+            first_run := false;
+            prepare_first_run;
         end if;
         receive(net, actor, request_msg);
         msg_type := message_type(request_msg);
@@ -179,17 +212,106 @@ begin
             writeAddress := pop(request_msg);
             writeData := pop(request_msg);
             writeMask := pop(request_msg);
-            write_bus_address(writeAddress);
-            write_bus_mask(writeMask);
+            prepare_bus_transaction (
+                bus_mask => writeMask,
+                bus_address => writeAddress,
+                burstLength => 0);
             write_bus_data(writeData);
-            acknowledge(net, request_msg, true);
+            transaction_epilogue(bus_faultData => faultData,
+                                 bus_faultAddress => faultAddress);
+            if faultData = bus_pkg.bus_fault_no_fault then
+                reply_msg := new_msg(simulated_depp_master_pkg.write_reply_msg);
+                reply(net, request_msg, reply_msg);
+            else
+                reply_msg := new_msg(simulated_depp_master_pkg.fault_reply_msg);
+                push(reply_msg, faultData);
+                push(reply_msg, faultAddress);
+                reply(net, request_msg, reply_msg);
+            end if;
+        elsif msg_type = simulated_depp_master_pkg.write_multipleToAddress_msg then
+            writeMask := pop(request_msg);
+            writeAddress := pop(request_msg);
+            requestSize := pop(request_msg);
+            prepare_bus_transaction (
+                bus_mask => writeMask,
+                bus_address => writeAddress,
+                burstLength => 0);
+            while requestSize > 256 loop
+                update_burstLength_move_to_rw(burstLength => 255);
+                for i in 0 to 255 loop
+                    writeData := pop(request_msg);
+                    write_bus_data(writeData);
+                end loop;
+                requestSize := requestSize - 256;
+            end loop;
+            update_burstLength_move_to_rw(burstLength => requestSize - 1);
+            for i in 0 to requestSize - 1 loop
+                writeData := pop(request_msg);
+                write_bus_data(writeData);
+            end loop;
+            transaction_epilogue(bus_faultData => faultData,
+                                 bus_faultAddress => faultAddress);
+            if faultData = bus_pkg.bus_fault_no_fault then
+                reply_msg := new_msg(simulated_depp_master_pkg.write_reply_msg);
+                reply(net, request_msg, reply_msg);
+            else
+                reply_msg := new_msg(simulated_depp_master_pkg.fault_reply_msg);
+                push(reply_msg, faultData);
+                push(reply_msg, faultAddress);
+                reply(net, request_msg, reply_msg);
+            end if;
         elsif msg_type = simulated_depp_master_pkg.read_fromAddress_msg then
             readAddress := pop(request_msg);
-            write_bus_address(readAddress);
+            writeMask := (others => '1');
+            prepare_bus_transaction (
+                bus_mask => writeMask,
+                bus_address => readAddress,
+                burstLength => 0);
             read_bus_data(readData);
+            transaction_epilogue(bus_faultData => faultData,
+                                 bus_faultAddress => faultAddress);
+            if faultData = bus_pkg.bus_fault_no_fault then
+                reply_msg := new_msg(simulated_depp_master_pkg.read_reply_msg);
+                push(reply_msg, readData);
+                reply(net, request_msg, reply_msg);
+            else
+                reply_msg := new_msg(simulated_depp_master_pkg.fault_reply_msg);
+                push(reply_msg, faultData);
+                push(reply_msg, faultAddress);
+                reply(net, request_msg, reply_msg);
+            end if;
+        elsif msg_type = simulated_depp_master_pkg.read_multipleFromAddress_msg then
+            readAddress := pop(request_msg);
+            requestSize := pop(request_msg);
+            writeMask := (others => '1');
             reply_msg := new_msg(simulated_depp_master_pkg.read_reply_msg);
-            push(reply_msg, readData);
-            reply(net, request_msg, reply_msg);
+            prepare_bus_transaction (
+                bus_mask => writeMask,
+                bus_address => readAddress,
+                burstLength => 0);
+            while requestSize > 256 loop
+                update_burstLength_move_to_rw(burstLength => 255);
+                for i in 0 to 255 loop
+                    read_bus_data(readData);
+                    push(reply_msg, readData);
+                end loop;
+                requestSize := requestSize - 256;
+            end loop;
+            update_burstLength_move_to_rw(burstLength => requestSize - 1);
+            for i in 0 to requestSize - 1 loop
+                read_bus_data(readData);
+                push(reply_msg, readData);
+            end loop;
+            transaction_epilogue(bus_faultData => faultData,
+                                 bus_faultAddress => faultAddress);
+            if faultData = bus_pkg.bus_fault_no_fault then
+                reply(net, request_msg, reply_msg);
+            else
+                reply_msg := new_msg(simulated_depp_master_pkg.fault_reply_msg);
+                push(reply_msg, faultData);
+                push(reply_msg, faultAddress);
+                reply(net, request_msg, reply_msg);
+            end if;
         else
             unexpected_msg_type(msg_type);
         end if;

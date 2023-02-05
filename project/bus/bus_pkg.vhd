@@ -50,10 +50,11 @@ package bus_pkg is
     subtype bus_write_mask is std_logic_vector(bus_bytes_per_word - 1 downto 0);
 
     -- Some predefined faults
-    constant bus_fault_unaligned_access : bus_fault_type := std_logic_vector(to_unsigned(0, bus_fault_type'length));
-    constant bus_fault_address_out_of_range : bus_fault_type := std_logic_vector(to_unsigned(1, bus_fault_type'length));
-    constant bus_fault_illegal_write_mask : bus_fault_type := std_logic_vector(to_unsigned(2, bus_fault_type'length));
-    constant bus_fault_illegal_address_for_burst : bus_fault_type := std_logic_vector(to_unsigned(3, bus_fault_type'length));
+    constant bus_fault_no_fault : bus_fault_type :=                     std_logic_vector(to_unsigned(0, bus_fault_type'length));
+    constant bus_fault_unaligned_access : bus_fault_type :=             std_logic_vector(to_unsigned(1, bus_fault_type'length));
+    constant bus_fault_address_out_of_range : bus_fault_type :=         std_logic_vector(to_unsigned(2, bus_fault_type'length));
+    constant bus_fault_illegal_write_mask : bus_fault_type :=           std_logic_vector(to_unsigned(3, bus_fault_type'length));
+    constant bus_fault_illegal_address_for_burst : bus_fault_type :=    std_logic_vector(to_unsigned(4, bus_fault_type'length));
 
     -- The remapping logic.
     -- Any range of input can be placed at any range of output. Moreover, parts of the output can be set to 0 or 1.

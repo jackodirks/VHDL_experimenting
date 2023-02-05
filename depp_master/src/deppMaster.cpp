@@ -10,24 +10,14 @@
 
 #include "deppMaster.hpp"
 
-// Address register is 4 byte
-static constexpr BYTE addrRegStart = 0;
-// Write data register is 4 byte
-static constexpr BYTE writeDataRegStart = 4;
-// Read data register is 4 byte
-static constexpr BYTE readDataRegStart = 8;
-// Write mask register is 1 byte
-static constexpr BYTE writeMaskRegStart = 12;
-// Mode register is 1 byte
-static constexpr BYTE modeRegStart = 13;
-// Fault register is 1 byte
-static constexpr BYTE faultRegStart = 14;
-// Activation register is 1 byte
-static constexpr BYTE activationRegStart = 15;
+static constexpr BYTE faultDataRegStart = 0;
+static constexpr BYTE faultAddressRegStart = 1;
+static constexpr BYTE writeMaskRegStart = 5;
+static constexpr BYTE burstLengthRegStart = 6;
+static constexpr BYTE addressRegStart = 7;
+static constexpr BYTE readWriteRegStart = 11;
 
-// Mode bits
-static constexpr BYTE modeFastRead = 1;
-static constexpr BYTE modeFastWrite = 2;
+static constexpr std::size_t maxBurstSize = 255;
 
 // address & wordAlignMask results in a word aligned address
 static constexpr uint32_t wordAlignMask = 0xfffffffc;
@@ -74,32 +64,44 @@ void DeppMaster::DeppGetRegRepeatWrapper(const BYTE &bAddr, BYTE *pbData, const 
     }
 }
 
-void DeppMaster::setWriteMask(const uint8_t &writeMask) const
-{
-    BYTE data = writeMask;
-    DeppPutRegWrapper(writeMaskRegStart, data);
+void DeppMaster::prepareBusWriteTransaction(uint8_t writeMask, uint8_t burstLen, uint32_t address) const {
+    BYTE pbData[6];
+    pbData[0] = writeMask;
+    pbData[1] = burstLen;
+    for (size_t i = 2; i < 6; ++i) {
+        pbData[i] = address & 0xff;
+        address >>= 8;
+    }
+    this->DeppPutRegRepeatWrapper(writeMaskRegStart, &pbData[0], 6);
 }
-
 
 void DeppMaster::setAddress(uint32_t address) const
 {
-    BYTE pbAddrData[8];
-    for (size_t i = 0; i < 8; i += 2) {
-        pbAddrData[i] = addrRegStart + i/2;
-        pbAddrData[i + 1] = address & 0xff;
+    BYTE pbData[4];
+    for (size_t i = 0; i < 4; i ++) {
+        pbData[i] = address & 0xff;
         address >>= 8;
     }
-    DeppPutRegSetWrapper(&pbAddrData[0], 4);
+    this->DeppPutRegRepeatWrapper(addressRegStart, &pbData[0], 4);
 }
 
-void DeppMaster::forceRead() const
-{
-    DeppPutRegWrapper(activationRegStart, 0x01);
+void DeppMaster::updateBurstLen(uint8_t burstLen) const {
+    BYTE bData = burstLen;
+    this->DeppPutRegWrapper(burstLengthRegStart, bData);
 }
 
-void DeppMaster::forceWrite() const
-{
-    DeppPutRegWrapper(activationRegStart, 0x0);
+void DeppMaster::transmitWords(std::vector<uint32_t>::const_iterator& it, std::size_t count) const {
+    std::vector<BYTE> pbData(count*4);
+    for (std::size_t i = 0; i < count; ++i) {
+        std::size_t pdDataIndex = i*4;
+        uint32_t address = *it;
+        for (std::size_t j = 0; j < 4; ++j) {
+            pbData[pdDataIndex + j] = address & 0xff;
+            address >>= 8;
+        }
+        std::advance(it, 1);
+    }
+    this->DeppPutRegRepeatWrapper(readWriteRegStart, pbData.data(), count*4);
 }
 
 DeppMaster::DeppMaster(const std::string& devStr)
@@ -114,13 +116,6 @@ DeppMaster::DeppMaster(const std::string& devStr)
         DmgrClose(this->hif);
         throw std::invalid_argument("DeppEnable failed");
     }
-
-    // Enable fast read and fast write. Dont use the wrapper, we might need to destruct
-    if (!DeppPutReg(this->hif, modeRegStart, modeFastRead | modeFastWrite, false)) {
-        DeppDisable(this->hif);
-        DmgrClose(this->hif);
-        throw std::invalid_argument("DeppPutReg failed");
-    }
 }
 
 DeppMaster::~DeppMaster()
@@ -129,137 +124,36 @@ DeppMaster::~DeppMaster()
     DmgrClose(this->hif);
 }
 
-void DeppMaster::setDataBulk(const uint8_t* data, const size_t &count, const uint32_t &startAddress) const
-{
+void DeppMaster::writeOperation(const std::vector<uint32_t>& data, uint32_t address, uint8_t writeMask) const {
+    std::size_t count = data.size();
+    if (count == 0)
+        return;
+
+    std::vector<BYTE> pbData;
+    for (uint32_t d : data) {
+        for (std::size_t j = 0; j < 4; ++j) {
+            pbData.push_back(d & 0xff);
+            d >>= 8;
+        }
+    }
+    this->prepareBusWriteTransaction(writeMask, 0, address);
+    this->DeppPutRegRepeatWrapper(readWriteRegStart, &pbData.data()[0], 4*count);
+}
+
+std::vector<uint32_t> DeppMaster::readOperation(uint32_t address, std::size_t count) {
+    std::size_t origCount = count;
     if (count == 0) {
-        return;
+        return std::vector<uint32_t>();
     }
-    std::unique_ptr<BYTE[]> pbData(new BYTE[count]);
-    for (size_t i = 0; i < count; ++i) {
-        pbData[i] = data[i];
+    std::vector<BYTE> pbData(count*4);
+    this->setAddress(address);
+    std::size_t pbDataIndex = 0;
+    this->DeppGetRegRepeatWrapper(readWriteRegStart, &pbData.data()[pbDataIndex*4], 4*count);
+
+    std::vector<uint32_t> retval;
+    for (size_t i = 0; i < origCount; ++i) {
+        uint32_t data = pbData[i*4] | ((uint32_t)pbData[i*4 + 1] << 8) | ((uint32_t)pbData[i*4 + 2] << 16) | ((uint32_t)pbData[i*4 + 3] << 24);
+        retval.push_back(data);
     }
-    // This function takes care to do everything aligned.
-    uint32_t addr = startAddress & wordAlignMask;
-    // Set the start address
-    setAddress(addr);
-    // Write the unaligned head (if any)
-    size_t headCnt = 4 - (startAddress & 0x3);
-    if (headCnt < 4) {
-        size_t actCnt = headCnt;
-        if (count < headCnt) {
-            actCnt = count;
-        }
-        uint8_t writeMask = 0x08 >> (headCnt - 1);
-        if (actCnt == 2) {
-            writeMask |= 0x08 >> (headCnt - 2);
-        } else if (actCnt == 3) {
-            writeMask |= 0xc;
-        }
-        setWriteMask(writeMask);
-        DeppPutRegRepeatWrapper(writeDataRegStart + 4 - headCnt, &pbData[0], actCnt);
-        if (actCnt < headCnt) {
-            forceWrite();
-        }
-    } else {
-        headCnt = 0;
-    }
-    if (headCnt >= count) {
-        // We are already done
-        return;
-    }
-    // Update the writeMask
-    setWriteMask(0xf);
-    // Write the bulk
-    DeppPutRegRepeatWrapper(writeDataRegStart, &pbData[headCnt], count - headCnt);
-    // Check if we have to finish differently
-    size_t tailCnt = (startAddress + count) & 0x3;
-    if (tailCnt > 0) {
-        uint8_t writeMask = 0xf >> (4 - tailCnt);
-        setWriteMask(writeMask);
-        forceWrite();
-    }
-}
-
-void DeppMaster::getDataBulk(uint8_t* data, const size_t &count, const uint32_t &startAddress) const
-{
-    uint32_t address = startAddress & wordAlignMask;
-    size_t auxElements = startAddress - address;
-    std::unique_ptr<BYTE[]> pbData(new BYTE[count + auxElements]);
-    setAddress(address);
-    DeppGetRegRepeatWrapper(readDataRegStart, &pbData[0], count + auxElements);
-    for (size_t i = 0; i < count; i += 1) {
-        data[i] = pbData[i + auxElements];
-    }
-}
-
-void DeppMaster::setData(const uint32_t &data, const uint32_t &address, const uint8_t &writeMask) const
-{
-    setWriteMask(writeMask);
-    setAddress(address);
-    BYTE pData[4];
-    for (size_t i = 0; i < 4; i += 1) {
-        pData[i] = (data >> i*8) & 0xff;
-    }
-    DeppPutRegRepeatWrapper(writeDataRegStart, &pData[0], 4);
-    // No need for a force write, since the transaction will autostart
-}
-
-void DeppMaster::getData(uint32_t &data, const uint32_t &address) const
-{
-    setAddress(address);
-    BYTE pData[4];
-    DeppGetRegRepeatWrapper(readDataRegStart, &pData[0], 4);
-    data = pData[0] | (pData[1] << 8) | (pData[2] << 16) | (pData[3] << 24);
-}
-
-void DeppMaster::setData(const uint16_t &data, const uint32_t &address) const
-{
-    // First, set the write mask
-    setWriteMask(0x0f);
-    // Then, set the address
-    setAddress(address);
-    // Set the data
-    BYTE pData[2];
-    pData[0] = data & 0xff;
-    pData[1] = (data >> 8) & 0xff;
-    DeppPutRegRepeatWrapper(writeDataRegStart, &pData[0], 2);
-    // Force a write
-    forceWrite();
-
-}
-
-void DeppMaster::getData(uint16_t &data, const uint32_t &address) const
-{
-    // First set the address
-    setAddress(address);
-    // Then force a read
-    forceRead();
-    // Then read back
-    BYTE ret[2];
-    DeppGetRegRepeatWrapper(readDataRegStart, &ret[0], 2);
-    data = ret[0] | (ret[1] << 8);
-}
-
-void DeppMaster::setData(const uint8_t &data, const uint32_t &address) const
-{
-    // First, set the write mask
-    setWriteMask(0x01);
-    // Then, set the address
-    setAddress(address);
-    // Set the data
-    DeppPutRegWrapper(writeDataRegStart, data);
-    // Force a write
-    forceWrite();
-}
-
-void DeppMaster::getData(uint8_t &data, const uint32_t &address) const
-{
-    BYTE ret;
-    // First set the address
-    setAddress(address);
-    // Then force a read
-    forceRead();
-    // Then read back
-    DeppGetRegWrapper(readDataRegStart, &ret);
-    data = ret;
+    return retval;
 }

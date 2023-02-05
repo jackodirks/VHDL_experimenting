@@ -28,11 +28,24 @@ package simulated_bus_memory_pkg is
               constant addr : in bus_pkg.bus_address_type;
               variable data : out bus_pkg.bus_data_type);
 
+    procedure read_from_address(
+              signal net : inout network_t;
+              constant actor : in actor_t;
+              constant addr : in bus_pkg.bus_address_type;
+              variable data : out bus_pkg.bus_data_array);
+
     procedure write_to_address(
               signal net : inout network_t;
               constant actor : in actor_t;
               constant addr : in bus_pkg.bus_address_type;
               constant data : in bus_pkg.bus_data_type;
+              constant mask : in bus_pkg.bus_write_mask);
+
+    procedure write_to_address(
+              signal net : inout network_t;
+              constant actor : in actor_t;
+              constant addr : in bus_pkg.bus_address_type;
+              constant data : in bus_pkg.bus_data_array;
               constant mask : in bus_pkg.bus_write_mask);
 end package;
 
@@ -59,12 +72,30 @@ package body simulated_bus_memory_pkg is
               constant actor : in actor_t;
               constant addr : in bus_pkg.bus_address_type;
               variable data : out bus_pkg.bus_data_type) is
-        variable msg : msg_t := new_msg(read_fromAddress_msg);
+        variable msg : msg_t := new_msg(read_fromaddress_msg);
         variable reply_msg : msg_t;
     begin
         push(msg, addr);
         request(net, actor, msg, reply_msg);
         data := pop(reply_msg);
+    end;
+
+    procedure read_from_address(
+              signal net : inout network_t;
+              constant actor : in actor_t;
+              constant addr : in bus_pkg.bus_address_type;
+              variable data : out bus_pkg.bus_data_array) is
+        variable address_internal : natural;
+        variable output_address : bus_pkg.bus_address_type;
+    begin
+        address_internal := to_integer(unsigned(addr));
+        for i in 0 to data'length - 1 loop
+            output_address := std_logic_vector(to_unsigned(address_internal + bus_pkg.bus_bytes_per_word*i, output_address'length)); 
+            read_from_address(net => net,
+                             actor => actor,
+                             addr => output_address,
+                             data => data(i));
+        end loop;
     end;
 
     procedure write_to_address(
@@ -79,6 +110,26 @@ package body simulated_bus_memory_pkg is
         push(msg, data);
         push(msg, mask);
         send(net, actor, msg);
+    end;
+
+    procedure write_to_address(
+              signal net : inout network_t;
+              constant actor : in actor_t;
+              constant addr : in bus_pkg.bus_address_type;
+              constant data : in bus_pkg.bus_data_array;
+              constant mask : in bus_pkg.bus_write_mask) is
+        variable address_internal : natural;
+        variable output_address : bus_pkg.bus_address_type;
+    begin
+        address_internal := to_integer(unsigned(addr));
+        for i in 0 to data'length - 1 loop
+            output_address := std_logic_vector(to_unsigned(address_internal + bus_pkg.bus_bytes_per_word*i, output_address'length)); 
+            write_to_address(net => net,
+                             actor => actor,
+                             addr => output_address,
+                             data => data(i),
+                             mask => mask);
+        end loop;
     end;
         
 
