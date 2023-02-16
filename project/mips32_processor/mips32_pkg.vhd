@@ -11,6 +11,8 @@ package mips32_pkg is
     subtype data_type is std_logic_vector(2**data_width_log2b -1 downto 0);
     subtype instruction_type is std_logic_vector(2**instruction_width_log2b - 1 downto 0);
 
+    type data_array is array (natural range <>) of data_type;
+
     -- To begin, this processor will support the following instructions:
     -- lw, sw, beq, add, sub, and, or, set on less than
     -- The nop, for now, will be and $0 $0 $0

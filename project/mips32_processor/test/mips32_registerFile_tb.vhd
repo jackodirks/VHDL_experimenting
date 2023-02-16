@@ -1,0 +1,118 @@
+library ieee;
+use ieee.std_logic_1164.all;
+use ieee.numeric_std.all;
+
+library vunit_lib;
+context vunit_lib.vunit_context;
+context vunit_lib.vc_context;
+
+library src;
+use src.bus_pkg;
+use src.mips32_pkg;
+
+entity mips32_registerFile_tb is
+    generic (
+        runner_cfg : string);
+end entity;
+
+architecture tb of mips32_registerFile_tb is
+    constant clk_period : time := 20 ns;
+
+    signal clk : std_logic := '0';
+    signal readPortOneAddress : mips32_pkg.registerFileAddress_type := 31;
+    signal readPortOneData : mips32_pkg.data_type;
+
+    signal readPortTwoAddress : mips32_pkg.registerFileAddress_type := 31;
+    signal readPortTwoData : mips32_pkg.data_type;
+
+    signal writePortDoWrite : boolean := false;
+    signal writePortAddress : mips32_pkg.registerFileAddress_type := 31;
+    signal writePortData : mips32_pkg.data_type;
+
+begin
+
+    clk <= not clk after (clk_period/2);
+
+    main : process
+        variable expectedData : mips32_pkg.data_type := (others => '0');
+    begin
+        test_runner_setup(runner, runner_cfg);
+        while test_suite loop
+            -- Preamble
+            writePortDoWrite <= true;
+            writePortAddress <= 31;
+            writePortData <= (others => '1');
+            wait until rising_edge(clk);
+            writePortDoWrite <= false;
+            wait until rising_edge(clk);
+            if run("readPortOne: address zero returns 0") then
+                expectedData := (others => '0');
+                readPortOneAddress <= 0;
+                wait until falling_edge(clk);
+                check_equal(readPortOneData, expectedData);
+            elsif run("readPortOne: read during relevant write returns writeData") then
+                expectedData := X"00112233";
+                writePortDoWrite <= true;
+                writePortAddress <= 2;
+                writePortData <= expectedData;
+                readPortOneAddress <= 2;
+                wait until falling_edge(clk);
+                check_equal(readPortOneData, expectedData);
+            elsif run("readPortOne: read during relevant but disabled write returns registerData") then
+                expectedData := X"00112233";
+                writePortDoWrite <= true;
+                writePortAddress <= 2;
+                writePortData <= expectedData;
+                wait until rising_edge(clk);
+                writePortDoWrite <= false;
+                writePortAddress <= 2;
+                writePortData <= (others => '1');
+                readPortOneAddress <= 2;
+                wait until falling_edge(clk);
+                check_equal(readPortOneData, expectedData);
+            elsif run("readPortOne: read during irrelevant write returns registerData") then
+                expectedData := X"00112233";
+                writePortDoWrite <= true;
+                writePortAddress <= 2;
+                writePortData <= expectedData;
+                wait until rising_edge(clk);
+                writePortDoWrite <= true;
+                writePortAddress <= 3;
+                writePortData <= (others => '1');
+                readPortOneAddress <= 2;
+                wait until falling_edge(clk);
+                check_equal(readPortOneData, expectedData);
+            elsif run("writePort: disabled write is ignored") then
+                expectedData := X"00112233";
+                writePortDoWrite <= true;
+                writePortAddress <= 2;
+                writePortData <= expectedData;
+                wait until rising_edge(clk);
+                writePortDoWrite <= false;
+                writePortAddress <= 2;
+                writePortData <= (others => '1');
+                readPortOneAddress <= 2;
+                wait until rising_edge(clk);
+                check_equal(readPortOneData, expectedData);
+            end if;
+        end loop;
+        wait until rising_edge(clk);
+        wait until falling_edge(clk);
+        test_runner_cleanup(runner);
+        wait;
+    end process;
+
+    test_runner_watchdog(runner,  1 us);
+
+    registerFile : entity src.mips32_registerFile
+    port map (
+        clk => clk,
+        readPortOneAddress => readPortOneAddress,
+        readPortOneData => readPortOneData,
+        readPortTwoAddress => readPortTwoAddress,
+        readPortTwoData => readPortTwoData,
+        writePortDoWrite => writePortDoWrite,
+        writePortAddress => writePortAddress,
+        writePortData => writePortData
+    );
+end architecture;
