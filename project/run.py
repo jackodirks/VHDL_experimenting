@@ -33,4 +33,7 @@ src_library.add_source_files(SRC_PATH / "common" / "simple_multishot_timer.vhd")
 src_library.add_source_files(SRC_PATH / "mips32_processor" / "*.vhd")
 tb_library.add_source_files(SRC_PATH / "mips32_processor" / "test" / "*.vhd")
 
+src_library.add_source_files(SRC_PATH / "mips32_processor" / "pipeline" / "*.vhd")
+tb_library.add_source_files(SRC_PATH / "mips32_processor" / "pipeline" / "test" / "*.vhd")
+
 VU.main()
