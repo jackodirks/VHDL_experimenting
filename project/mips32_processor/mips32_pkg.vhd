@@ -72,4 +72,11 @@ package mips32_pkg is
     constant opcodeSw : opcode_type := 16#2b#;
     constant opcodeBeq : opcode_type := 16#4#;
     constant opcodeJ : opcode_type := 16#2#;
+
+    constant aluFunctionAdd : aluFunction_type := 16#20#;
+    constant aluFunctionAddUnsigned : aluFunction_type := 16#21#;
+    constant aluFunctionSubtract : aluFunction_type := 16#22#;
+    constant aluFunctionAnd : aluFunction_type := 16#24#;
+    constant aluFunctionOr : aluFunction_type := 16#25#;
+    constant aluFunctionSetLessThan : aluFunction_type := 16#2a#;
 end package;
