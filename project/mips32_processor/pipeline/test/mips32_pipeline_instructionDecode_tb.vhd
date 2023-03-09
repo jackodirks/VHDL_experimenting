@@ -33,7 +33,7 @@ architecture tb of mips32_pipeline_instructionDecode_tb is
 
     signal regDataA : mips32_pkg.data_type;
     signal regDataB : mips32_pkg.data_type;
-    signal immidiate : mips32_pkg.immidiate_type;
+    signal immidiate : mips32_pkg.data_type;
     signal destinationReg : mips32_pkg.registerFileAddress_type;
     signal aluFunction : mips32_pkg.aluFunction_type;
     signal shamt : mips32_pkg.shamt_type;
@@ -53,7 +53,7 @@ begin
         variable expectedDestinationReg : mips32_pkg.registerFileAddress_type;
         variable expectedAluFunction : mips32_pkg.aluFunction_type;
         variable expectedShamt : mips32_pkg.shamt_type;
-        variable expectedImmidiate : mips32_pkg.immidiate_type;
+        variable expectedImmidiate : mips32_pkg.data_type;
     begin
         test_runner_setup(runner, runner_cfg);
         while test_suite loop
@@ -179,7 +179,7 @@ begin
                 instructionIn(20 downto 16) := std_logic_vector(to_unsigned(6, 5));
                 instructionIn(15 downto 0) := std_logic_vector(to_signed(-32, 16));
                 expectedDestinationReg := 6;
-                expectedImmidiate := to_signed(-32, expectedImmidiate'length);
+                expectedImmidiate := std_logic_vector(to_signed(-32, expectedImmidiate'length));
                 instructionFromInstructionDecode <= instructionIn;
                 wait until rising_edge(clk);
                 wait until falling_edge(clk);
@@ -197,7 +197,7 @@ begin
                 instructionIn(20 downto 16) := std_logic_vector(to_unsigned(12, 5));
                 instructionIn(15 downto 0) := std_logic_vector(to_signed(128, 16));
                 expectedDestinationReg := 12;
-                expectedImmidiate := to_signed(128, expectedImmidiate'length);
+                expectedImmidiate := std_logic_vector(to_signed(128, expectedImmidiate'length));
                 instructionFromInstructionDecode <= instructionIn;
                 wait until rising_edge(clk);
                 wait until falling_edge(clk);

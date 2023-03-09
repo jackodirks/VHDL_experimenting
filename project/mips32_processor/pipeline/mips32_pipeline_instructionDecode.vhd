@@ -26,7 +26,7 @@ entity mips32_pipeline_instructionDecode is
         -- To execute stage: data
         regDataA : out mips32_pkg.data_type;
         regDataB : out mips32_pkg.data_type;
-        immidiate : out mips32_pkg.immidiate_type;
+        immidiate : out mips32_pkg.data_type;
         destinationReg : out mips32_pkg.registerFileAddress_type;
         aluFunction : out mips32_pkg.aluFunction_type;
         shamt : out mips32_pkg.shamt_type;
@@ -55,7 +55,7 @@ architecture behaviourial of mips32_pipeline_instructionDecode is
     signal jumpTarget : mips32_pkg.address_type;
     signal branchTarget : mips32_pkg.address_type;
     signal registerReadsAreEqual : boolean;
-    signal immidiate_buf : mips32_pkg.immidiate_type;
+    signal immidiate_buf : mips32_pkg.data_type;
     signal destinationReg_buf : mips32_pkg.registerFileAddress_type;
     signal aluFunction_buf : mips32_pkg.aluFunction_type;
     signal shamt_buf : mips32_pkg.shamt_type;
@@ -64,7 +64,7 @@ begin
     readPortOneAddress <= to_integer(unsigned(instructionFromInstructionDecode(25 downto 21)));
     readPortTwoAddress <= to_integer(unsigned(instructionFromInstructionDecode(20 downto 16)));
     registerReadsAreEqual <= readPortOneData = readPortTwoData;
-    immidiate_buf <= resize(signed(instructionFromInstructionDecode(15 downto 0)), immidiate'length);
+    immidiate_buf <= std_logic_vector(resize(signed(instructionFromInstructionDecode(15 downto 0)), immidiate'length));
     shamt_buf <= to_integer(unsigned(instructionFromInstructionDecode(10 downto 6)));
     aluFunction_buf <= to_integer(unsigned(instructionFromInstructionDecode(5 downto 0)));
 
@@ -102,10 +102,12 @@ begin
     end process;
 
     determineBranchTarget : process(programCounterPlusFour, immidiate_buf)
-        variable pcPlusFourAsSigned : mips32_pkg.immidiate_type;
+        variable pcPlusFourAsSigned : signed(mips32_pkg.address_type'range);
+        variable immidiateAsSigned : signed(mips32_pkg.data_type'range);
     begin
         pcPlusFourAsSigned := signed(programCounterPlusFour);
-        branchTarget <= std_logic_vector(pcPlusFourAsSigned + shift_left(immidiate_buf, 2));
+        immidiateAsSigned := signed(immidiate_buf);
+        branchTarget <= std_logic_vector(pcPlusFourAsSigned + shift_left(immidiateAsSigned, 2));
     end process;
 
     handleIDEXReg : process(clk)

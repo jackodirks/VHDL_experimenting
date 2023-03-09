@@ -13,7 +13,6 @@ package mips32_pkg is
     subtype opcode_type is natural range 0 to 63;
     subtype registerFileAddress_type is natural range 0 to 31;
     subtype aluFunction_type is natural range 0 to 63;
-    subtype immidiate_type is signed(31 downto 0);
     subtype shamt_type is natural range 0 to 31;
 
     type data_array is array (natural range <>) of data_type;
