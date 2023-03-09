@@ -49,23 +49,23 @@ begin
         test_runner_setup(runner, runner_cfg);
         while test_suite loop
             if run("Before the first rising edge, all control output is zero") then
-                check(not memoryControlWordToMem.MemRead);
-                check(not memoryControlWordToMem.MemWrite);
+                check(not memoryControlWordToMem.MemOp);
+                check(not memoryControlWordToMem.MemOpIsWrite);
                 check(not writeBackControlWordToMem.regWrite);
                 check(not writeBackControlWordToMem.MemtoReg);
             elsif run("Input memory, writeback control is forwarded") then
-                memoryControlWord.MemWrite <= true;
+                memoryControlWord.MemOpIsWrite <= true;
                 wait until rising_edge(clk);
                 wait until falling_edge(clk);
-                check(memoryControlWordToMem.MemWrite);
+                check(memoryControlWordToMem.MemOpIsWrite);
             elsif run("Synchronous reset works") then
-                memoryControlWord.MemRead <= true;
+                memoryControlWord.MemOp <= true;
                 wait until rising_edge(clk);
                 wait until falling_edge(clk);
                 rst <= '1';
                 wait until rising_edge(clk);
                 wait until falling_edge(clk);
-                check(not memoryControlWordToMem.MemRead);
+                check(not memoryControlWordToMem.MemOp);
             elsif run("R-type subtract function works") then
                 regDataA <= std_logic_vector(to_signed(100, regDataA'length));
                 regDataB <= std_logic_vector(to_signed(10, regDataB'length));
@@ -93,14 +93,14 @@ begin
                 check_equal(destinationRegToMem, expectedDestinationRegToMem);
                 check_equal(regDataRead, expectedRegDataRead);
             elsif run("Stall stalls the registers") then
-                memoryControlWord.MemRead <= true;
+                memoryControlWord.MemOp <= true;
                 wait until rising_edge(clk);
                 wait until falling_edge(clk);
                 stall <= true;
-                memoryControlWord.MemRead <= false;
+                memoryControlWord.MemOp <= false;
                 wait until rising_edge(clk);
                 wait until falling_edge(clk);
-                check(memoryControlWordToMem.MemRead);
+                check(memoryControlWordToMem.MemOp);
             end if;
         end loop;
         wait until rising_edge(clk);

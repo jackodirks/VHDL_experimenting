@@ -30,8 +30,8 @@ package mips32_pkg is
     end record;
 
     type MemoryControlWord_type is record
-        MemRead : boolean;
-        MemWrite : boolean;
+        MemOp : boolean;
+        MemOpIsWrite : boolean;
     end record;
 
     type WriteBackControlWord_type is record
@@ -52,8 +52,8 @@ package mips32_pkg is
     );
 
     constant memoryControlWordAllFalse : MemoryControlWord_type := (
-        MemRead => false,
-        MemWrite => false
+        MemOp => false,
+        MemOpIsWrite => false
     );
 
     constant writeBackControlWordAllFalse : WriteBackControlWord_type := (

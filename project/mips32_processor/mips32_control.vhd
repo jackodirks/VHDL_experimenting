@@ -41,13 +41,14 @@ begin
                 executeControlWord_buf.ALUSrc := true;
                 writeBackControlWord_buf.MemtoReg := true;
                 writeBackControlWord_buf.regWrite := true;
-                memoryControlWord_buf.MemRead := true;
+                memoryControlWord_buf.memOp := true;
             when mips32_pkg.opcodeBeq =>
                 instructionDecodeControlWord_buf.branch := true;
             when mips32_pkg.opcodeSw =>
                 executeControlWord_buf.ALUOpIsAdd := true;
                 executeControlWord_buf.ALUSrc := true;
-                memoryControlWord_buf.MemWrite := true;
+                memoryControlWord_buf.MemOp := true;
+                memoryControlWord_buf.MemOpIsWrite := true;
             when mips32_pkg.opcodeJ =>
                 instructionDecodeControlWord_buf.jump := true;
             when others =>

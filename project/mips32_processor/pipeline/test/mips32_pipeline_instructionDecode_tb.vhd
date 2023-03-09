@@ -126,15 +126,15 @@ begin
                 check_equal(shamt, expectedShamt);
                 check(not executeControlWord.ALUSrc);
                 check(not executeControlWord.ALUOpIsAdd);
-                check(not memoryControlWord.MemRead);
-                check(not memoryControlWord.MemWrite);
+                check(not memoryControlWord.MemOp);
+                check(not memoryControlWord.MemOpIsWrite);
                 check(writeBackControlWord.regWrite);
                 check(not writeBackControlWord.MemtoReg);
             elsif run("Before the first rising_edge, all control logic should be false") then
                 check(not executeControlWord.ALUSrc);
                 check(not executeControlWord.ALUOpIsAdd);
-                check(not memoryControlWord.MemRead);
-                check(not memoryControlWord.MemWrite);
+                check(not memoryControlWord.MemOp);
+                check(not memoryControlWord.MemOpIsWrite);
                 check(not writeBackControlWord.regWrite);
                 check(not writeBackControlWord.MemtoReg);
             elsif run("On reset, all control logic should be reset to false") then
@@ -152,8 +152,8 @@ begin
                 wait until falling_edge(clk);
                 check(not executeControlWord.ALUSrc);
                 check(not executeControlWord.ALUOpIsAdd);
-                check(not memoryControlWord.MemRead);
-                check(not memoryControlWord.MemWrite);
+                check(not memoryControlWord.MemOp);
+                check(not memoryControlWord.MemOpIsWrite);
                 check(not writeBackControlWord.regWrite);
                 check(not writeBackControlWord.MemtoReg);
             elsif run("On stall, the incoming instruction should be ignored") then
@@ -187,8 +187,8 @@ begin
                 check_equal(immidiate, expectedImmidiate);
                 check(executeControlWord.ALUSrc);
                 check(executeControlWord.ALUOpIsAdd);
-                check(memoryControlWord.MemRead);
-                check(not memoryControlWord.MemWrite);
+                check(memoryControlWord.MemOp);
+                check(not memoryControlWord.MemOpIsWrite);
                 check(writeBackControlWord.regWrite);
                 check(writeBackControlWord.MemtoReg);
             elsif run("Store word behaves as expected") then
@@ -205,8 +205,8 @@ begin
                 check_equal(immidiate, expectedImmidiate);
                 check(executeControlWord.ALUSrc);
                 check(executeControlWord.ALUOpIsAdd);
-                check(not memoryControlWord.MemRead);
-                check(memoryControlWord.MemWrite);
+                check(memoryControlWord.MemOp);
+                check(memoryControlWord.MemOpIsWrite);
                 check(not writeBackControlWord.regWrite);
                 check(not writeBackControlWord.MemtoReg);
             end if;
