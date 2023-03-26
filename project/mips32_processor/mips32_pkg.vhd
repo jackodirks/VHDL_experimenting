@@ -6,16 +6,21 @@ package mips32_pkg is
     constant address_width_log2b : natural := 5;
     constant data_width_log2b : natural := 5;
     constant instruction_width_log2b : natural := 5;
+    constant byte_width_log2b : natural := 3;
+
+    constant bytes_per_data_word : natural := 2**(data_width_log2b - byte_width_log2b);
 
     subtype address_type is std_logic_vector(2**address_width_log2b - 1 downto  0);
     subtype data_type is std_logic_vector(2**data_width_log2b -1 downto 0);
     subtype instruction_type is std_logic_vector(2**instruction_width_log2b - 1 downto 0);
+    subtype byte_type is std_logic_vector(2**byte_width_log2b - 1 downto 0);
     subtype opcode_type is natural range 0 to 63;
     subtype registerFileAddress_type is natural range 0 to 31;
     subtype aluFunction_type is natural range 0 to 63;
     subtype shamt_type is natural range 0 to 31;
 
     type data_array is array (natural range <>) of data_type;
+    type byte_array is array (natural range <>) of byte_type;
 
     type InstructionDecodeControlWord_type is record
         branch : boolean;

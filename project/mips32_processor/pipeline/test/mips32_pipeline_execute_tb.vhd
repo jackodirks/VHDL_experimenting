@@ -7,7 +7,6 @@ context vunit_lib.vunit_context;
 context vunit_lib.vc_context;
 
 library src;
-use src.bus_pkg;
 use src.mips32_pkg;
 
 entity mips32_pipeline_execute_tb is

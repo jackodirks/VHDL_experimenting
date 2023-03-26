@@ -3,7 +3,6 @@ use IEEE.std_logic_1164.all;
 use IEEE.numeric_std.all;
 
 library work;
-use work.bus_pkg;
 use work.mips32_pkg;
 
 entity mips32_pipeline_memory is
