@@ -32,7 +32,9 @@ architecture tb of mips32_pipeline_instructionDecode_tb is
     signal executeControlWord : mips32_pkg.ExecuteControlWord_type;
 
     signal regDataA : mips32_pkg.data_type;
+    signal regAddressA : mips32_pkg.registerFileAddress_type;
     signal regDataB : mips32_pkg.data_type;
+    signal regAddressB : mips32_pkg.registerFileAddress_type;
     signal immidiate : mips32_pkg.data_type;
     signal destinationReg : mips32_pkg.registerFileAddress_type;
     signal aluFunction : mips32_pkg.aluFunction_type;
@@ -54,6 +56,8 @@ begin
         variable expectedAluFunction : mips32_pkg.aluFunction_type;
         variable expectedShamt : mips32_pkg.shamt_type;
         variable expectedImmidiate : mips32_pkg.data_type;
+        variable expectedRegAddressA : mips32_pkg.registerFileAddress_type;
+        variable expectedRegAddressB : mips32_pkg.registerFileAddress_type;
     begin
         test_runner_setup(runner, runner_cfg);
         while test_suite loop
@@ -209,6 +213,20 @@ begin
                 check(memoryControlWord.MemOpIsWrite);
                 check(not writeBackControlWord.regWrite);
                 check(not writeBackControlWord.MemtoReg);
+            elsif run("ID forwards registerAddresses") then
+                instructionIn(31 downto 26) := std_logic_vector(to_unsigned(mips32_pkg.opcodeRType, 6));
+                instructionIn(25 downto 21) := std_logic_vector(to_unsigned(2, 5));
+                instructionIn(20 downto 16) := std_logic_vector(to_unsigned(1, 5));
+                instructionIn(15 downto 11) := std_logic_vector(to_unsigned(3, 5));
+                instructionIn(10 downto 6) := std_logic_vector(to_unsigned(10, 5));
+                instructionIn(5 downto 0) := std_logic_vector(to_unsigned(4, 6));
+                instructionFromInstructionDecode <= instructionIn;
+                expectedRegAddressA := 2;
+                expectedRegAddressB := 1;
+                wait until rising_edge(clk);
+                wait until falling_edge(clk);
+                check_equal(regAddressA, expectedRegAddressA);
+                check_equal(regAddressB, expectedRegAddressB);
             end if;
         end loop;
         wait until rising_edge(clk);
@@ -232,7 +250,9 @@ begin
         memoryControlWord => memoryControlWord,
         executeControlWord => executeControlWord,
         regDataA => regDataA,
+        regAddressA => regAddressA,
         regDataB => regDataB,
+        regAddressB => regAddressB,
         immidiate => immidiate,
         destinationReg => destinationReg,
         aluFunction => aluFunction,
