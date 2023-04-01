@@ -16,6 +16,7 @@ entity mips32_pipeline_instructionDecode is
         instructionFromInstructionDecode : in mips32_pkg.instruction_type;
         programCounterPlusFour : in mips32_pkg.address_type;
         overrideProgramCounter : out boolean;
+        repeatInstruction : out boolean;
         newProgramCounter : out mips32_pkg.address_type;
 
         -- To execute stage: control signals
@@ -32,6 +33,10 @@ entity mips32_pipeline_instructionDecode is
         destinationReg : out mips32_pkg.registerFileAddress_type;
         aluFunction : out mips32_pkg.aluFunction_type;
         shamt : out mips32_pkg.shamt_type;
+
+        -- From execute stage: Hazard detection data
+        exInstructionIsMemLoad : in boolean;
+        exInstructionTargetReg : in mips32_pkg.registerFileAddress_type;
 
         -- From writeBack stage: data
         regWrite : in boolean;
@@ -61,6 +66,8 @@ architecture behaviourial of mips32_pipeline_instructionDecode is
     signal destinationReg_buf : mips32_pkg.registerFileAddress_type;
     signal aluFunction_buf : mips32_pkg.aluFunction_type;
     signal shamt_buf : mips32_pkg.shamt_type;
+
+    signal loadHazardDetected : boolean := false;
 begin
     opcode <= to_integer(unsigned(instructionFromInstructionDecode(31 downto 26)));
     readPortOneAddress <= to_integer(unsigned(instructionFromInstructionDecode(25 downto 21)));
@@ -69,6 +76,7 @@ begin
     immidiate_buf <= std_logic_vector(resize(signed(instructionFromInstructionDecode(15 downto 0)), immidiate'length));
     shamt_buf <= to_integer(unsigned(instructionFromInstructionDecode(10 downto 6)));
     aluFunction_buf <= to_integer(unsigned(instructionFromInstructionDecode(5 downto 0)));
+    repeatInstruction <= loadHazardDetected;
 
     determineDestinationReg : process(instructionFromInstructionDecode, decodedInstructionDecodeControlWord)
     begin
@@ -112,13 +120,19 @@ begin
         branchTarget <= std_logic_vector(pcPlusFourAsSigned + shift_left(immidiateAsSigned, 2));
     end process;
 
+    detectLoadHazard : process(exInstructionIsMemLoad, exInstructionTargetReg, readPortOneAddress, readPortTwoAddress)
+    begin
+        loadHazardDetected <= exInstructionIsMemLoad and
+                              (exInstructionTargetReg = readPortOneAddress or exInstructionTargetReg = readPortTwoAddress);
+    end process;
+
     handleIDEXReg : process(clk)
         variable writeBackControlWord_var : mips32_pkg.WriteBackControlWord_type := mips32_pkg.writeBackControlWordAllFalse;
         variable memoryControlWord_var : mips32_pkg.MemoryControlWord_type := mips32_pkg.memoryControlWordAllFalse;
         variable executeControlWord_var : mips32_pkg.ExecuteControlWord_type := mips32_pkg.executeControlWordAllFalse;
     begin
         if rising_edge(clk) then
-            if rst = '1' then
+            if rst = '1' or loadHazardDetected then
                 writeBackControlWord_var := mips32_pkg.writeBackControlWordAllFalse;
                 memoryControlWord_var := mips32_pkg.memoryControlWordAllFalse;
                 executeControlWord_var := mips32_pkg.executeControlWordAllFalse;

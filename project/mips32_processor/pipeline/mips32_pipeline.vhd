@@ -32,6 +32,7 @@ architecture behaviourial of mips32_pipeline is
     -- Instruction decode to instruction fetch
     signal overridePcToIF : boolean;
     signal newPcToIF : mips32_pkg.address_type;
+    signal repeatInstruction : boolean;
     -- Instruction fetch to execute
     signal exControlWordToEx : mips32_pkg.ExecuteControlWord_type;
     signal memControlWordToEx : mips32_pkg.MemoryControlWord_type;
@@ -71,7 +72,7 @@ begin
     ) port map (
         clk => clk,
         rst => rst,
-        stall => stall,
+        stall => stall or repeatInstruction,
 
         requestFromBusAddress => instructionAddress,
         instructionFromBus => instruction,
@@ -93,6 +94,7 @@ begin
         programCounterPlusFour => pcPlusFourToID,
 
         overrideProgramCounter => overridePcToIF,
+        repeatInstruction => repeatInstruction,
         newProgramCounter => newPcToIF,
 
         executeControlWord => exControlWordToEx,
@@ -106,6 +108,9 @@ begin
         destinationReg => destRegToEx,
         aluFunction => aluFuncToEx,
         shamt => shamtToEx,
+
+        exInstructionIsMemLoad => memControlWordToEx.MemOp and not memControlWordToEx.MemOpIsWrite,
+        exInstructionTargetReg => destRegToEx,
 
         regWrite => regWriteToID,
         regWriteAddress => regWriteAddrToID,

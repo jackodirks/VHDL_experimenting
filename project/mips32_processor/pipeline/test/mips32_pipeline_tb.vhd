@@ -59,21 +59,16 @@ begin
                     net => net,
                     actor => memActor,
                     addr => 8,
-                    data => mips32_pkg.instructionNop);
-                mips32_pipeline_simulated_memory_pkg.write_to_address(
-                    net => net,
-                    actor => memActor,
-                    addr => 12,
                     data => X"014B6020");
                 mips32_pipeline_simulated_memory_pkg.write_to_address(
                     net => net,
                     actor => memActor,
-                    addr => 16,
+                    addr => 12,
                     data => X"08000000");
                 mips32_pipeline_simulated_memory_pkg.write_to_address(
                     net => net,
                     actor => memActor,
-                    addr => 20,
+                    addr => 16,
                     data => X"AC0C0058");
 
                 mips32_pipeline_simulated_memory_pkg.write_to_address(

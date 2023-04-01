@@ -9,6 +9,7 @@ context vunit_lib.vc_context;
 library src;
 use src.bus_pkg;
 use src.mips32_pkg;
+use src.mips32_pkg."=";
 
 entity mips32_pipeline_instructionDecode_tb is
     generic (
@@ -26,6 +27,7 @@ architecture tb of mips32_pipeline_instructionDecode_tb is
     signal programCounterPlusFour : mips32_pkg.address_type := (others => '1');
     signal overrideProgramCounter : boolean;
     signal newProgramCounter : mips32_pkg.address_type;
+    signal repeatInstruction : boolean;
 
     signal writeBackControlWord : mips32_pkg.WriteBackControlWord_type;
     signal memoryControlWord : mips32_pkg.MemoryControlWord_type;
@@ -39,6 +41,9 @@ architecture tb of mips32_pipeline_instructionDecode_tb is
     signal destinationReg : mips32_pkg.registerFileAddress_type;
     signal aluFunction : mips32_pkg.aluFunction_type;
     signal shamt : mips32_pkg.shamt_type;
+
+    signal exInstructionIsMemLoad : boolean;
+    signal exInstructionTargetReg : mips32_pkg.registerFileAddress_type;
 
     signal regWrite : boolean := false;
     signal regWriteAddress : mips32_pkg.registerFileAddress_type := 16#0#;
@@ -128,19 +133,14 @@ begin
                 check_equal(destinationReg, expectedDestinationReg);
                 check_equal(aluFunction, expectedAluFunction);
                 check_equal(shamt, expectedShamt);
-                check(not executeControlWord.ALUSrc);
-                check(not executeControlWord.ALUOpIsAdd);
-                check(not memoryControlWord.MemOp);
-                check(not memoryControlWord.MemOpIsWrite);
+                check(executeControlWord = mips32_pkg.executeControlWordAllFalse);
+                check(memoryControlWord = mips32_pkg.memoryControlWordAllFalse);
                 check(writeBackControlWord.regWrite);
                 check(not writeBackControlWord.MemtoReg);
             elsif run("Before the first rising_edge, all control logic should be false") then
-                check(not executeControlWord.ALUSrc);
-                check(not executeControlWord.ALUOpIsAdd);
-                check(not memoryControlWord.MemOp);
-                check(not memoryControlWord.MemOpIsWrite);
-                check(not writeBackControlWord.regWrite);
-                check(not writeBackControlWord.MemtoReg);
+                check(executeControlWord = mips32_pkg.executeControlWordAllFalse);
+                check(memoryControlWord = mips32_pkg.memoryControlWordAllFalse);
+                check(writeBackControlWord = mips32_pkg.writeBackControlWordAllFalse);
             elsif run("On reset, all control logic should be reset to false") then
                 instructionIn(31 downto 26) := std_logic_vector(to_unsigned(mips32_pkg.opcodeRType, 6));
                 instructionIn(25 downto 21) := std_logic_vector(to_unsigned(2, 5));
@@ -154,12 +154,9 @@ begin
                 rst <= '1';
                 wait until rising_edge(clk);
                 wait until falling_edge(clk);
-                check(not executeControlWord.ALUSrc);
-                check(not executeControlWord.ALUOpIsAdd);
-                check(not memoryControlWord.MemOp);
-                check(not memoryControlWord.MemOpIsWrite);
-                check(not writeBackControlWord.regWrite);
-                check(not writeBackControlWord.MemtoReg);
+                check(executeControlWord = mips32_pkg.executeControlWordAllFalse);
+                check(memoryControlWord = mips32_pkg.memoryControlWordAllFalse);
+                check(writeBackControlWord = mips32_pkg.writeBackControlWordAllFalse);
             elsif run("On stall, the incoming instruction should be ignored") then
                 instructionIn(31 downto 26) := std_logic_vector(to_unsigned(mips32_pkg.opcodeRType, 6));
                 instructionIn(25 downto 21) := std_logic_vector(to_unsigned(2, 5));
@@ -211,8 +208,7 @@ begin
                 check(executeControlWord.ALUOpIsAdd);
                 check(memoryControlWord.MemOp);
                 check(memoryControlWord.MemOpIsWrite);
-                check(not writeBackControlWord.regWrite);
-                check(not writeBackControlWord.MemtoReg);
+                check(writeBackControlWord = mips32_pkg.writeBackControlWordAllFalse);
             elsif run("ID forwards registerAddresses") then
                 instructionIn(31 downto 26) := std_logic_vector(to_unsigned(mips32_pkg.opcodeRType, 6));
                 instructionIn(25 downto 21) := std_logic_vector(to_unsigned(2, 5));
@@ -227,6 +223,35 @@ begin
                 wait until falling_edge(clk);
                 check_equal(regAddressA, expectedRegAddressA);
                 check_equal(regAddressB, expectedRegAddressB);
+            elsif run("Dependend R-type after load word causes repeat") then
+                instructionIn(31 downto 26) := std_logic_vector(to_unsigned(mips32_pkg.opcodeRType, 6));
+                instructionIn(25 downto 21) := std_logic_vector(to_unsigned(2, 5));
+                instructionIn(20 downto 16) := std_logic_vector(to_unsigned(1, 5));
+                instructionIn(15 downto 11) := std_logic_vector(to_unsigned(3, 5));
+                instructionIn(10 downto 6) := std_logic_vector(to_unsigned(10, 5));
+                instructionIn(5 downto 0) := std_logic_vector(to_unsigned(4, 6));
+                instructionFromInstructionDecode <= instructionIn;
+                exInstructionIsMemLoad <= true;
+                exInstructionTargetReg <= 2;
+                wait until rising_edge(clk);
+                wait until falling_edge(clk);
+                check(repeatInstruction);
+                check(executeControlWord = mips32_pkg.executeControlWordAllFalse);
+                check(memoryControlWord = mips32_pkg.memoryControlWordAllFalse);
+                check(writeBackControlWord = mips32_pkg.writeBackControlWordAllFalse);
+            elsif run("Inependend R-type after load word does not cause repeat") then
+                instructionIn(31 downto 26) := std_logic_vector(to_unsigned(mips32_pkg.opcodeRType, 6));
+                instructionIn(25 downto 21) := std_logic_vector(to_unsigned(2, 5));
+                instructionIn(20 downto 16) := std_logic_vector(to_unsigned(1, 5));
+                instructionIn(15 downto 11) := std_logic_vector(to_unsigned(3, 5));
+                instructionIn(10 downto 6) := std_logic_vector(to_unsigned(10, 5));
+                instructionIn(5 downto 0) := std_logic_vector(to_unsigned(4, 6));
+                instructionFromInstructionDecode <= instructionIn;
+                exInstructionIsMemLoad <= true;
+                exInstructionTargetReg <= 6;
+                wait until rising_edge(clk);
+                wait until falling_edge(clk);
+                check(not repeatInstruction);
             end if;
         end loop;
         wait until rising_edge(clk);
@@ -245,6 +270,7 @@ begin
         instructionFromInstructionDecode => instructionFromInstructionDecode,
         programCounterPlusFour => programCounterPlusFour,
         overrideProgramCounter => overrideProgramCounter,
+        repeatInstruction => repeatInstruction,
         newProgramCounter => newProgramCounter,
         writeBackControlWord => writeBackControlWord,
         memoryControlWord => memoryControlWord,
@@ -257,6 +283,8 @@ begin
         destinationReg => destinationReg,
         aluFunction => aluFunction,
         shamt => shamt,
+        exInstructionIsMemLoad => exInstructionIsMemLoad,
+        exInstructionTargetReg => exInstructionTargetReg,
         regWrite => regWrite,
         regWriteAddress => regWriteAddress,
         regWriteData => regWriteData
