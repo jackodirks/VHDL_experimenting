@@ -36,12 +36,18 @@ architecture behaviourial of mips32_pipeline is
     signal exControlWordToEx : mips32_pkg.ExecuteControlWord_type;
     signal memControlWordToEx : mips32_pkg.MemoryControlWord_type;
     signal wbControlWordToEx : mips32_pkg.WriteBackControlWord_type;
-    signal regDataAToEx : mips32_pkg.data_type;
-    signal regDataBToEx : mips32_pkg.data_type;
     signal immidiateToEx : mips32_pkg.data_type;
     signal destRegToEx : mips32_pkg.registerFileAddress_type;
     signal aluFuncToEx : mips32_pkg.aluFunction_type;
     signal shamtToEx : mips32_pkg.shamt_type;
+    -- Instruction fetch to forwarding
+    signal regDataAToFwU : mips32_pkg.data_type;
+    signal regAddressAToFwU : mips32_pkg.registerFileAddress_type;
+    signal regDataBToFwU : mips32_pkg.data_type;
+    signal regAddressBToFwU : mips32_pkg.registerFileAddress_type;
+    -- Forwarding unit to execute
+    signal regDataAToEx : mips32_pkg.data_type;
+    signal regDataBToEx : mips32_pkg.data_type;
     -- Write back to instruction decode
     signal regWriteToID : boolean;
     signal regWriteAddrToID : mips32_pkg.registerFileAddress_type;
@@ -92,8 +98,10 @@ begin
         executeControlWord => exControlWordToEx,
         memoryControlWord => memControlWordToEx,
         writeBackControlWord => wbControlWordToEx,
-        regDataA => regDataAToEx,
-        regDataB => regDataBToEx,
+        regDataA => regDataAToFwU,
+        regAddressA => regAddressAToFwU,
+        regDataB => regDataBToFwU,
+        regAddressB => regAddressBToFwU,
         immidiate => immidiateToEx,
         destinationReg => destRegToEx,
         aluFunction => aluFuncToEx,
@@ -161,5 +169,23 @@ begin
         regWrite => regWriteToID,
         regWriteAddress => regWriteAddrToID,
         regWriteData => regWriteDataToID
+    );
+
+    forwarding_unit : entity work.mips32_pipeline_forwarding_unit
+    port map (
+        regDataAFromID => regDataAToFwU,
+        regAddressAFromID => regAddressAToFwU,
+        regDataBFromID => regDataBToFwU,
+        regAddressBFromID => regAddressBToFwU,
+
+        regDataFromEx => aluResToMem,
+        regAddressFromEx => destRegToMem,
+        regWriteFromEx => wbControlWordToMem.regWrite,
+        regDataFromMem => regWriteDataToID,
+        regAddressFromMem => regWriteAddrToID,
+        regWriteFromMem => regWriteToID,
+
+        regDataA => regDataAToEx,
+        regDataB => regDataBToEx
     );
 end architecture;
