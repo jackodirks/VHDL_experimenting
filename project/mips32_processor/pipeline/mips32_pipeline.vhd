@@ -43,7 +43,7 @@ architecture behaviourial of mips32_pipeline is
     signal shamtToEx : mips32_pkg.shamt_type;
     -- Instruction fetch to forwarding
     signal rsDataToFwU : mips32_pkg.data_type;
-    signal regAddressAToFwU : mips32_pkg.registerFileAddress_type;
+    signal rsAddressToFwU : mips32_pkg.registerFileAddress_type;
     signal regDataBToFwU : mips32_pkg.data_type;
     signal regAddressBToFwU : mips32_pkg.registerFileAddress_type;
     -- Forwarding unit to execute
@@ -101,7 +101,7 @@ begin
         memoryControlWord => memControlWordToEx,
         writeBackControlWord => wbControlWordToEx,
         rsData => rsDataToFwU,
-        regAddressA => regAddressAToFwU,
+        rsAddress => rsAddressToFwU,
         regDataB => regDataBToFwU,
         regAddressB => regAddressBToFwU,
         immidiate => immidiateToEx,
@@ -179,7 +179,7 @@ begin
     forwarding_unit : entity work.mips32_pipeline_forwarding_unit
     port map (
         rsDataFromID => rsDataToFwU,
-        regAddressAFromID => regAddressAToFwU,
+        rsAddressFromID => rsAddressToFwU,
         regDataBFromID => regDataBToFwU,
         regAddressBFromID => regAddressBToFwU,
 

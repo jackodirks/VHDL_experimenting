@@ -34,7 +34,7 @@ architecture tb of mips32_pipeline_instructionDecode_tb is
     signal executeControlWord : mips32_pkg.ExecuteControlWord_type;
 
     signal rsData : mips32_pkg.data_type;
-    signal regAddressA : mips32_pkg.registerFileAddress_type;
+    signal rsAddress : mips32_pkg.registerFileAddress_type;
     signal regDataB : mips32_pkg.data_type;
     signal regAddressB : mips32_pkg.registerFileAddress_type;
     signal immidiate : mips32_pkg.data_type;
@@ -61,7 +61,7 @@ begin
         variable expectedAluFunction : mips32_pkg.aluFunction_type;
         variable expectedShamt : mips32_pkg.shamt_type;
         variable expectedImmidiate : mips32_pkg.data_type;
-        variable expectedRegAddressA : mips32_pkg.registerFileAddress_type;
+        variable expectedRsAddress : mips32_pkg.registerFileAddress_type;
         variable expectedRegAddressB : mips32_pkg.registerFileAddress_type;
     begin
         test_runner_setup(runner, runner_cfg);
@@ -217,11 +217,11 @@ begin
                 instructionIn(10 downto 6) := std_logic_vector(to_unsigned(10, 5));
                 instructionIn(5 downto 0) := std_logic_vector(to_unsigned(4, 6));
                 instructionFromInstructionDecode <= instructionIn;
-                expectedRegAddressA := 2;
+                expectedRsAddress := 2;
                 expectedRegAddressB := 1;
                 wait until rising_edge(clk);
                 wait until falling_edge(clk);
-                check_equal(regAddressA, expectedRegAddressA);
+                check_equal(rsAddress, expectedRsAddress);
                 check_equal(regAddressB, expectedRegAddressB);
             elsif run("Dependend R-type after load word causes repeat") then
                 instructionIn(31 downto 26) := std_logic_vector(to_unsigned(mips32_pkg.opcodeRType, 6));
@@ -276,7 +276,7 @@ begin
         memoryControlWord => memoryControlWord,
         executeControlWord => executeControlWord,
         rsData => rsData,
-        regAddressA => regAddressA,
+        rsAddress => rsAddress,
         regDataB => regDataB,
         regAddressB => regAddressB,
         immidiate => immidiate,

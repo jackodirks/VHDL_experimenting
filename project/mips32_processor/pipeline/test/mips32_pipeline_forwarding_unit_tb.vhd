@@ -19,7 +19,7 @@ architecture tb of mips32_pipeline_forwarding_unit_tb is
 
     signal clk : std_logic := '0';
     signal rsDataFromID : mips32_pkg.data_type := (others => '0');
-    signal regAddressAFromID : mips32_pkg.registerFileAddress_type := 0;
+    signal rsAddressFromID : mips32_pkg.registerFileAddress_type := 0;
     signal regDataBFromID : mips32_pkg.data_type := (others => '0');
     signal regAddressBFromID : mips32_pkg.registerFileAddress_type := 0;
 
@@ -53,7 +53,7 @@ begin
             elsif run("RegData is forwarded from mem stage") then
                 expectedRsData := X"0000000A";
                 expectedRegDataB := expectedRsData;
-                regAddressAFromID <= 5;
+                rsAddressFromID <= 5;
                 regAddressBFromID <= 5;
                 regDataFromMem <= expectedRsData;
                 regAddressFromMem <= 5;
@@ -64,7 +64,7 @@ begin
             elsif run("RegData is not forwarded if addressFromMem is different") then
                 expectedRsData := X"0000000A";
                 expectedRegDataB := expectedRsData;
-                regAddressAFromID <= 5;
+                rsAddressFromID <= 5;
                 regAddressBFromID <= 5;
                 rsDataFromID <= expectedRsData;
                 regDataBFromID <= expectedRegDataB;
@@ -76,7 +76,7 @@ begin
             elsif run("RegData from ex is prefered over mem") then
                 expectedRsData := X"0000000A";
                 expectedRegDataB := expectedRsData;
-                regAddressAFromID <= 5;
+                rsAddressFromID <= 5;
                 regAddressBFromID <= 5;
                 regAddressFromMem <= 5;
                 regWriteFromMem <= true;
@@ -89,7 +89,7 @@ begin
             elsif run("RegData from ex is not prefered if address differs") then
                 expectedRsData := X"0000000A";
                 expectedRegDataB := expectedRsData;
-                regAddressAFromID <= 5;
+                rsAddressFromID <= 5;
                 regAddressBFromID <= 5;
                 regDataFromMem <= expectedRsData;
                 regAddressFromMem <= 5;
@@ -104,7 +104,7 @@ begin
                 expectedRegDataB := expectedRsData;
                 rsDataFromID <= expectedRsData;
                 regDataBFromID <= expectedRegDataB;
-                regAddressAFromID <= 0;
+                rsAddressFromID <= 0;
                 regAddressBFromID <= 0;
                 regAddressFromMem <= 0;
                 regWriteFromMem <= true;
@@ -126,7 +126,7 @@ begin
     executeStage : entity src.mips32_pipeline_forwarding_unit
     port map (
         rsDataFromID => rsDataFromID,
-        regAddressAFromID => regAddressAFromID,
+        rsAddressFromID => rsAddressFromID,
         regDataBFromID => regDataBFromID,
         regAddressBFromID => regAddressBFromID,
         regDataFromEx => regDataFromEx,

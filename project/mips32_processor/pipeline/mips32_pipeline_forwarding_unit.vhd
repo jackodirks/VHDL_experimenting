@@ -9,7 +9,7 @@ use work.mips32_pkg;
 entity mips32_pipeline_forwarding_unit is
     port (
         rsDataFromID : in mips32_pkg.data_type;
-        regAddressAFromID : in mips32_pkg.registerFileAddress_type;
+        rsAddressFromID : in mips32_pkg.registerFileAddress_type;
         regDataBFromID : in mips32_pkg.data_type;
         regAddressBFromID : in mips32_pkg.registerFileAddress_type;
 
@@ -28,14 +28,14 @@ end entity;
 
 architecture behaviourial of mips32_pipeline_forwarding_unit is
 begin
-    determineRsData : process(rsDataFromID, regAddressAFromID, regDataFromEx, regAddressFromEx, regWriteFromEx,
+    determineRsData : process(rsDataFromID, rsAddressFromID, regDataFromEx, regAddressFromEx, regWriteFromEx,
                                 regDataFromMem, regAddressFromMem, regWriteFromMem)
     begin
-        if regAddressAFromID = 0 then
+        if rsAddressFromID = 0 then
             rsData <= rsDataFromID;
-        elsif regWriteFromEx and regAddressAFromID = regAddressFromEx then
+        elsif regWriteFromEx and rsAddressFromID = regAddressFromEx then
             rsData <= regDataFromEx;
-        elsif regWriteFromMem and regAddressAFromID = regAddressFromMem then
+        elsif regWriteFromMem and rsAddressFromID = regAddressFromMem then
             rsData <= regDataFromMem;
         else
             rsData <= rsDataFromID;
