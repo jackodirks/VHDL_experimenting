@@ -45,7 +45,7 @@ architecture behaviourial of mips32_pipeline is
     signal rsDataToFwU : mips32_pkg.data_type;
     signal rsAddressToFwU : mips32_pkg.registerFileAddress_type;
     signal rtDataToFwU : mips32_pkg.data_type;
-    signal regAddressBToFwU : mips32_pkg.registerFileAddress_type;
+    signal rtAddressToFwU : mips32_pkg.registerFileAddress_type;
     -- Forwarding unit to execute
     signal rsDataToEx : mips32_pkg.data_type;
     signal rtDataToEx : mips32_pkg.data_type;
@@ -103,7 +103,7 @@ begin
         rsData => rsDataToFwU,
         rsAddress => rsAddressToFwU,
         rtData => rtDataToFwU,
-        regAddressB => regAddressBToFwU,
+        rtAddress => rtAddressToFwU,
         immidiate => immidiateToEx,
         destinationReg => destRegToEx,
         aluFunction => aluFuncToEx,
@@ -181,7 +181,7 @@ begin
         rsDataFromID => rsDataToFwU,
         rsAddressFromID => rsAddressToFwU,
         rtDataFromID => rtDataToFwU,
-        regAddressBFromID => regAddressBToFwU,
+        rtAddressFromID => rtAddressToFwU,
 
         regDataFromEx => aluResToMem,
         regAddressFromEx => destRegToMem,

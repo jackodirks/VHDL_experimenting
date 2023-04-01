@@ -11,7 +11,7 @@ entity mips32_pipeline_forwarding_unit is
         rsDataFromID : in mips32_pkg.data_type;
         rsAddressFromID : in mips32_pkg.registerFileAddress_type;
         rtDataFromID : in mips32_pkg.data_type;
-        regAddressBFromID : in mips32_pkg.registerFileAddress_type;
+        rtAddressFromID : in mips32_pkg.registerFileAddress_type;
 
         regDataFromEx : in mips32_pkg.data_type;
         regAddressFromEx : in mips32_pkg.registerFileAddress_type;
@@ -42,14 +42,14 @@ begin
         end if;
     end process;
 
-    determineRtData : process(rtDataFromID, regAddressBFromID, regDataFromEx, regAddressFromEx, regWriteFromEx,
+    determineRtData : process(rtDataFromID, rtAddressFromID, regDataFromEx, regAddressFromEx, regWriteFromEx,
                                 regDataFromMem, regAddressFromMem, regWriteFromMem)
     begin
-        if regAddressBFromID = 0 then
+        if rtAddressFromID = 0 then
             rtData <= rtDataFromID;
-        elsif regWriteFromEx and regAddressBFromID = regAddressFromEx then
+        elsif regWriteFromEx and rtAddressFromID = regAddressFromEx then
             rtData <= regDataFromEx;
-        elsif regWriteFromMem and regAddressBFromID = regAddressFromMem then
+        elsif regWriteFromMem and rtAddressFromID = regAddressFromMem then
             rtData <= regDataFromMem;
         else
             rtData <= rtDataFromID;

@@ -21,7 +21,7 @@ architecture tb of mips32_pipeline_forwarding_unit_tb is
     signal rsDataFromID : mips32_pkg.data_type := (others => '0');
     signal rsAddressFromID : mips32_pkg.registerFileAddress_type := 0;
     signal rtDataFromID : mips32_pkg.data_type := (others => '0');
-    signal regAddressBFromID : mips32_pkg.registerFileAddress_type := 0;
+    signal rtAddressFromID : mips32_pkg.registerFileAddress_type := 0;
 
     signal regDataFromEx : mips32_pkg.data_type := (others => '0');
     signal regAddressFromEx : mips32_pkg.registerFileAddress_type := 0;
@@ -54,7 +54,7 @@ begin
                 expectedRsData := X"0000000A";
                 expectedRtData := expectedRsData;
                 rsAddressFromID <= 5;
-                regAddressBFromID <= 5;
+                rtAddressFromID <= 5;
                 regDataFromMem <= expectedRsData;
                 regAddressFromMem <= 5;
                 regWriteFromMem <= true;
@@ -65,7 +65,7 @@ begin
                 expectedRsData := X"0000000A";
                 expectedRtData := expectedRsData;
                 rsAddressFromID <= 5;
-                regAddressBFromID <= 5;
+                rtAddressFromID <= 5;
                 rsDataFromID <= expectedRsData;
                 rtDataFromID <= expectedRtData;
                 regAddressFromMem <= 6;
@@ -77,7 +77,7 @@ begin
                 expectedRsData := X"0000000A";
                 expectedRtData := expectedRsData;
                 rsAddressFromID <= 5;
-                regAddressBFromID <= 5;
+                rtAddressFromID <= 5;
                 regAddressFromMem <= 5;
                 regWriteFromMem <= true;
                 regDataFromEx <= expectedRsData;
@@ -90,7 +90,7 @@ begin
                 expectedRsData := X"0000000A";
                 expectedRtData := expectedRsData;
                 rsAddressFromID <= 5;
-                regAddressBFromID <= 5;
+                rtAddressFromID <= 5;
                 regDataFromMem <= expectedRsData;
                 regAddressFromMem <= 5;
                 regWriteFromMem <= true;
@@ -105,7 +105,7 @@ begin
                 rsDataFromID <= expectedRsData;
                 rtDataFromID <= expectedRtData;
                 rsAddressFromID <= 0;
-                regAddressBFromID <= 0;
+                rtAddressFromID <= 0;
                 regAddressFromMem <= 0;
                 regWriteFromMem <= true;
                 regAddressFromEx <= 0;
@@ -128,7 +128,7 @@ begin
         rsDataFromID => rsDataFromID,
         rsAddressFromID => rsAddressFromID,
         rtDataFromID => rtDataFromID,
-        regAddressBFromID => regAddressBFromID,
+        rtAddressFromID => rtAddressFromID,
         regDataFromEx => regDataFromEx,
         regAddressFromEx => regAddressFromEx,
         regWriteFromEx => regWriteFromEx,

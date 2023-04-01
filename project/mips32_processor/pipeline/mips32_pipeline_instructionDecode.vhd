@@ -28,7 +28,7 @@ entity mips32_pipeline_instructionDecode is
         rsData : out mips32_pkg.data_type;
         rsAddress : out mips32_pkg.registerFileAddress_type;
         rtData : out mips32_pkg.data_type;
-        regAddressB : out mips32_pkg.registerFileAddress_type;
+        rtAddress : out mips32_pkg.registerFileAddress_type;
         immidiate : out mips32_pkg.data_type;
         destinationReg : out mips32_pkg.registerFileAddress_type;
         aluFunction : out mips32_pkg.aluFunction_type;
@@ -143,7 +143,7 @@ begin
                 rsData <= readPortOneData;
                 rsAddress <= readPortOneAddress;
                 rtData <= readPortTwoData;
-                regAddressB <= readPortTwoAddress;
+                rtAddress <= readPortTwoAddress;
                 immidiate <= immidiate_buf;
                 destinationReg <= destinationReg_buf;
                 aluFunction <= aluFunction_buf;
@@ -163,7 +163,6 @@ begin
         memoryControlWord => decodedMemoryControlWord,
         writeBackControlWord => decodedWriteBackControlWord
     );
-
 
     registerFile : entity work.mips32_registerFile
     port map (

@@ -36,7 +36,7 @@ architecture tb of mips32_pipeline_instructionDecode_tb is
     signal rsData : mips32_pkg.data_type;
     signal rsAddress : mips32_pkg.registerFileAddress_type;
     signal rtData : mips32_pkg.data_type;
-    signal regAddressB : mips32_pkg.registerFileAddress_type;
+    signal rtAddress : mips32_pkg.registerFileAddress_type;
     signal immidiate : mips32_pkg.data_type;
     signal destinationReg : mips32_pkg.registerFileAddress_type;
     signal aluFunction : mips32_pkg.aluFunction_type;
@@ -62,7 +62,7 @@ begin
         variable expectedShamt : mips32_pkg.shamt_type;
         variable expectedImmidiate : mips32_pkg.data_type;
         variable expectedRsAddress : mips32_pkg.registerFileAddress_type;
-        variable expectedRegAddressB : mips32_pkg.registerFileAddress_type;
+        variable expectedRtAddress : mips32_pkg.registerFileAddress_type;
     begin
         test_runner_setup(runner, runner_cfg);
         while test_suite loop
@@ -218,11 +218,11 @@ begin
                 instructionIn(5 downto 0) := std_logic_vector(to_unsigned(4, 6));
                 instructionFromInstructionDecode <= instructionIn;
                 expectedRsAddress := 2;
-                expectedRegAddressB := 1;
+                expectedRtAddress := 1;
                 wait until rising_edge(clk);
                 wait until falling_edge(clk);
                 check_equal(rsAddress, expectedRsAddress);
-                check_equal(regAddressB, expectedRegAddressB);
+                check_equal(rtAddress, expectedRtAddress);
             elsif run("Dependend R-type after load word causes repeat") then
                 instructionIn(31 downto 26) := std_logic_vector(to_unsigned(mips32_pkg.opcodeRType, 6));
                 instructionIn(25 downto 21) := std_logic_vector(to_unsigned(2, 5));
@@ -278,7 +278,7 @@ begin
         rsData => rsData,
         rsAddress => rsAddress,
         rtData => rtData,
-        regAddressB => regAddressB,
+        rtAddress => rtAddress,
         immidiate => immidiate,
         destinationReg => destinationReg,
         aluFunction => aluFunction,
