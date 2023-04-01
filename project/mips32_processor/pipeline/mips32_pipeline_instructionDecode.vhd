@@ -25,7 +25,7 @@ entity mips32_pipeline_instructionDecode is
         executeControlWord : out mips32_pkg.ExecuteControlWord_type;
 
         -- To execute stage: data
-        regDataA : out mips32_pkg.data_type;
+        rsData : out mips32_pkg.data_type;
         regAddressA : out mips32_pkg.registerFileAddress_type;
         regDataB : out mips32_pkg.data_type;
         regAddressB : out mips32_pkg.registerFileAddress_type;
@@ -140,7 +140,7 @@ begin
                 writeBackControlWord_var := decodedWriteBackControlWord;
                 memoryControlWord_var := decodedMemoryControlWord;
                 executeControlWord_var := decodedExecuteControlWord;
-                regDataA <= readPortOneData;
+                rsData <= readPortOneData;
                 regAddressA <= readPortOneAddress;
                 regDataB <= readPortTwoData;
                 regAddressB <= readPortTwoAddress;

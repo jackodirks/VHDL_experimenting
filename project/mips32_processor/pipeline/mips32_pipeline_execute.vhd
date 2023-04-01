@@ -18,7 +18,7 @@ entity mips32_pipeline_execute is
         executeControlWord : in mips32_pkg.ExecuteControlWord_type;
 
         -- From decode stage: data
-        regDataA : in mips32_pkg.data_type;
+        rsData : in mips32_pkg.data_type;
         regDataB : in mips32_pkg.data_type;
         immidiate : in mips32_pkg.data_type;
         destinationReg : in mips32_pkg.registerFileAddress_type;
@@ -81,7 +81,7 @@ begin
 
     alu : entity work.mips32_alu
     port map (
-        inputA => regDataA,
+        inputA => rsData,
         inputB => aluInputB,
         funct => aluFunctionInput,
         output => aluResult_buf

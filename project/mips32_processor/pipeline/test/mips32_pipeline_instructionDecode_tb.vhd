@@ -33,7 +33,7 @@ architecture tb of mips32_pipeline_instructionDecode_tb is
     signal memoryControlWord : mips32_pkg.MemoryControlWord_type;
     signal executeControlWord : mips32_pkg.ExecuteControlWord_type;
 
-    signal regDataA : mips32_pkg.data_type;
+    signal rsData : mips32_pkg.data_type;
     signal regAddressA : mips32_pkg.registerFileAddress_type;
     signal regDataB : mips32_pkg.data_type;
     signal regAddressB : mips32_pkg.registerFileAddress_type;
@@ -55,7 +55,7 @@ begin
         variable instructionIn : mips32_pkg.instruction_type;
         variable expectedJumpTarget : mips32_pkg.address_type;
         variable inputAddress : mips32_pkg.address_type;
-        variable expectedRegDataA : mips32_pkg.data_type;
+        variable expectedRsData : mips32_pkg.data_type;
         variable expectedRegDataB : mips32_pkg.data_type;
         variable expectedDestinationReg : mips32_pkg.registerFileAddress_type;
         variable expectedAluFunction : mips32_pkg.aluFunction_type;
@@ -112,14 +112,14 @@ begin
                 instructionIn(15 downto 11) := std_logic_vector(to_unsigned(3, 5));
                 instructionIn(10 downto 6) := std_logic_vector(to_unsigned(10, 5));
                 instructionIn(5 downto 0) := std_logic_vector(to_unsigned(4, 6));
-                expectedRegDataA := std_logic_vector(to_unsigned(11, expectedRegDataA'length));
+                expectedRsData := std_logic_vector(to_unsigned(11, expectedRsData'length));
                 expectedRegDataB := std_logic_vector(to_unsigned(12, expectedRegDataB'length));
                 expectedDestinationReg := 3;
                 expectedAluFunction := 4;
                 expectedShamt := 10;
                 regWrite <= true;
                 regWriteAddress <= 2;
-                regWriteData <= expectedRegDataA;
+                regWriteData <= expectedRsData;
                 wait until rising_edge(clk);
                 instructionFromInstructionDecode <= instructionIn;
                 regWriteAddress <= 1;
@@ -128,7 +128,7 @@ begin
                 instructionFromInstructionDecode <= (others => '1');
                 regWrite <= false;
                 wait until falling_edge(clk);
-                check_equal(regDataA, expectedRegDataA);
+                check_equal(rsData, expectedRsData);
                 check_equal(regDataB, expectedRegDataB);
                 check_equal(destinationReg, expectedDestinationReg);
                 check_equal(aluFunction, expectedAluFunction);
@@ -275,7 +275,7 @@ begin
         writeBackControlWord => writeBackControlWord,
         memoryControlWord => memoryControlWord,
         executeControlWord => executeControlWord,
-        regDataA => regDataA,
+        rsData => rsData,
         regAddressA => regAddressA,
         regDataB => regDataB,
         regAddressB => regAddressB,

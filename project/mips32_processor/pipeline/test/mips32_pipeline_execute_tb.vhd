@@ -25,7 +25,7 @@ architecture tb of mips32_pipeline_execute_tb is
     signal memoryControlWord : mips32_pkg.MemoryControlWord_type := mips32_pkg.memoryControlWordAllFalse;
     signal executeControlWord : mips32_pkg.ExecuteControlWord_type := mips32_pkg.executeControlWordAllFalse;
 
-    signal regDataA : mips32_pkg.data_type;
+    signal rsData : mips32_pkg.data_type;
     signal regDataB : mips32_pkg.data_type;
     signal immidiate : mips32_pkg.data_type;
     signal destinationReg : mips32_pkg.registerFileAddress_type;
@@ -66,7 +66,7 @@ begin
                 wait until falling_edge(clk);
                 check(not memoryControlWordToMem.MemOp);
             elsif run("R-type subtract function works") then
-                regDataA <= std_logic_vector(to_signed(100, regDataA'length));
+                rsData <= std_logic_vector(to_signed(100, rsData'length));
                 regDataB <= std_logic_vector(to_signed(10, regDataB'length));
                 aluFunction <= mips32_pkg.aluFunctionSubtract;
                 destinationReg <= 13;
@@ -77,7 +77,7 @@ begin
                 check_equal(aluResult, expectedAluResult);
                 check_equal(destinationRegToMem, expectedDestinationRegToMem);
             elsif run("I-type add instructions work") then
-                regDataA <= std_logic_vector(to_signed(32, regDataA'length));
+                rsData <= std_logic_vector(to_signed(32, rsData'length));
                 regDataB <= std_logic_vector(to_signed(255, regDataB'length));
                 immidiate <= std_logic_vector(to_signed(-4, immidiate'length));
                 executeControlWord.ALUSrc <= true;
@@ -118,7 +118,7 @@ begin
         writeBackControlWord => writeBackControlWord,
         memoryControlWord => memoryControlWord,
         executeControlWord => executeControlWord,
-        regDataA => regDataA,
+        rsData => rsData,
         regDataB => regDataB,
         immidiate => immidiate,
         destinationReg => destinationReg,
