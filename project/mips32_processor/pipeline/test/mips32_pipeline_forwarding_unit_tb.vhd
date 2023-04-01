@@ -20,7 +20,7 @@ architecture tb of mips32_pipeline_forwarding_unit_tb is
     signal clk : std_logic := '0';
     signal rsDataFromID : mips32_pkg.data_type := (others => '0');
     signal rsAddressFromID : mips32_pkg.registerFileAddress_type := 0;
-    signal regDataBFromID : mips32_pkg.data_type := (others => '0');
+    signal rtDataFromID : mips32_pkg.data_type := (others => '0');
     signal regAddressBFromID : mips32_pkg.registerFileAddress_type := 0;
 
     signal regDataFromEx : mips32_pkg.data_type := (others => '0');
@@ -32,27 +32,27 @@ architecture tb of mips32_pipeline_forwarding_unit_tb is
     signal regWriteFromMem : boolean := false;
 
     signal rsData : mips32_pkg.data_type;
-    signal regDataB : mips32_pkg.data_type;
+    signal rtData : mips32_pkg.data_type;
 begin
     clk <= not clk after (clk_period/2);
 
     main : process
         variable expectedRsData : mips32_pkg.data_type;
-        variable expectedRegDataB : mips32_pkg.data_type;
+        variable expectedRtData : mips32_pkg.data_type;
     begin
         test_runner_setup(runner, runner_cfg);
         while test_suite loop
             if run("Regdata is forwarded when no other stage regWrites") then
                 expectedRsData := X"0000000A";
-                expectedRegDataB := X"0000000B";
+                expectedRtData := X"0000000B";
                 rsDataFromID <= expectedRsData;
-                regDataBFromID <= expectedRegDataB;
+                rtDataFromID <= expectedRtData;
                 wait until rising_edge(clk);
                 check_equal(rsData, expectedRsData);
-                check_equal(regDataB, expectedRegDataB);
+                check_equal(rtData, expectedRtData);
             elsif run("RegData is forwarded from mem stage") then
                 expectedRsData := X"0000000A";
-                expectedRegDataB := expectedRsData;
+                expectedRtData := expectedRsData;
                 rsAddressFromID <= 5;
                 regAddressBFromID <= 5;
                 regDataFromMem <= expectedRsData;
@@ -60,22 +60,22 @@ begin
                 regWriteFromMem <= true;
                 wait until rising_edge(clk);
                 check_equal(rsData, expectedRsData);
-                check_equal(regDataB, expectedRegDataB);
+                check_equal(rtData, expectedRtData);
             elsif run("RegData is not forwarded if addressFromMem is different") then
                 expectedRsData := X"0000000A";
-                expectedRegDataB := expectedRsData;
+                expectedRtData := expectedRsData;
                 rsAddressFromID <= 5;
                 regAddressBFromID <= 5;
                 rsDataFromID <= expectedRsData;
-                regDataBFromID <= expectedRegDataB;
+                rtDataFromID <= expectedRtData;
                 regAddressFromMem <= 6;
                 regWriteFromMem <= true;
                 wait until rising_edge(clk);
                 check_equal(rsData, expectedRsData);
-                check_equal(regDataB, expectedRegDataB);
+                check_equal(rtData, expectedRtData);
             elsif run("RegData from ex is prefered over mem") then
                 expectedRsData := X"0000000A";
-                expectedRegDataB := expectedRsData;
+                expectedRtData := expectedRsData;
                 rsAddressFromID <= 5;
                 regAddressBFromID <= 5;
                 regAddressFromMem <= 5;
@@ -85,10 +85,10 @@ begin
                 regWriteFromEx <= true;
                 wait until rising_edge(clk);
                 check_equal(rsData, expectedRsData);
-                check_equal(regDataB, expectedRegDataB);
+                check_equal(rtData, expectedRtData);
             elsif run("RegData from ex is not prefered if address differs") then
                 expectedRsData := X"0000000A";
-                expectedRegDataB := expectedRsData;
+                expectedRtData := expectedRsData;
                 rsAddressFromID <= 5;
                 regAddressBFromID <= 5;
                 regDataFromMem <= expectedRsData;
@@ -98,12 +98,12 @@ begin
                 regWriteFromEx <= true;
                 wait until rising_edge(clk);
                 check_equal(rsData, expectedRsData);
-                check_equal(regDataB, expectedRegDataB);
+                check_equal(rtData, expectedRtData);
             elsif run("RegData is not forwarded for address 0") then
                 expectedRsData := X"0000000A";
-                expectedRegDataB := expectedRsData;
+                expectedRtData := expectedRsData;
                 rsDataFromID <= expectedRsData;
-                regDataBFromID <= expectedRegDataB;
+                rtDataFromID <= expectedRtData;
                 rsAddressFromID <= 0;
                 regAddressBFromID <= 0;
                 regAddressFromMem <= 0;
@@ -112,7 +112,7 @@ begin
                 regWriteFromEx <= true;
                 wait until rising_edge(clk);
                 check_equal(rsData, expectedRsData);
-                check_equal(regDataB, expectedRegDataB);
+                check_equal(rtData, expectedRtData);
             end if;
         end loop;
         wait until rising_edge(clk);
@@ -127,7 +127,7 @@ begin
     port map (
         rsDataFromID => rsDataFromID,
         rsAddressFromID => rsAddressFromID,
-        regDataBFromID => regDataBFromID,
+        rtDataFromID => rtDataFromID,
         regAddressBFromID => regAddressBFromID,
         regDataFromEx => regDataFromEx,
         regAddressFromEx => regAddressFromEx,
@@ -136,6 +136,6 @@ begin
         regAddressFromMem => regAddressFromMem,
         regWriteFromMem => regWriteFromMem,
         rsData => rsData,
-        regDataB => regDataB
+        rtData => rtData
     );
 end architecture;

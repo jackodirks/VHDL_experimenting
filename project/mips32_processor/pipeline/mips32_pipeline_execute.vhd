@@ -19,7 +19,7 @@ entity mips32_pipeline_execute is
 
         -- From decode stage: data
         rsData : in mips32_pkg.data_type;
-        regDataB : in mips32_pkg.data_type;
+        rtData : in mips32_pkg.data_type;
         immidiate : in mips32_pkg.data_type;
         destinationReg : in mips32_pkg.registerFileAddress_type;
         aluFunction : in mips32_pkg.aluFunction_type;
@@ -53,7 +53,7 @@ begin
                 memoryControlWordToMem_buf := memoryControlWord;
                 writeBackControlWordToMem_buf := writeBackControlWord;
                 aluResult <= aluResult_buf;
-                regDataRead <= regDataB;
+                regDataRead <= rtData;
                 destinationRegToMem <= destinationReg;
             end if;
         end if;
@@ -61,12 +61,12 @@ begin
         writeBackControlWordToMem <= writeBackControlWordToMem_buf;
     end process;
 
-    determineAluInputB : process(executeControlWord, immidiate, regDataB)
+    determineAluInputB : process(executeControlWord, immidiate, rtData)
     begin
         if executeControlWord.ALUSrc then
             aluInputB <= immidiate;
         else
-            aluInputB <= regDataB;
+            aluInputB <= rtData;
         end if;
     end process;
 

@@ -35,7 +35,7 @@ architecture tb of mips32_pipeline_instructionDecode_tb is
 
     signal rsData : mips32_pkg.data_type;
     signal rsAddress : mips32_pkg.registerFileAddress_type;
-    signal regDataB : mips32_pkg.data_type;
+    signal rtData : mips32_pkg.data_type;
     signal regAddressB : mips32_pkg.registerFileAddress_type;
     signal immidiate : mips32_pkg.data_type;
     signal destinationReg : mips32_pkg.registerFileAddress_type;
@@ -56,7 +56,7 @@ begin
         variable expectedJumpTarget : mips32_pkg.address_type;
         variable inputAddress : mips32_pkg.address_type;
         variable expectedRsData : mips32_pkg.data_type;
-        variable expectedRegDataB : mips32_pkg.data_type;
+        variable expectedRtData : mips32_pkg.data_type;
         variable expectedDestinationReg : mips32_pkg.registerFileAddress_type;
         variable expectedAluFunction : mips32_pkg.aluFunction_type;
         variable expectedShamt : mips32_pkg.shamt_type;
@@ -113,7 +113,7 @@ begin
                 instructionIn(10 downto 6) := std_logic_vector(to_unsigned(10, 5));
                 instructionIn(5 downto 0) := std_logic_vector(to_unsigned(4, 6));
                 expectedRsData := std_logic_vector(to_unsigned(11, expectedRsData'length));
-                expectedRegDataB := std_logic_vector(to_unsigned(12, expectedRegDataB'length));
+                expectedRtData := std_logic_vector(to_unsigned(12, expectedRtData'length));
                 expectedDestinationReg := 3;
                 expectedAluFunction := 4;
                 expectedShamt := 10;
@@ -123,13 +123,13 @@ begin
                 wait until rising_edge(clk);
                 instructionFromInstructionDecode <= instructionIn;
                 regWriteAddress <= 1;
-                regWriteData <= expectedRegDataB;
+                regWriteData <= expectedRtData;
                 wait until rising_edge(clk);
                 instructionFromInstructionDecode <= (others => '1');
                 regWrite <= false;
                 wait until falling_edge(clk);
                 check_equal(rsData, expectedRsData);
-                check_equal(regDataB, expectedRegDataB);
+                check_equal(rtData, expectedRtData);
                 check_equal(destinationReg, expectedDestinationReg);
                 check_equal(aluFunction, expectedAluFunction);
                 check_equal(shamt, expectedShamt);
@@ -277,7 +277,7 @@ begin
         executeControlWord => executeControlWord,
         rsData => rsData,
         rsAddress => rsAddress,
-        regDataB => regDataB,
+        rtData => rtData,
         regAddressB => regAddressB,
         immidiate => immidiate,
         destinationReg => destinationReg,

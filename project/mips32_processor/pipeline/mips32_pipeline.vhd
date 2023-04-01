@@ -44,11 +44,11 @@ architecture behaviourial of mips32_pipeline is
     -- Instruction fetch to forwarding
     signal rsDataToFwU : mips32_pkg.data_type;
     signal rsAddressToFwU : mips32_pkg.registerFileAddress_type;
-    signal regDataBToFwU : mips32_pkg.data_type;
+    signal rtDataToFwU : mips32_pkg.data_type;
     signal regAddressBToFwU : mips32_pkg.registerFileAddress_type;
     -- Forwarding unit to execute
     signal rsDataToEx : mips32_pkg.data_type;
-    signal regDataBToEx : mips32_pkg.data_type;
+    signal rtDataToEx : mips32_pkg.data_type;
     -- Write back to instruction decode
     signal regWriteToID : boolean;
     signal regWriteAddrToID : mips32_pkg.registerFileAddress_type;
@@ -102,7 +102,7 @@ begin
         writeBackControlWord => wbControlWordToEx,
         rsData => rsDataToFwU,
         rsAddress => rsAddressToFwU,
-        regDataB => regDataBToFwU,
+        rtData => rtDataToFwU,
         regAddressB => regAddressBToFwU,
         immidiate => immidiateToEx,
         destinationReg => destRegToEx,
@@ -127,7 +127,7 @@ begin
         memoryControlWord => memControlWordToEx,
         writeBackControlWord => wbControlWordToEx,
         rsData => rsDataToEx,
-        regDataB => regDataBToEx,
+        rtData => rtDataToEx,
         immidiate => immidiateToEx,
         destinationReg => destRegToEx,
         aluFunction => aluFuncToEx,
@@ -180,7 +180,7 @@ begin
     port map (
         rsDataFromID => rsDataToFwU,
         rsAddressFromID => rsAddressToFwU,
-        regDataBFromID => regDataBToFwU,
+        rtDataFromID => rtDataToFwU,
         regAddressBFromID => regAddressBToFwU,
 
         regDataFromEx => aluResToMem,
@@ -191,6 +191,6 @@ begin
         regWriteFromMem => regWriteToID,
 
         rsData => rsDataToEx,
-        regDataB => regDataBToEx
+        rtData => rtDataToEx
     );
 end architecture;

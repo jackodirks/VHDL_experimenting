@@ -27,7 +27,7 @@ entity mips32_pipeline_instructionDecode is
         -- To execute stage: data
         rsData : out mips32_pkg.data_type;
         rsAddress : out mips32_pkg.registerFileAddress_type;
-        regDataB : out mips32_pkg.data_type;
+        rtData : out mips32_pkg.data_type;
         regAddressB : out mips32_pkg.registerFileAddress_type;
         immidiate : out mips32_pkg.data_type;
         destinationReg : out mips32_pkg.registerFileAddress_type;
@@ -142,7 +142,7 @@ begin
                 executeControlWord_var := decodedExecuteControlWord;
                 rsData <= readPortOneData;
                 rsAddress <= readPortOneAddress;
-                regDataB <= readPortTwoData;
+                rtData <= readPortTwoData;
                 regAddressB <= readPortTwoAddress;
                 immidiate <= immidiate_buf;
                 destinationReg <= destinationReg_buf;

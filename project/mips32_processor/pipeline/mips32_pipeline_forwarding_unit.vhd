@@ -10,7 +10,7 @@ entity mips32_pipeline_forwarding_unit is
     port (
         rsDataFromID : in mips32_pkg.data_type;
         rsAddressFromID : in mips32_pkg.registerFileAddress_type;
-        regDataBFromID : in mips32_pkg.data_type;
+        rtDataFromID : in mips32_pkg.data_type;
         regAddressBFromID : in mips32_pkg.registerFileAddress_type;
 
         regDataFromEx : in mips32_pkg.data_type;
@@ -22,7 +22,7 @@ entity mips32_pipeline_forwarding_unit is
         regWriteFromMem : in boolean;
 
         rsData : out mips32_pkg.data_type;
-        regDataB : out mips32_pkg.data_type
+        rtData : out mips32_pkg.data_type
     );
 end entity;
 
@@ -42,17 +42,17 @@ begin
         end if;
     end process;
 
-    determineRegDataB : process(regDataBFromID, regAddressBFromID, regDataFromEx, regAddressFromEx, regWriteFromEx,
+    determineRtData : process(rtDataFromID, regAddressBFromID, regDataFromEx, regAddressFromEx, regWriteFromEx,
                                 regDataFromMem, regAddressFromMem, regWriteFromMem)
     begin
         if regAddressBFromID = 0 then
-            regDataB <= regDataBFromID;
+            rtData <= rtDataFromID;
         elsif regWriteFromEx and regAddressBFromID = regAddressFromEx then
-            regDataB <= regDataFromEx;
+            rtData <= regDataFromEx;
         elsif regWriteFromMem and regAddressBFromID = regAddressFromMem then
-            regDataB <= regDataFromMem;
+            rtData <= regDataFromMem;
         else
-            regDataB <= regDataBFromID;
+            rtData <= rtDataFromID;
         end if;
     end process;
 end architecture;
