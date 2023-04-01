@@ -2,6 +2,7 @@ library ieee;
 use ieee.std_logic_1164.all;
 use ieee.numeric_std.all;
 use ieee.numeric_std_unsigned.all;
+use std.textio.all;
 
 library vunit_lib;
 context vunit_lib.vunit_context;
@@ -28,6 +29,12 @@ package mips32_pipeline_simulated_memory_pkg is
               constant actor : in actor_t;
               constant addr : in natural;
               constant data : in mips32_pkg.data_type);
+
+    procedure write_file_to_address (
+              signal net : inout network_t;
+              constant actor : in actor_t;
+              constant addr : in natural;
+              constant fileName : in string);
 end package;
 
 package body mips32_pipeline_simulated_memory_pkg is
@@ -55,4 +62,24 @@ package body mips32_pipeline_simulated_memory_pkg is
         push(msg, data);
         send(net, actor, msg);
     end;
+
+    procedure write_file_to_address (
+              signal net : inout network_t;
+              constant actor : in actor_t;
+              constant addr : in natural;
+              constant fileName : in string) is
+        file read_file : text;
+        variable line_v : line;
+        variable data : mips32_pkg.data_type;
+        variable address : natural := addr;
+    begin
+        file_open(read_file, fileName, read_mode);
+        while not endfile(read_file) loop
+            readline(read_file, line_v);
+            hread(line_v, data);
+            write_to_address(net, actor, address, data);
+        end loop;
+        file_close(read_file);
+    end;
+
 end package body;
