@@ -21,7 +21,8 @@ end entity;
 architecture tb of mips32_pipeline_tb is
     constant clk_period : time := 20 ns;
     constant memActor : actor_t := new_actor("Mem");
-    constant resetAddress : mips32_pkg.address_type := (others => '0');
+    constant offset_address : natural := 16#100000#;
+    constant resetAddress : mips32_pkg.address_type := std_logic_vector(to_unsigned(offset_address, mips32_pkg.address_type'length));
 
     signal clk : std_logic := '0';
     signal rst : std_logic := '0';
@@ -43,44 +44,13 @@ begin
     begin
         test_runner_setup(runner, runner_cfg);
         while test_suite loop
-            if run("Unforwarded add") then
+            if run("Looped add") then
                 rst <= '1';
-                mips32_pipeline_simulated_memory_pkg.write_to_address(
+                mips32_pipeline_simulated_memory_pkg.write_file_to_address(
                     net => net,
                     actor => memActor,
-                    addr => 0,
-                    data => X"8C0A0050");
-                mips32_pipeline_simulated_memory_pkg.write_to_address(
-                    net => net,
-                    actor => memActor,
-                    addr => 4,
-                    data => X"8C0B0054");
-                mips32_pipeline_simulated_memory_pkg.write_to_address(
-                    net => net,
-                    actor => memActor,
-                    addr => 8,
-                    data => X"014B6020");
-                mips32_pipeline_simulated_memory_pkg.write_to_address(
-                    net => net,
-                    actor => memActor,
-                    addr => 12,
-                    data => X"08000000");
-                mips32_pipeline_simulated_memory_pkg.write_to_address(
-                    net => net,
-                    actor => memActor,
-                    addr => 16,
-                    data => X"AC0C0058");
-
-                mips32_pipeline_simulated_memory_pkg.write_to_address(
-                    net => net,
-                    actor => memActor,
-                    addr => 80,
-                    data => X"00000001");
-                mips32_pipeline_simulated_memory_pkg.write_to_address(
-                    net => net,
-                    actor => memActor,
-                    addr => 84,
-                    data => X"00000002");
+                    addr => offset_address,
+                    fileName => "./mips32_processor/pipeline/test/testPrograms/loopedAdd.txt");
                 rst <= '0';
                 expectedReadData := X"00000003";
                 wait for 11*clk_period;
@@ -88,7 +58,7 @@ begin
                 mips32_pipeline_simulated_memory_pkg.read_from_address(
                     net => net,
                     actor => memActor,
-                    addr => 88,
+                    addr => 16#100024#,
                     data => readData);
                 check_equal(readData, expectedReadData);
             end if;
@@ -120,7 +90,8 @@ begin
    generic map (
         actor => memActor,
         memory_size_log2b => 10,
-        stall_cycles => 0
+        stall_cycles => 0,
+        offset_address => offset_address
     ) port map (
         clk => clk,
         rst => rst,

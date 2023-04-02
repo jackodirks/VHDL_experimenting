@@ -19,6 +19,7 @@ entity mips32_pipeline_simulated_memory is
         constant actor : actor_t;
         memory_size_log2b : natural range mips32_pkg.data_width_log2b to 20;
         stall_cycles : natural;
+        offset_address : natural := 0;
         constant logger : logger_t := get_logger("pipeline_simulated_bus_memory")
     );
     port (
@@ -40,7 +41,7 @@ end entity;
 architecture tb of mips32_pipeline_simulated_memory is
     constant byte_count : natural := 2**memory_size_log2b;
 
-    signal memory : mips32_pkg.byte_array(0 to byte_count);
+    signal memory : mips32_pkg.byte_array(offset_address to offset_address + byte_count);
 
     -- vcom interaction
     signal vcom_request_write : boolean := false;
@@ -51,13 +52,12 @@ begin
     stall <= false;
 
     ifHandling : process(ifRequestAddress, memory)
-        variable actualRequestAddress : natural;
+        variable actualRequestAddress : natural := offset_address;
     begin
         if ifRequestAddress'event then
             assert(ifRequestAddress(1 downto 0) = "00");
+            actualRequestAddress := to_integer(unsigned(ifRequestAddress));
         end if;
-        actualRequestAddress := to_integer(unsigned(ifRequestAddress));
-        assert(actualRequestAddress + mips32_pkg.bytes_per_data_word - 1 <= byte_count);
         for i in 0 to mips32_pkg.bytes_per_data_word - 1 loop
             ifData((i + 1)*mips32_pkg.byte_type'length - 1 downto i*mips32_pkg.byte_type'length) <= memory(i + actualRequestAddress);
         end loop;
@@ -69,7 +69,7 @@ begin
         if doMemRead then
             assert(memAddress(1 downto 0) = "00");
             actualRequestAddress := to_integer(unsigned(memAddress));
-            assert(actualRequestAddress + 3 <= byte_count);
+            assert(actualRequestAddress + mips32_pkg.bytes_per_data_word - 1 <= memory'high);
             for i in 0 to mips32_pkg.bytes_per_data_word - 1 loop
                 dataFromMem((i + 1)*mips32_pkg.byte_type'length - 1 downto i*mips32_pkg.byte_type'length) <= memory(i + actualRequestAddress);
             end loop;
@@ -82,7 +82,7 @@ begin
         if rising_edge(clk) and rst /= '1' and doMemWrite then
             assert(memAddress(1 downto 0) = "00");
             actualRequestAddress := to_integer(unsigned(memAddress));
-            assert(actualRequestAddress + mips32_pkg.bytes_per_data_word - 1 <= byte_count);
+            assert(actualRequestAddress + mips32_pkg.bytes_per_data_word - 1 <= memory'high);
             for i in 0 to mips32_pkg.bytes_per_data_word - 1 loop
                 memory(i+actualRequestAddress) <=
                     dataToMem((i + 1)*mips32_pkg.byte_type'length - 1 downto i*mips32_pkg.byte_type'length);
@@ -122,6 +122,7 @@ begin
             vcom_request_data <= pop(request_msg);
             vcom_request_write <= true;
             wait until vcom_write_done;
+            info(logger, name(actor) & " is writing " & to_hstring(vcom_request_data) & " to address " & to_hstring(to_signed(vcom_request_address, 32)));
             vcom_request_write <= false;
             wait until not vcom_write_done;
         end if;

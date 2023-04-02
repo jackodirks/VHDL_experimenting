@@ -78,6 +78,7 @@ package body mips32_pipeline_simulated_memory_pkg is
             readline(read_file, line_v);
             hread(line_v, data);
             write_to_address(net, actor, address, data);
+            address := address + 4;
         end loop;
         file_close(read_file);
     end;
