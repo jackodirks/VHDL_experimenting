@@ -42,3 +42,7 @@ fp-info-cache
 depp_master/final
 depp_master/final_debug
 depp_master/obj/*
+
+#Hal project
+hal/final*
+hal/obj/*
