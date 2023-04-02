@@ -100,6 +100,13 @@ begin
                 wait until rising_edge(clk);
                 wait until falling_edge(clk);
                 check(memoryControlWordToMem.MemOp);
+            elsif run("Load upper immidiate works") then
+                executeControlWord.lui <= true;
+                immidiate <= X"0000ABCD";
+                expectedExecResult := X"ABCD0000";
+                wait until rising_edge(clk);
+                wait until falling_edge(clk);
+                check_equal(execResult, expectedExecResult);
             end if;
         end loop;
         wait until rising_edge(clk);

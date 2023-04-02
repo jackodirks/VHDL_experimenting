@@ -51,6 +51,9 @@ begin
                 memoryControlWord_buf.MemOpIsWrite := true;
             when mips32_pkg.opcodeJ =>
                 instructionDecodeControlWord_buf.jump := true;
+            when mips32_pkg.opcodeLui =>
+                executeControlWord_buf.lui := true;
+                writeBackControlWord_buf.regWrite := true;
             when others =>
                 invalidOpcode <= true;
         end case;

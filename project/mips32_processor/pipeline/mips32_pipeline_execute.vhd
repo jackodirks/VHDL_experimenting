@@ -38,9 +38,13 @@ end entity;
 
 architecture behaviourial of mips32_pipeline_execute is
     signal execResult_buf : mips32_pkg.data_type;
+    signal aluResult : mips32_pkg.data_type;
+    signal luiResult : mips32_pkg.data_type;
     signal aluInputB : mips32_pkg.data_type;
     signal aluFunctionInput : mips32_pkg.aluFunction_type;
 begin
+    luiResult <= std_logic_vector(shift_left(unsigned(immidiate), 16));
+
     exMemReg : process(clk)
         variable memoryControlWordToMem_buf : mips32_pkg.MemoryControlWord_type := mips32_pkg.memoryControlWordAllFalse;
         variable writeBackControlWordToMem_buf : mips32_pkg.WriteBackControlWord_type := mips32_pkg.writeBackControlWordAllFalse;
@@ -79,11 +83,20 @@ begin
         end if;
     end process;
 
+    determineExecResult : process(aluResult, luiResult, executeControlWord)
+    begin
+        if executeControlWord.lui then
+            execResult_buf <= luiResult;
+        else
+            execResult_buf <= aluResult;
+        end if;
+    end process;
+
     alu : entity work.mips32_alu
     port map (
         inputA => rsData,
         inputB => aluInputB,
         funct => aluFunctionInput,
-        output => execResult_buf
+        output => aluResult
     );
 end architecture;

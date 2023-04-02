@@ -32,6 +32,7 @@ package mips32_pkg is
     type ExecuteControlWord_type is record
         ALUSrc : boolean;
         ALUOpIsAdd : boolean;
+        lui : boolean;
     end record;
 
     type MemoryControlWord_type is record
@@ -53,7 +54,8 @@ package mips32_pkg is
 
     constant executeControlWordAllFalse : ExecuteControlWord_type := (
         ALUSrc => false,
-        ALUOpIsAdd => false
+        ALUOpIsAdd => false,
+        lui => false
     );
 
     constant memoryControlWordAllFalse : MemoryControlWord_type := (
@@ -76,6 +78,7 @@ package mips32_pkg is
     constant opcodeSw : opcode_type := 16#2b#;
     constant opcodeBeq : opcode_type := 16#4#;
     constant opcodeJ : opcode_type := 16#2#;
+    constant opcodeLui : opcode_type := 16#f#;
 
     constant aluFunctionAdd : aluFunction_type := 16#20#;
     constant aluFunctionAddUnsigned : aluFunction_type := 16#21#;
