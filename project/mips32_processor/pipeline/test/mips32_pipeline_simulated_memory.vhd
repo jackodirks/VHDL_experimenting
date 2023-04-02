@@ -53,7 +53,9 @@ begin
     ifHandling : process(ifRequestAddress, memory)
         variable actualRequestAddress : natural;
     begin
-        --assert(ifRequestAddress(1 downto 0) = "00");
+        if ifRequestAddress'event then
+            assert(ifRequestAddress(1 downto 0) = "00");
+        end if;
         actualRequestAddress := to_integer(unsigned(ifRequestAddress));
         assert(actualRequestAddress + mips32_pkg.bytes_per_data_word - 1 <= byte_count);
         for i in 0 to mips32_pkg.bytes_per_data_word - 1 loop
