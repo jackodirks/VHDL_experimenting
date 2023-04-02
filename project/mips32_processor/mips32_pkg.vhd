@@ -74,6 +74,7 @@ package mips32_pkg is
     constant instructionNop : instruction_type := X"00000024";
 
     constant opcodeRType : opcode_type := 16#0#;
+    constant opcodeAddiu : opcode_type := 16#9#;
     constant opcodeLw : opcode_type := 16#23#;
     constant opcodeSw : opcode_type := 16#2b#;
     constant opcodeBeq : opcode_type := 16#4#;

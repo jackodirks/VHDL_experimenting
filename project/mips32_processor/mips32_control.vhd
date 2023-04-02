@@ -36,6 +36,10 @@ begin
             when mips32_pkg.opcodeRType =>
                 instructionDecodeControlWord_buf.regDst := true;
                 writeBackControlWord_buf.regWrite := true;
+            when mips32_pkg.opcodeAddiu =>
+                executeControlWord_buf.ALUOpIsAdd := true;
+                executeControlWord_buf.ALUSrc := true;
+                writeBackControlWord_buf.regWrite := true;
             when mips32_pkg.opcodeLw =>
                 executeControlWord_buf.ALUOpIsAdd := true;
                 executeControlWord_buf.ALUSrc := true;
