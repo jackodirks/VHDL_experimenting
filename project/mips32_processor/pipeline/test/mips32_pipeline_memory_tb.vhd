@@ -25,12 +25,12 @@ architecture tb of mips32_pipeline_memory_tb is
     signal writeBackControlWord : mips32_pkg.WriteBackControlWord_type := mips32_pkg.writeBackControlWordAllFalse;
     signal memoryControlWord : mips32_pkg.MemoryControlWord_type := mips32_pkg.memoryControlWordAllFalse;
 
-    signal aluResult : mips32_pkg.data_type;
+    signal execResult : mips32_pkg.data_type;
     signal regDataRead : mips32_pkg.data_type;
     signal destinationReg : mips32_pkg.registerFileAddress_type;
 
     signal writeBackControlWordToWriteBack : mips32_pkg.WriteBackControlWord_type;
-    signal aluResultToWriteback : mips32_pkg.data_type;
+    signal execResultToWriteback : mips32_pkg.data_type;
     signal memDataReadToWriteback : mips32_pkg.data_type;
     signal destinationRegToWriteback : mips32_pkg.registerFileAddress_type;
 
@@ -45,7 +45,7 @@ begin
     main : process
         variable expectedMemAddress : mips32_pkg.address_type;
         variable expectedDataToMem : mips32_pkg.data_type;
-        variable expectedAluResultToWriteback : mips32_pkg.data_type;
+        variable expectedExecResultToWriteback : mips32_pkg.data_type;
         variable expectedDestinationRegToWriteback : mips32_pkg.registerFileAddress_type;
         variable expectedMemDataReadToWriteback : mips32_pkg.data_type;
     begin
@@ -59,7 +59,7 @@ begin
                 memoryControlWord.MemOpIsWrite <= true;
                 expectedMemAddress := X"0000FFF0";
                 expectedDataToMem := X"FFFF0000";
-                aluResult <= expectedMemAddress;
+                execResult <= expectedMemAddress;
                 regDataRead <= expectedDataToMem;
                 wait until rising_edge(clk);
                 check_equal(memAddress, expectedMemAddress);
@@ -73,23 +73,23 @@ begin
                 check(not doMemWrite);
                 check(not doMemRead);
             elsif run("Data is forwarded to writeBack on rising edge") then
-                expectedAluResultToWriteback := X"AABBCCDD";
+                expectedExecResultToWriteback := X"AABBCCDD";
                 expectedDestinationRegToWriteback := 5;
                 writeBackControlWord.regWrite <= true;
                 writeBackControlWord.MemtoReg <= true;
-                aluResult <= expectedAluResultToWriteback;
+                execResult <= expectedExecResultToWriteback;
                 destinationReg <= expectedDestinationRegToWriteback;
                 wait until rising_edge(clk);
                 wait until falling_edge(clk);
                 check(writeBackControlWordToWriteBack.regWrite);
                 check(writeBackControlWordToWriteBack.MemtoReg);
-                check_equal(aluResultToWriteback, expectedAluResultToWriteback);
+                check_equal(execResultToWriteback, expectedExecResultToWriteback);
                 check_equal(destinationRegToWriteback, expectedDestinationRegToWriteback);
             elsif run("Requesting a memory read works") then
                 memoryControlWord.MemOp <= true;
                 memoryControlWord.MemOpIsWrite <= false;
                 expectedMemAddress := X"0000FFF0";
-                aluResult <= expectedMemAddress;
+                execResult <= expectedMemAddress;
                 wait until rising_edge(clk);
                 check_equal(memAddress, expectedMemAddress);
                 check(not doMemWrite);
@@ -137,11 +137,11 @@ begin
         stall => stall,
         writeBackControlWord => writeBackControlWord,
         memoryControlWord => memoryControlWord,
-        aluResult => aluResult,
+        execResult => execResult,
         regDataRead => regDataRead,
         destinationReg => destinationReg,
         writeBackControlWordToWriteBack => writeBackControlWordToWriteBack,
-        aluResultToWriteback => aluResultToWriteback,
+        execResultToWriteback => execResultToWriteback,
         memDataReadToWriteback => memDataReadToWriteback,
         destinationRegToWriteback => destinationRegToWriteback,
         doMemRead => doMemRead,

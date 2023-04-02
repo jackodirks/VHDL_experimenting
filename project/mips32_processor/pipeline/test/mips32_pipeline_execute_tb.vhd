@@ -34,14 +34,14 @@ architecture tb of mips32_pipeline_execute_tb is
 
     signal memoryControlWordToMem : mips32_pkg.MemoryControlWord_type;
     signal writeBackControlWordToMem : mips32_pkg.WriteBackControlWord_type;
-    signal aluResult : mips32_pkg.data_type;
+    signal execResult : mips32_pkg.data_type;
     signal regDataRead : mips32_pkg.data_type;
     signal destinationRegToMem : mips32_pkg.registerFileAddress_type;
 begin
     clk <= not clk after (clk_period/2);
 
     main : process
-        variable expectedAluResult : mips32_pkg.data_type;
+        variable expectedExecResult : mips32_pkg.data_type;
         variable expectedDestinationRegToMem : mips32_pkg.registerFileAddress_type;
         variable expectedRegDataRead : mips32_pkg.data_type;
     begin
@@ -70,11 +70,11 @@ begin
                 rtData <= std_logic_vector(to_signed(10, rtData'length));
                 aluFunction <= mips32_pkg.aluFunctionSubtract;
                 destinationReg <= 13;
-                expectedAluResult := std_logic_vector(to_signed(90, expectedAluResult'length));
+                expectedExecResult := std_logic_vector(to_signed(90, expectedExecResult'length));
                 expectedDestinationRegToMem := 13;
                 wait until rising_edge(clk);
                 wait until falling_edge(clk);
-                check_equal(aluResult, expectedAluResult);
+                check_equal(execResult, expectedExecResult);
                 check_equal(destinationRegToMem, expectedDestinationRegToMem);
             elsif run("I-type add instructions work") then
                 rsData <= std_logic_vector(to_signed(32, rsData'length));
@@ -83,12 +83,12 @@ begin
                 executeControlWord.ALUSrc <= true;
                 executeControlWord.ALUOpIsAdd <= true;
                 destinationReg <= 26;
-                expectedAluResult := std_logic_vector(to_signed(28, expectedAluResult'length));
+                expectedExecResult := std_logic_vector(to_signed(28, expectedExecResult'length));
                 expectedDestinationRegToMem := 26;
                 expectedRegDataRead := std_logic_vector(to_signed(255, expectedRegDataRead'length));
                 wait until rising_edge(clk);
                 wait until falling_edge(clk);
-                check_equal(aluResult, expectedAluResult);
+                check_equal(execResult, expectedExecResult);
                 check_equal(destinationRegToMem, expectedDestinationRegToMem);
                 check_equal(regDataRead, expectedRegDataRead);
             elsif run("Stall stalls the registers") then
@@ -126,7 +126,7 @@ begin
         shamt => shamt,
         memoryControlWordToMem => memoryControlWordToMem,
         writeBackControlWordToMem => writeBackControlWordToMem,
-        aluResult => aluResult,
+        execResult => execResult,
         regDataRead => regDataRead,
         destinationRegToMem => destinationRegToMem
     );

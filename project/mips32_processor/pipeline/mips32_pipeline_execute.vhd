@@ -30,14 +30,14 @@ entity mips32_pipeline_execute is
         writeBackControlWordToMem : out mips32_pkg.WriteBackControlWord_type;
 
         -- To Memory stage: data
-        aluResult : out mips32_pkg.data_type;
+        execResult : out mips32_pkg.data_type;
         regDataRead : out mips32_pkg.data_type;
         destinationRegToMem : out mips32_pkg.registerFileAddress_type
     );
 end entity;
 
 architecture behaviourial of mips32_pipeline_execute is
-    signal aluResult_buf : mips32_pkg.data_type;
+    signal execResult_buf : mips32_pkg.data_type;
     signal aluInputB : mips32_pkg.data_type;
     signal aluFunctionInput : mips32_pkg.aluFunction_type;
 begin
@@ -52,7 +52,7 @@ begin
             elsif not stall then
                 memoryControlWordToMem_buf := memoryControlWord;
                 writeBackControlWordToMem_buf := writeBackControlWord;
-                aluResult <= aluResult_buf;
+                execResult <= execResult_buf;
                 regDataRead <= rtData;
                 destinationRegToMem <= destinationReg;
             end if;
@@ -84,6 +84,6 @@ begin
         inputA => rsData,
         inputB => aluInputB,
         funct => aluFunctionInput,
-        output => aluResult_buf
+        output => execResult_buf
     );
 end architecture;

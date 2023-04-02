@@ -16,7 +16,7 @@ entity mips32_pipeline_memory is
         memoryControlWord : in mips32_pkg.MemoryControlWord_type;
 
         -- From execute stage: data
-        aluResult : in mips32_pkg.data_type;
+        execResult : in mips32_pkg.data_type;
         regDataRead : in mips32_pkg.data_type;
         destinationReg : in mips32_pkg.registerFileAddress_type;
 
@@ -24,7 +24,7 @@ entity mips32_pipeline_memory is
         writeBackControlWordToWriteBack : out mips32_pkg.WriteBackControlWord_type;
 
         -- To writeback stage: data
-        aluResultToWriteback : out mips32_pkg.data_type;
+        execResultToWriteback : out mips32_pkg.data_type;
         memDataReadToWriteback : out mips32_pkg.data_type;
         destinationRegToWriteback : out mips32_pkg.registerFileAddress_type;
 
@@ -39,12 +39,12 @@ end entity;
 
 architecture behaviourial of mips32_pipeline_memory is
 begin
-    mem2busOut : process(memoryControlWord, aluResult, regDataRead)
+    mem2busOut : process(memoryControlWord, execResult, regDataRead)
     begin
         doMemRead <= false;
         doMemWrite <= false;
         dataToMem <= regDataRead;
-        memAddress <= aluResult;
+        memAddress <= execResult;
         if memoryControlWord.MemOp then
             if memoryControlWord.MemOpIsWrite then
                 doMemWrite <= true;
@@ -62,7 +62,7 @@ begin
                 writeBackControlWordToWriteBack_buf := mips32_pkg.writeBackControlWordAllFalse;
             elsif not stall then
                 writeBackControlWordToWriteBack_buf := writeBackControlWord;
-                aluResultToWriteback <= aluResult;
+                execResultToWriteback <= execResult;
                 destinationRegToWriteback <= destinationReg;
                 memDataReadToWriteback <= dataFromMem;
             end if;

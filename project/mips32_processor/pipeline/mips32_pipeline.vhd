@@ -56,12 +56,12 @@ architecture behaviourial of mips32_pipeline is
     -- Execute to memory
     signal memControlWordToMem : mips32_pkg.MemoryControlWord_type;
     signal wbControlWordToMem : mips32_pkg.WriteBackControlWord_type;
-    signal aluResToMem : mips32_pkg.data_type;
+    signal execResToMem : mips32_pkg.data_type;
     signal regDataReadToMem : mips32_pkg.data_type;
     signal destRegToMem : mips32_pkg.registerFileAddress_type;
     -- Memory to write back
     signal wbControlWordToWb : mips32_pkg.WriteBackControlWord_type;
-    signal aluResToWb : mips32_pkg.data_type;
+    signal execResToWb : mips32_pkg.data_type;
     signal memReadToWb : mips32_pkg.data_type;
     signal destRegToWb : mips32_pkg.registerFileAddress_type;
 
@@ -135,7 +135,7 @@ begin
 
         memoryControlWordToMem => memControlWordToMem,
         writeBackControlWordToMem => wbControlWordToMem,
-        aluResult => aluResToMem,
+        execResult => execResToMem,
         regDataRead => regDataReadToMem,
         destinationRegToMem => destRegToMem
     );
@@ -148,12 +148,12 @@ begin
 
         memoryControlWord => memControlWordToMem,
         writeBackControlWord => wbControlWordToMem,
-        aluResult => aluResToMem,
+        execResult => execResToMem,
         regDataRead => regDataReadToMem,
         destinationReg => destRegToMem,
 
         writeBackControlWordToWriteBack => wbControlWordToWb,
-        aluResultToWriteback => aluResToWb,
+        execResultToWriteback => execResToWb,
         memDataReadToWriteback => memReadToWb,
         destinationRegToWriteback => destRegToWb,
 
@@ -167,7 +167,7 @@ begin
     writeBack : entity work.mips32_pipeline_writeBack
     port map (
         writeBackControlWord => wbControlWordToWb,
-        aluResult => aluResToWb,
+        execResult => execResToWb,
         memDataRead => memReadToWb,
         destinationReg => destRegToWb,
 
@@ -183,7 +183,7 @@ begin
         rtDataFromID => rtDataToFwU,
         rtAddressFromID => rtAddressToFwU,
 
-        regDataFromEx => aluResToMem,
+        regDataFromEx => execResToMem,
         regAddressFromEx => destRegToMem,
         regWriteFromEx => wbControlWordToMem.regWrite,
         regDataFromMem => regWriteDataToID,

@@ -12,7 +12,7 @@ entity mips32_pipeline_writeBack is
         writeBackControlWord : in mips32_pkg.WriteBackControlWord_type;
 
         -- From mem stage: control signals
-        aluResult : in mips32_pkg.data_type;
+        execResult : in mips32_pkg.data_type;
         memDataRead : in mips32_pkg.data_type;
         destinationReg : in mips32_pkg.registerFileAddress_type;
 
@@ -25,14 +25,14 @@ end entity;
 
 architecture behaviourial of mips32_pipeline_writeBack is
 begin
-    process(writeBackControlWord, aluResult, destinationReg)
+    process(writeBackControlWord, execResult, destinationReg)
     begin
         regWrite <= writeBackControlWord.regWrite;
         regWriteAddress <= destinationReg;
         if writeBackControlWord.MemtoReg then
             regWriteData <= memDataRead;
         else
-            regWriteData <= aluResult;
+            regWriteData <= execResult;
         end if;
     end process;
 

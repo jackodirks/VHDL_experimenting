@@ -22,7 +22,7 @@ architecture tb of mips32_pipeline_writeBack_tb is
 
     signal writeBackControlWord : mips32_pkg.WriteBackControlWord_type;
 
-    signal aluResult : mips32_pkg.data_type;
+    signal execResult : mips32_pkg.data_type;
     signal memDataRead : mips32_pkg.data_type;
     signal destinationReg : mips32_pkg.registerFileAddress_type;
 
@@ -43,7 +43,7 @@ begin
                 writeBackControlWord.MemtoReg <= false;
                 expectedRegWriteAddress := 5;
                 expectedRegWriteData := X"ABCDABCD";
-                aluResult <= expectedRegWriteData;
+                execResult <= expectedRegWriteData;
                 memDataRead <= (others => '1');
                 destinationReg <= expectedRegWriteAddress;
                 wait until rising_edge(clk);
@@ -56,7 +56,7 @@ begin
                 expectedRegWriteAddress := 5;
                 expectedRegWriteData := X"ABCDABCD";
                 memDataRead <= expectedRegWriteData;
-                aluResult <= (others => '1');
+                execResult <= (others => '1');
                 destinationReg <= expectedRegWriteAddress;
                 wait until rising_edge(clk);
                 check(regWrite);
@@ -79,7 +79,7 @@ begin
     writeBack_stage : entity src.mips32_pipeline_writeBack
     port map (
         writeBackControlWord => writeBackControlWord,
-        aluResult => aluResult,
+        execResult => execResult,
         memDataRead => memDataRead,
         destinationReg => destinationReg,
         regWrite => regWrite,
