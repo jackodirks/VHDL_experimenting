@@ -28,6 +28,8 @@ architecture tb of mips32_pipeline_tb is
     signal rst : std_logic := '0';
     signal stall : boolean;
 
+    signal if_stall_cycles : natural := 0;
+
     signal instructionAddress : mips32_pkg.address_type;
     signal instruction : mips32_pkg.data_type;
 
@@ -54,6 +56,24 @@ begin
                 rst <= '0';
                 expectedReadData := X"00000003";
                 wait for 11*clk_period;
+                rst <= '1';
+                mips32_pipeline_simulated_memory_pkg.read_from_address(
+                    net => net,
+                    actor => memActor,
+                    addr => 16#100024#,
+                    data => readData);
+                check_equal(readData, expectedReadData);
+            elsif run("Delayed looped add") then
+                if_stall_cycles <= 2;
+                rst <= '1';
+                mips32_pipeline_simulated_memory_pkg.write_file_to_address(
+                    net => net,
+                    actor => memActor,
+                    addr => offset_address,
+                    fileName => "./mips32_processor/pipeline/test/testPrograms/loopedAdd.txt");
+                rst <= '0';
+                expectedReadData := X"00000003";
+                wait for 29*clk_period;
                 rst <= '1';
                 mips32_pipeline_simulated_memory_pkg.read_from_address(
                     net => net,
@@ -90,12 +110,12 @@ begin
    generic map (
         actor => memActor,
         memory_size_log2b => 10,
-        stall_cycles => 0,
         offset_address => offset_address
     ) port map (
         clk => clk,
         rst => rst,
         stall => stall,
+        if_stall_cycles => if_stall_cycles,
         ifRequestAddress => instructionAddress,
         ifData => instruction,
         doMemRead => dataRead,

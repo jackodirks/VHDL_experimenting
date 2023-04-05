@@ -18,7 +18,6 @@ entity mips32_pipeline_simulated_memory is
     generic (
         constant actor : actor_t;
         memory_size_log2b : natural range mips32_pkg.data_width_log2b to 20;
-        stall_cycles : natural;
         offset_address : natural := 0;
         constant logger : logger_t := get_logger("pipeline_simulated_bus_memory")
     );
@@ -26,6 +25,8 @@ entity mips32_pipeline_simulated_memory is
         clk : in std_logic;
         rst : in std_logic;
         stall : out boolean;
+
+        if_stall_cycles : in natural;
 
         ifRequestAddress : in mips32_pkg.address_type;
         ifData : out mips32_pkg.data_type;
@@ -49,7 +50,34 @@ architecture tb of mips32_pipeline_simulated_memory is
     signal vcom_request_address : natural;
     signal vcom_request_data : mips32_pkg.data_type;
 begin
-    stall <= false;
+    stall_handling : process(clk, ifRequestAddress, if_stall_cycles)
+        variable cached_address : mips32_pkg.address_type := (others => '0');
+        variable stall_cycles_left : natural := 0;
+        variable stall_buf : boolean := false;
+    begin
+
+        if if_stall_cycles'active then
+            info(logger, name(actor) & "stall_cycles_left updates to " & integer'image(if_stall_cycles));
+            stall_cycles_left := if_stall_cycles;
+            cached_address := (others => '0');
+        end if;
+
+        if rising_edge(clk) then
+            if stall_buf then
+                stall_cycles_left := stall_cycles_left - 1;
+            else
+                stall_cycles_left := if_stall_cycles;
+            end if;
+        end if;
+
+        if cached_address /= ifRequestAddress and stall_cycles_left /= 0 then
+            stall_buf := true;
+        else
+            stall_buf := false;
+            cached_address := ifRequestAddress;
+        end if;
+        stall <= stall_buf;
+    end process;
 
     ifHandling : process(ifRequestAddress, memory)
         variable actualRequestAddress : natural := offset_address;
