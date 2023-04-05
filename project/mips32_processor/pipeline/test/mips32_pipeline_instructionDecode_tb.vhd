@@ -239,6 +239,24 @@ begin
                 check(executeControlWord = mips32_pkg.executeControlWordAllFalse);
                 check(memoryControlWord = mips32_pkg.memoryControlWordAllFalse);
                 check(writeBackControlWord = mips32_pkg.writeBackControlWordAllFalse);
+            elsif run("Dependend R-type after load word during stall does not reset controlwords") then
+                instructionIn(31 downto 26) := std_logic_vector(to_unsigned(mips32_pkg.opcodeRType, 6));
+                instructionIn(25 downto 21) := std_logic_vector(to_unsigned(2, 5));
+                instructionIn(20 downto 16) := std_logic_vector(to_unsigned(1, 5));
+                instructionIn(15 downto 11) := std_logic_vector(to_unsigned(3, 5));
+                instructionIn(10 downto 6) := std_logic_vector(to_unsigned(10, 5));
+                instructionIn(5 downto 0) := std_logic_vector(to_unsigned(4, 6));
+                instructionFromInstructionDecode <= instructionIn;
+                exInstructionIsMemLoad <= false;
+                exInstructionTargetReg <= 2;
+                wait until rising_edge(clk);
+                wait until falling_edge(clk);
+                check(writeBackControlWord.regWrite);
+                stall <= true;
+                exInstructionIsMemLoad <= true;
+                wait until rising_edge(clk);
+                wait until falling_edge(clk);
+                check(writeBackControlWord.regWrite);
             elsif run("Inependend R-type after load word does not cause repeat") then
                 instructionIn(31 downto 26) := std_logic_vector(to_unsigned(mips32_pkg.opcodeRType, 6));
                 instructionIn(25 downto 21) := std_logic_vector(to_unsigned(2, 5));

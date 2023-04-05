@@ -132,22 +132,28 @@ begin
         variable executeControlWord_var : mips32_pkg.ExecuteControlWord_type := mips32_pkg.executeControlWordAllFalse;
     begin
         if rising_edge(clk) then
-            if rst = '1' or loadHazardDetected then
+            if rst = '1' then
                 writeBackControlWord_var := mips32_pkg.writeBackControlWordAllFalse;
                 memoryControlWord_var := mips32_pkg.memoryControlWordAllFalse;
                 executeControlWord_var := mips32_pkg.executeControlWordAllFalse;
             elsif not stall then
-                writeBackControlWord_var := decodedWriteBackControlWord;
-                memoryControlWord_var := decodedMemoryControlWord;
-                executeControlWord_var := decodedExecuteControlWord;
-                rsData <= readPortOneData;
-                rsAddress <= readPortOneAddress;
-                rtData <= readPortTwoData;
-                rtAddress <= readPortTwoAddress;
-                immidiate <= immidiate_buf;
-                destinationReg <= destinationReg_buf;
-                aluFunction <= aluFunction_buf;
-                shamt <= shamt_buf;
+                if loadHazardDetected then
+                    writeBackControlWord_var := mips32_pkg.writeBackControlWordAllFalse;
+                    memoryControlWord_var := mips32_pkg.memoryControlWordAllFalse;
+                    executeControlWord_var := mips32_pkg.executeControlWordAllFalse;
+                else
+                    writeBackControlWord_var := decodedWriteBackControlWord;
+                    memoryControlWord_var := decodedMemoryControlWord;
+                    executeControlWord_var := decodedExecuteControlWord;
+                    rsData <= readPortOneData;
+                    rsAddress <= readPortOneAddress;
+                    rtData <= readPortTwoData;
+                    rtAddress <= readPortTwoAddress;
+                    immidiate <= immidiate_buf;
+                    destinationReg <= destinationReg_buf;
+                    aluFunction <= aluFunction_buf;
+                    shamt <= shamt_buf;
+                end if;
             end if;
         end if;
         writeBackControlWord <= writeBackControlWord_var;
