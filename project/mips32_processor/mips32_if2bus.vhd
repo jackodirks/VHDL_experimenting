@@ -11,6 +11,9 @@ entity mips32_if2bus is
         clk : in std_logic;
         rst : in std_logic;
 
+        forbidBusInteraction : in boolean;
+        flushCache : in boolean;
+
         mst2slv : out bus_pkg.bus_mst2slv_type;
         slv2mst : in bus_pkg.bus_slv2mst_type;
 
@@ -33,7 +36,7 @@ begin
 
     stall <= stall_buf;
 
-    handleStall : process(cachedAddress, cacheValid)
+    handleStall : process(cachedAddress, cacheValid, requestAddress)
     begin
         stall_buf <= not cacheValid or cachedAddress /= requestAddress;
     end process;
@@ -52,20 +55,26 @@ begin
                 hasFault_buf := false;
                 faultData_buf := bus_pkg.bus_fault_no_fault;
                 cacheValid <= false;
-            elsif hasFault_buf then
-                -- Pass
-            elsif bus_pkg.any_transaction(mst2slv_buf, slv2mst) then
-                if bus_pkg.fault_transaction(mst2slv_buf, slv2mst) then
-                    hasFault_buf := true;
-                    faultData_buf := slv2mst.faultData;
-                elsif bus_pkg.read_transaction(mst2slv_buf, slv2mst) then
-                    instruction_buf := slv2mst.readData(instruction'range);
-                    cacheValid <= true;
-                    cachedAddress <= mst2slv_buf.address;
+            else
+                if bus_pkg.any_transaction(mst2slv_buf, slv2mst) then
+                    if bus_pkg.fault_transaction(mst2slv_buf, slv2mst) then
+                        hasFault_buf := true;
+                        faultData_buf := slv2mst.faultData;
+                    elsif bus_pkg.read_transaction(mst2slv_buf, slv2mst) then
+                        instruction_buf := slv2mst.readData(instruction'range);
+                        cacheValid <= true;
+                        cachedAddress <= mst2slv_buf.address;
+                    end if;
+                    mst2slv_buf := bus_pkg.BUS_MST2SLV_IDLE;
+                elsif hasFault_buf or forbidBusInteraction then
+                    -- Pass
+                elsif stall_buf then
+                    mst2slv_buf := bus_pkg.bus_mst2slv_read(address => requestAddress);
                 end if;
-                mst2slv_buf := bus_pkg.BUS_MST2SLV_IDLE;
-            elsif stall_buf then
-                mst2slv_buf := bus_pkg.bus_mst2slv_read(address => requestAddress);
+
+                if flushCache then
+                    cacheValid <= false;
+                end if;
             end if;
         end if;
         mst2slv <= mst2slv_buf;

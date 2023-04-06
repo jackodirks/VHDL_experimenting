@@ -21,6 +21,9 @@ architecture tb of mips32_if2bus_tb is
     signal clk : std_logic := '0';
     signal rst : std_logic := '0';
 
+    signal forbidBusInteraction : boolean := false;
+    signal flushCache : boolean := false;
+
     signal mst2slv : bus_pkg.bus_mst2slv_type;
     signal slv2mst : bus_pkg.bus_slv2mst_type := bus_pkg.BUS_SLV2MST_IDLE;
 
@@ -88,6 +91,43 @@ begin
                 requestAddress <= X"11223344";
                 slv2mst <= bus_pkg.BUS_SLV2MST_IDLE;
                 wait until rising_edge(clk) and bus_pkg.bus_requesting(mst2slv);
+            elsif run("forbidBusInteraction prevents starting a new interaction but does stall") then
+                requestAddress <= X"00112233";
+                forbidBusInteraction <= true;
+                wait for 5*clk_period;
+                check(stall);
+                check(not bus_pkg.bus_requesting(mst2slv));
+            elsif run("forbidBusInteraction during bus request still finishes the request") then
+                requestAddress <= X"00112233";
+                wait until rising_edge(clk) and bus_pkg.bus_requesting(mst2slv);
+                forbidBusInteraction <= true;
+                wait for 5*clk_period;
+                slv2mst.readValid <= '1';
+                slv2mst.readData <= X"33221100";
+                wait until rising_edge(clk) and bus_pkg.any_transaction(mst2slv, slv2mst);
+                slv2mst <= bus_pkg.BUS_SLV2MST_IDLE;
+                wait until rising_edge(clk);
+                check(not stall);
+                requestAddress <= X"00112240";
+                wait until rising_edge(clk);
+                check(stall);
+                wait for 5*clk_period;
+                check(not bus_pkg.bus_requesting(mst2slv));
+            elsif run("flushCache flushes the cache") then
+                requestAddress <= X"00112233";
+                wait until rising_edge(clk) and bus_pkg.bus_requesting(mst2slv);
+                slv2mst.readValid <= '1';
+                slv2mst.readData <= X"33221100";
+                wait until rising_edge(clk) and bus_pkg.any_transaction(mst2slv, slv2mst);
+                slv2mst <= bus_pkg.BUS_SLV2MST_IDLE;
+                wait until rising_edge(clk);
+                check(not stall);
+                flushCache <= true;
+                wait until rising_edge(clk);
+                flushCache <= false;
+                wait until rising_edge(clk);
+                check(stall);
+                wait until rising_edge(clk) and bus_pkg.bus_requesting(mst2slv);
             end if;
         end loop;
         wait until rising_edge(clk);
@@ -102,6 +142,8 @@ begin
     port map (
         clk => clk,
         rst => rst,
+        forbidBusInteraction => forbidBusInteraction,
+        flushCache => flushCache,
         mst2slv => mst2slv,
         slv2mst => slv2mst,
         hasFault => hasFault,
