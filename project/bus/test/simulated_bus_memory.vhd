@@ -41,6 +41,7 @@ architecture behavioral of simulated_bus_memory is
     signal mem2mst_internal : bus_slv2mst_type;
 
     signal vcom_request_write : std_logic := '0';
+    signal vcom_write_done : boolean := false;
     signal vcom_request_address : bus_address_type;
     signal vcom_request_data : bus_data_type;
     signal vcom_request_writeMask : bus_write_mask;
@@ -81,9 +82,9 @@ begin
             vcom_request_data <= pop(request_msg);
             vcom_request_writeMask <= pop(request_msg);
             vcom_request_write <= '1';
-            wait for 1 fs;
+            wait until vcom_write_done;
             vcom_request_write <= '0';
-            wait for 1 fs;
+            wait until not vcom_write_done;
         else
             unexpected_msg_type(msg_type);
         end if;
@@ -146,6 +147,9 @@ begin
                     ram(to_integer(unsigned(vcom_request_address)) + i) <= vcom_request_data((i+1)*bus_byte_type'length - 1 downto i*bus_byte_type'length);
                 end if;
             end loop;
+            vcom_write_done <= true;
+        else
+            vcom_write_done <= false;
         end if;
 
         if rising_edge(clk) then
