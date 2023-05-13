@@ -31,7 +31,7 @@ architecture behaviourial of bus_arbiter is
         for i in 0 to masterCount - 1 loop
             checkingMaster := i + currentMaster;
             if checkingMaster > masterCount - 1 then
-                checkingMaster := checkingMaster - (masterCount - 1);
+                checkingMaster := checkingMaster - masterCount;
             end if;
 
             if bus_pkg.bus_mst_active(mst2arbiter(checkingMaster)) then

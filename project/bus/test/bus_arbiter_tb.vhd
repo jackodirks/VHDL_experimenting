@@ -71,6 +71,18 @@ begin
                 slv2arbiter.readData <= X"00112233";
                 wait until rising_edge(clk);
                 check_equal(slv2arbiter.readData, arbiter2mst(2).readData);
+            elsif run("Arbiter selects slave 0 after slave 2") then
+                actualAddress := std_logic_vector(to_unsigned(4, bus_address_type'length));
+                mst2arbiter(2) <= bus_mst2slv_read(address => actualAddress);
+                wait until rising_edge(clk) and arbiter2slv.readReady = '1';
+                slv2arbiter.readValid <= '1';
+                actualAddress := std_logic_vector(to_unsigned(0, bus_address_type'length));
+                mst2arbiter(0) <= bus_mst2slv_read(address => actualAddress);
+                wait until rising_edge(clk);
+                mst2arbiter(2) <= BUS_MST2SLV_IDLE;
+                slv2arbiter <= BUS_SLV2MST_IDLE;
+                wait until rising_edge(clk) and arbiter2slv.readReady = '1';
+                check_equal(actualAddress, arbiter2slv.address);
             end if;
         end loop;
         wait until rising_edge(clk);
