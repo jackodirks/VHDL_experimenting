@@ -56,7 +56,9 @@ begin
             constant address : depp_pkg.depp_address_type
         ) is
         begin
-            wait until usb_wait = '0';
+            if usb_wait /= '0' then
+                wait until usb_wait = '0';
+            end if;
             wait for wait_low_to_astb_dstb_active;
             usb_astb <= '0';
             wait for astb_dstb_active_to_db_valid;
@@ -73,7 +75,9 @@ begin
             constant data : depp_pkg.depp_data_type
         ) is
         begin
-            wait until usb_wait = '0';
+            if usb_wait /= '0' then
+                wait until usb_wait = '0';
+            end if;
             wait for wait_low_to_astb_dstb_active;
             usb_dstb <= '0';
             wait for astb_dstb_active_to_db_valid;
@@ -90,7 +94,9 @@ begin
             variable data : out depp_pkg.depp_data_type
         ) is
         begin
-            wait until usb_wait = '0';
+            if usb_wait /= '0' then
+                wait until usb_wait = '0';
+            end if;
             wait for wait_low_to_astb_dstb_active;
             usb_dstb <= '0';
             wait until usb_wait = '1';
