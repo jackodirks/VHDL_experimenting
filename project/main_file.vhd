@@ -31,14 +31,9 @@ architecture Behavioral of main_file is
 
     constant address_map : addr_range_and_mapping_array := (
         address_range_and_map(
-            low => std_logic_vector(to_unsigned(16#0#, bus_address_type'length)),
-            high => std_logic_vector(to_unsigned(16#4# - 1, bus_address_type'length)),
-            mapping => bus_map_constant(bus_address_type'high - 1, '0') & bus_map_range(1, 0)
-        ),
-        address_range_and_map(
             low => std_logic_vector(to_unsigned(16#1000#, bus_address_type'length)),
-            high => std_logic_vector(to_unsigned(16#1800# - 1, bus_address_type'length)),
-            mapping => bus_map_constant(bus_address_type'high - 10, '0') & bus_map_range(10, 0)
+            high => std_logic_vector(to_unsigned(16#1004# - 1, bus_address_type'length)),
+            mapping => bus_map_constant(bus_address_type'high - 1, '0') & bus_map_range(1, 0)
         ),
         address_range_and_map(
             low => std_logic_vector(to_unsigned(16#100000#, bus_address_type'length)),
@@ -93,7 +88,6 @@ begin
         USB_WAIT => usb_wait
     );
 
-
     demux : entity work.bus_demux
     generic map (
         ADDRESS_MAP => address_map
@@ -102,13 +96,10 @@ begin
         mst2demux => depp2demux,
         demux2mst => demux2depp,
         demux2slv(0) => demux2ss,
-        demux2slv(1) => demux2mem,
-        demux2slv(2) => demux2spimem,
+        demux2slv(1) => demux2spimem,
         slv2demux(0) => ss2demux,
-        slv2demux(1) => mem2demux,
-        slv2demux(2) => spimem2demux
+        slv2demux(1) => spimem2demux
     );
-
 
     ss : entity work.seven_seg_controller
     generic map (
@@ -122,17 +113,6 @@ begin
         slv2mst => ss2demux,
         digit_anodes => seven_seg_an,
         kathode => seven_seg_kath
-    );
-
-    mem : entity work.bus_singleport_ram
-    generic map (
-        DEPTH_LOG2B => 11
-    )
-    port map (
-        rst => rst,
-        clk => clk,
-        mst2mem => demux2mem,
-        mem2mst => mem2demux
     );
 
     spimem : entity work.triple_23lc1024_controller
@@ -150,6 +130,4 @@ begin
         mst2slv => demux2spimem,
         slv2mst => spimem2demux
     );
-
-
 end Behavioral;

@@ -46,15 +46,11 @@ architecture tb of main_file_tb is
 begin
     clk <= not clk after (clk_period/2);
     process
-        constant bram_start_address : bus_address_type := std_logic_vector(to_unsigned(16#1000#, bus_address_type'length));
         constant spimem0_start_address : bus_address_type := std_logic_vector(to_unsigned(16#100000#, bus_address_type'length));
         constant spimem1_start_address : bus_address_type := std_logic_vector(to_unsigned(16#120000#, bus_address_type'length));
         constant spimem2_start_address : bus_address_type := std_logic_vector(to_unsigned(16#140000#, bus_address_type'length));
 
         variable writeMask : bus_write_mask := (others => '1');
-
-        variable bram_test_input_data : bus_data_array(15 downto 0);
-        variable bram_test_output_data : bus_data_array(15 downto 0);
 
         variable spimem0_test_input_data : bus_data_array(15 downto 0);
         variable spimem0_test_output_data : bus_data_array(15 downto 0);
@@ -65,33 +61,15 @@ begin
     begin
         test_runner_setup(runner, runner_cfg);
         while test_suite loop
-            if run("Bram is usable") then
-                for i in 0 to bram_test_input_data'high loop
-                    bram_test_input_data(i) := std_logic_vector(to_unsigned(i, bram_test_input_data(i)'length));
-                end loop;
-                simulated_depp_master_pkg.write_to_address(
-                    net => net,
-                    actor => deppMasterActor,
-                    addr => bram_start_address,
-                    mask => writeMask,
-                    data => bram_test_input_data);
-                simulated_depp_master_pkg.read_from_address(
-                    net => net,
-                    actor => deppMasterActor,
-                    addr => bram_start_address,
-                    data => bram_test_output_data);
-                for i in 0 to bram_test_input_data'high loop
-                    check_equal(bram_test_output_data(i), bram_test_input_data(i));
-                end loop;
-            elsif run("Spi mem is usable") then
+            if run("Spi mem is usable") then
                 for i in 0 to spimem0_test_input_data'high loop
-                    spimem0_test_input_data(i) := std_logic_vector(to_unsigned(i, bram_test_input_data(i)'length));
+                    spimem0_test_input_data(i) := std_logic_vector(to_unsigned(i, spimem0_test_input_data(i)'length));
                 end loop;
                 for i in 0 to spimem1_test_input_data'high loop
-                    spimem1_test_input_data(i) := std_logic_vector(to_unsigned(i + 255, bram_test_input_data(i)'length));
+                    spimem1_test_input_data(i) := std_logic_vector(to_unsigned(i + 255, spimem1_test_input_data(i)'length));
                 end loop;
                 for i in 0 to spimem2_test_input_data'high loop
-                    spimem2_test_input_data(i) := std_logic_vector(to_unsigned(i + 1024, bram_test_input_data(i)'length));
+                    spimem2_test_input_data(i) := std_logic_vector(to_unsigned(i + 1024, spimem2_test_input_data(i)'length));
                 end loop;
                 simulated_depp_master_pkg.write_to_address(
                     net => net,

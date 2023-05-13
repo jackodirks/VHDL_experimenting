@@ -3,10 +3,8 @@
 
 #include "deppMaster.hpp"
 
-static constexpr uint32_t sevenSegStart = 0x0;
+static constexpr uint32_t sevenSegStart = 0x1000;
 static constexpr std::size_t sevenSegWordCount = 1;
-static constexpr uint32_t bMemStart = 0x1000;
-static constexpr std::size_t bMemWordCount = 512;
 static constexpr uint32_t spiMem0Start = 0x100000;
 static constexpr uint32_t spiMem1Start = 0x120000;
 static constexpr uint32_t spiMem2Start = 0x140000;
@@ -41,21 +39,6 @@ static void testSpiMem(DeppMaster& master) {
     }
 }
 
-static void testBMem(DeppMaster& master) {
-    std::vector<uint32_t> transmitData;
-
-    for (size_t i = 0; i < bMemWordCount; i += 1) {
-        transmitData.push_back(i);
-    }
-    master.writeOperation(transmitData, bMemStart, 0xff);
-    std::vector<uint32_t> receiveData = master.readOperation(bMemStart, bMemWordCount);
-    for (size_t i = 0; i < bMemWordCount; i += 1) {
-        if (transmitData[i] != receiveData[i]) {
-            std::cout << "BMem: Error at " << i << " Expected: " << (uint32_t)transmitData[i] << " but got: " << (uint32_t)receiveData[i] << std::endl;
-        }
-    }
-}
-
 static void testSevenSeg(DeppMaster& master) {
     std::vector<uint32_t> transmitData;
     transmitData.push_back(0x04030201);
@@ -73,6 +56,5 @@ int main(void)
     DeppMaster master("Basys2");
     testSpiMem(master);
     testSevenSeg(master);
-    testBMem(master);
     return 0;
 }
