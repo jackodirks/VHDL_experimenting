@@ -31,7 +31,7 @@ architecture tb of mips32_pipeline_tb is
     signal if_stall_cycles : natural := 0;
 
     signal instructionAddress : mips32_pkg.address_type;
-    signal instruction : mips32_pkg.data_type;
+    signal instruction : mips32_pkg.instruction_type;
 
     signal dataAddress : mips32_pkg.address_type;
     signal dataRead : boolean;

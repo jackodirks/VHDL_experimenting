@@ -15,7 +15,7 @@ entity mips32_pipeline is
         stall : in boolean;
 
         instructionAddress : out mips32_pkg.address_type;
-        instruction : in mips32_pkg.data_type;
+        instruction : in mips32_pkg.instruction_type;
 
         dataAddress : out mips32_pkg.address_type;
         dataRead : out boolean;
