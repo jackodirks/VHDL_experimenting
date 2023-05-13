@@ -101,7 +101,7 @@ begin
 
     processor : entity src.mips32_processor
     generic map (
-        resetAddress => resetAddress
+        startAddress => resetAddress
     ) port map (
         clk => clk,
         rst => rst,

@@ -22,7 +22,7 @@ architecture tb of mips32_pipeline_tb is
     constant clk_period : time := 20 ns;
     constant memActor : actor_t := new_actor("Mem");
     constant offset_address : natural := 16#100000#;
-    constant resetAddress : mips32_pkg.address_type := std_logic_vector(to_unsigned(offset_address, mips32_pkg.address_type'length));
+    constant startAddress : mips32_pkg.address_type := std_logic_vector(to_unsigned(offset_address, mips32_pkg.address_type'length));
 
     signal clk : std_logic := '0';
     signal rst : std_logic := '0';
@@ -92,7 +92,7 @@ begin
 
     pipeline : entity src.mips32_pipeline
     generic map (
-        resetAddress => resetAddress
+        startAddress => startAddress
    ) port map (
         clk => clk,
         rst => rst,

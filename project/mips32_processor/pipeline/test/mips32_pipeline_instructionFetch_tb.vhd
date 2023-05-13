@@ -21,7 +21,7 @@ architecture tb of mips32_pipeline_instructionFetch_tb is
     signal clk : std_logic := '0';
     signal rst : std_logic := '0';
 
-    constant resetAddress : mips32_pkg.address_type := X"00000014";
+    constant startAddress : mips32_pkg.address_type := X"00000014";
     signal requestFromBusAddress : mips32_pkg.address_type;
     signal instructionToInstructionDecode : mips32_pkg.instruction_type;
     signal programCounterPlusFour : mips32_pkg.address_type;
@@ -42,19 +42,19 @@ begin
         while test_suite loop
             if run("On start, the requested address should be the reset address") then
                 wait until rising_edge(clk);
-                check_equal(resetAddress, requestFromBusAddress);
+                check_equal(startAddress, requestFromBusAddress);
             elsif run("On stall, the requested address should not increase") then
                 stall <= true;
                 wait until rising_edge(clk);
                 wait until rising_edge(clk);
-                check_equal(resetAddress, requestFromBusAddress);
+                check_equal(startAddress, requestFromBusAddress);
             elsif run("Without stall, the requested address should increase") then
-                expectedAddress := std_logic_vector(unsigned(resetAddress) + 4);
+                expectedAddress := std_logic_vector(unsigned(startAddress) + 4);
                 wait until rising_edge(clk);
                 wait until rising_edge(clk);
                 check_equal(expectedAddress, requestFromBusAddress);
             elsif run("The override address should be respected") then
-                expectedAddress := std_logic_vector(unsigned(resetAddress) + 40);
+                expectedAddress := std_logic_vector(unsigned(startAddress) + 40);
                 overrideProgramCounter <= true;
                 newProgramCounter <= expectedAddress;
                 wait until rising_edge(clk);
@@ -66,7 +66,7 @@ begin
             elsif run("On the second rising edge, the expected instruction and pc+4 should be send to ID") then
                 expectedInstruction := X"00000001";
                 instructionFromBus <= expectedInstruction;
-                expectedAddress := std_logic_vector(unsigned(resetAddress) + 4);
+                expectedAddress := std_logic_vector(unsigned(startAddress) + 4);
                 wait until rising_edge(clk);
                 instructionFromBus <= X"00000002";
                 wait until rising_edge(clk);
@@ -84,7 +84,7 @@ begin
 
     instructionFetch : entity src.mips32_pipeline_instructionFetch
     generic map (
-        resetAddress => resetAddress
+        startAddress => startAddress
     ) port map (
         clk => clk,
         rst => rst,

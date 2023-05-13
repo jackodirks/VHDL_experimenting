@@ -30,7 +30,7 @@ end main_file;
 architecture Behavioral of main_file is
 
     constant spiMemStartAddress : natural := 16#100000#;
-    constant procResetAddress : bus_address_type := std_logic_vector(to_unsigned(spiMemStartAddress, bus_address_type'length));
+    constant procStartAddress : bus_address_type := std_logic_vector(to_unsigned(spiMemStartAddress, bus_address_type'length));
 
     constant address_map : addr_range_and_mapping_array := (
         address_range_and_map(
@@ -107,7 +107,7 @@ begin
 
     processor : entity work.mips32_processor
     generic map (
-        resetAddress => procResetAddress
+        startAddress => procStartAddress
     ) port map (
         clk => clk,
         rst => rst,

@@ -26,7 +26,7 @@ begin
         variable subtractionOverflow : boolean;
         variable andResult : mips32_pkg.data_type;
         variable orResult : mips32_pkg.data_type;
-        variable setLessThanResult : boolean;
+        variable setLessThanResult : std_logic;
     begin
         additionResult := std_logic_vector(signed(inputA) + signed(inputB));
         additionOverflow := inputA(inputA'high) = inputB(inputB'high) and inputA(inputA'high) /= additionResult(additionResult'high);
@@ -34,7 +34,11 @@ begin
         subtractionOverflow := inputA(inputA'high) /= inputB(inputB'high) and inputB(inputB'high) = subtractionResult(subtractionResult'high);
         andResult := inputA and inputB;
         orResult := inputA or inputB;
-        setLessThanResult := signed(inputA) < signed(inputB);
+        if signed(inputA) < signed(inputB) then
+            setLessThanResult := '1';
+        else
+            setLessThanResult := '0';
+        end if;
 
         case funct is
             when mips32_pkg.aluFunctionAdd =>
@@ -54,7 +58,7 @@ begin
                 overflow <= false;
             when mips32_pkg.aluFunctionSetLessThan =>
                 output(output'high downto 1) <= (others => '0');
-                output(0) <= '1' when setLessThanResult else '0';
+                output(0) <= setLessThanResult;
                 overflow <= false;
             when others =>
                 output <= inputA;

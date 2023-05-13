@@ -72,6 +72,7 @@ begin
         variable mst2slv_buf : bus_pkg.bus_mst2slv_type := bus_pkg.BUS_MST2SLV_IDLE;
         variable hasFault_buf : boolean := false;
         variable bus_active : boolean := false;
+        constant fullWordWriteMask : bus_pkg.bus_write_mask := (others => '1');
     begin
         if rising_edge(clk) then
             if rst = '1' then
@@ -104,7 +105,7 @@ begin
                     read_cache_valid <= false;
                     mst2slv_buf := bus_pkg.bus_mst2slv_write(address => address,
                                                              write_data => dataIn,
-                                                             write_mask => (others => '1'));
+                                                             write_mask => fullWordWriteMask);
                 end if;
             elsif not stall_buf and not doRead and not doWrite then
                 read_cache_valid <= false;

@@ -8,7 +8,7 @@ use work.mips32_pkg;
 
 entity mips32_processor is
     generic (
-        resetAddress : bus_pkg.bus_address_type
+        startAddress : bus_pkg.bus_address_type
     );
     port (
         clk : in std_logic;
@@ -50,8 +50,10 @@ architecture behaviourial of mips32_processor is
     signal memoryHasFault : boolean;
     signal memoryFaultData : bus_pkg.bus_fault_type;
     signal memoryStall : boolean;
+    signal forbidBusInteraction : boolean;
 begin
     pipelineStall <= controllerStall or instructionStall or memoryStall;
+    forbidBusInteraction <= controllerReset or controllerStall;
 
     process(rst, controllerReset)
     begin
@@ -68,7 +70,7 @@ begin
 
     pipeline : entity work.mips32_pipeline
         generic map (
-            resetAddress => resetAddress
+            startAddress => startAddress
         ) port map (
             clk => clk,
             rst => pipelineRst,
@@ -96,7 +98,7 @@ begin
     port map (
         clk => clk,
         rst => rst,
-        forbidBusInteraction => controllerReset or controllerStall,
+        forbidBusInteraction => forbidBusInteraction,
         flushCache => controllerReset,
         mst2slv => instructionFetch2slv,
         slv2mst => slv2instructionFetch,
@@ -111,7 +113,7 @@ begin
     port map (
         clk => clk,
         rst => rst,
-        forbidBusInteraction => controllerReset or controllerStall,
+        forbidBusInteraction => forbidBusInteraction,
         flushCache => controllerReset,
         mst2slv => memory2slv,
         slv2mst => slv2memory,

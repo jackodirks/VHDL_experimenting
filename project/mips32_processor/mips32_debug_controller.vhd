@@ -22,22 +22,6 @@ end entity;
 architecture behaviourial of mips32_debug_controller is
     signal regZero : mips32_pkg.data_type := (others => '0');
 
-    pure function processWriteMask(
-        currentValue : mips32_pkg.data_type;
-        newValue : bus_pkg.bus_data_type;
-        writeMask  : bus_pkg.bus_write_mask
-    ) return mips32_pkg.data_type is
-        variable retVal : mips32_pkg.data_type := currentValue;
-        constant bSize : positive := bus_pkg.bus_byte_size;
-    begin
-        for i in 0 to bus_pkg.bus_bytes_per_word - 1 loop
-            if writeMask(i) = '1' then
-                retVal((i + 1)*bSize - 1 downto (i*bSize)) := newValue((i + 1)*bSize - 1 downto (i*bSize));
-            end if;
-            return retVal;
-        end loop;
-    end function;
-
 begin
 
     controllerReset <= regZero(0) = '1';
@@ -46,6 +30,7 @@ begin
     process(clk)
         variable debug2mst_buf : bus_pkg.bus_slv2mst_type := bus_pkg.BUS_SLV2MST_IDLE;
         variable regZero_buf : mips32_pkg.data_type := (0 => '1', others => '0');
+        constant acceptableWriteMask : bus_pkg.bus_write_mask := (others => '1');
     begin
         if rising_edge(clk) then
             if rst = '1' then
@@ -58,12 +43,15 @@ begin
                 if mst2debug.address(1 downto 0) /= "00" then
                     debug2mst_buf.fault := '1';
                     debug2mst_buf.faultData := bus_pkg.bus_fault_unaligned_access;
+                elsif mst2debug.writeReady = '1' and mst2debug.writeMask /= acceptableWriteMask then
+                    debug2mst_buf.fault := '1';
+                    debug2mst_buf.faultData := bus_pkg.bus_fault_illegal_write_mask;
                 elsif mst2debug.address = X"00000000" then
                     if mst2debug.readReady = '1' then
                         debug2mst_buf.readData := regZero_buf;
                         debug2mst_buf.readValid := '1';
                     elsif mst2debug.writeReady = '1' then
-                        regZero_buf := processWriteMask(regZero_buf, mst2debug.writeData, mst2debug.writeMask);
+                        regZero_buf := mst2debug.writeData;
                         debug2mst_buf.writeValid := '1';
                     end if;
                 else

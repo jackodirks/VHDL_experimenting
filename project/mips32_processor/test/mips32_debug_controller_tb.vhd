@@ -68,12 +68,13 @@ begin
                                                      write_mask => (others => '1'));
                 wait until rising_edge(clk) and bus_pkg.write_transaction(mst2slv, slv2mst);
                 check(controllerReset);
-            elsif run("Controller respects writeMask") then
-                mst2slv <= bus_pkg.bus_mst2slv_write(address => (others => '0'),
-                                                     write_data => (others => '0'),
-                                                     write_mask => (others => '0'));
-                wait until rising_edge(clk) and bus_pkg.write_transaction(mst2slv, slv2mst);
-                check(controllerReset);
+            elsif run("Debug controller errors on invalid writeMask") then
+               mst2slv <= bus_pkg.bus_mst2slv_write(address => (others => '0'),
+                                                    write_data => (others => '0'),
+                                                    write_mask => (others => '0'));
+               wait until rising_edge(clk) and bus_pkg.any_transaction(mst2slv, slv2mst);
+                check(bus_pkg.fault_transaction(mst2slv, slv2mst));
+                check_equal(slv2mst.faultData, bus_pkg.bus_fault_illegal_write_mask);
             elsif run("Reading back register works") then
                 mst2slv <= bus_pkg.bus_mst2slv_read(address => (others => '0'));
                 wait until rising_edge(clk) and bus_pkg.read_transaction(mst2slv, slv2mst);

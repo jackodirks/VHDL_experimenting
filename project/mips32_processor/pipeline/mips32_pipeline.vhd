@@ -7,7 +7,7 @@ use work.mips32_pkg;
 
 entity mips32_pipeline is
     generic (
-        resetAddress : mips32_pkg.address_type
+        startAddress : mips32_pkg.address_type
     );
     port (
         clk : in std_logic;
@@ -65,14 +65,20 @@ architecture behaviourial of mips32_pipeline is
     signal memReadToWb : mips32_pkg.data_type;
     signal destRegToWb : mips32_pkg.registerFileAddress_type;
 
+    signal instructionFetchStall : boolean;
+    signal instructionDecode_exInstructionIsMemLoad : boolean;
+
 begin
+    instructionFetchStall <= stall or repeatInstruction;
+    instructionDecode_exInstructionIsMemLoad <= memControlWordToEx.MemOp and not memControlWordToEx.MemOpIsWrite;
+
     instructionFetch : entity work.mips32_pipeline_instructionFetch
     generic map (
-        resetAddress => resetAddress
+        startAddress
     ) port map (
         clk => clk,
         rst => rst,
-        stall => stall or repeatInstruction,
+        stall => instructionFetchStall,
 
         requestFromBusAddress => instructionAddress,
         instructionFromBus => instruction,
@@ -109,7 +115,7 @@ begin
         aluFunction => aluFuncToEx,
         shamt => shamtToEx,
 
-        exInstructionIsMemLoad => memControlWordToEx.MemOp and not memControlWordToEx.MemOpIsWrite,
+        exInstructionIsMemLoad => instructionDecode_exInstructionIsMemLoad,
         exInstructionTargetReg => destRegToEx,
 
         regWrite => regWriteToID,

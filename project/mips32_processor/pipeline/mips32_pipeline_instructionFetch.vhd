@@ -8,7 +8,7 @@ use work.mips32_pkg;
 
 entity mips32_pipeline_instructionFetch is
     generic (
-        resetAddress : mips32_pkg.address_type
+        startAddress : mips32_pkg.address_type
     );
     port (
         clk : in std_logic;
@@ -27,7 +27,7 @@ entity mips32_pipeline_instructionFetch is
 end entity;
 
 architecture behaviourial of mips32_pipeline_instructionFetch is
-    signal programCounter : mips32_pkg.address_type := resetAddress;
+    signal programCounter : mips32_pkg.address_type := startAddress;
     signal nextProgramCounter : mips32_pkg.address_type;
     signal programCounterPlusFour_buf : mips32_pkg.address_type;
 begin
@@ -52,7 +52,7 @@ begin
     begin
         if rising_edge(clk) then
             if rst = '1' then
-                programCounter <= resetAddress;
+                programCounter <= startAddress;
             elsif stall then
                 -- pass
             else
