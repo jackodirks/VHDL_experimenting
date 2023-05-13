@@ -1,6 +1,7 @@
 library ieee;
 use ieee.std_logic_1164.all;
 use ieee.numeric_std.all;
+use std.textio.all;
 
 library vunit_lib;
 context vunit_lib.vunit_context;
@@ -47,6 +48,12 @@ package simulated_bus_memory_pkg is
               constant addr : in bus_pkg.bus_address_type;
               constant data : in bus_pkg.bus_data_array;
               constant mask : in bus_pkg.bus_write_mask);
+
+    procedure write_file_to_address (
+              signal net : inout network_t;
+              constant actor : in actor_t;
+              constant addr : in natural;
+              constant fileName : in string);
 end package;
 
 package body simulated_bus_memory_pkg is
@@ -90,7 +97,7 @@ package body simulated_bus_memory_pkg is
     begin
         address_internal := to_integer(unsigned(addr));
         for i in 0 to data'length - 1 loop
-            output_address := std_logic_vector(to_unsigned(address_internal + bus_pkg.bus_bytes_per_word*i, output_address'length)); 
+            output_address := std_logic_vector(to_unsigned(address_internal + bus_pkg.bus_bytes_per_word*i, output_address'length));
             read_from_address(net => net,
                              actor => actor,
                              addr => output_address,
@@ -123,7 +130,7 @@ package body simulated_bus_memory_pkg is
     begin
         address_internal := to_integer(unsigned(addr));
         for i in 0 to data'length - 1 loop
-            output_address := std_logic_vector(to_unsigned(address_internal + bus_pkg.bus_bytes_per_word*i, output_address'length)); 
+            output_address := std_logic_vector(to_unsigned(address_internal + bus_pkg.bus_bytes_per_word*i, output_address'length));
             write_to_address(net => net,
                              actor => actor,
                              addr => output_address,
@@ -131,6 +138,28 @@ package body simulated_bus_memory_pkg is
                              mask => mask);
         end loop;
     end;
-        
+
+    procedure write_file_to_address(
+              signal net : inout network_t;
+              constant actor : in actor_t;
+              constant addr : in natural;
+              constant fileName : in string) is
+        file read_file : text;
+        variable line_v : line;
+        variable data : bus_pkg.bus_data_type;
+        variable address : natural := addr;
+        variable busAddress : bus_pkg.bus_address_type;
+        constant mask : bus_pkg.bus_write_mask := (others => '1');
+    begin
+        file_open(read_file, fileName, read_mode);
+        while not endfile(read_file) loop
+            readline(read_file, line_v);
+            hread(line_v, data);
+            busAddress := std_logic_vector(to_unsigned(address, busAddress'length));
+            write_to_address(net, actor, busAddress, data, mask);
+            address := address + 4;
+        end loop;
+        file_close(read_file);
+    end;
 
 end package body;
