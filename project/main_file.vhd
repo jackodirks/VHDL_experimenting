@@ -29,6 +29,9 @@ end main_file;
 
 architecture Behavioral of main_file is
 
+    constant spiMemStartAddress : natural := 16#100000#;
+    constant procResetAddress : bus_address_type := std_logic_vector(to_unsigned(spiMemStartAddress, bus_address_type'length));
+
     constant address_map : addr_range_and_mapping_array := (
         address_range_and_map(
             low => std_logic_vector(to_unsigned(16#1000#, bus_address_type'length)),
@@ -36,7 +39,12 @@ architecture Behavioral of main_file is
             mapping => bus_map_constant(bus_address_type'high - 1, '0') & bus_map_range(1, 0)
         ),
         address_range_and_map(
-            low => std_logic_vector(to_unsigned(16#100000#, bus_address_type'length)),
+            low => std_logic_vector(to_unsigned(16#2000#, bus_address_type'length)),
+            high => std_logic_vector(to_unsigned(16#2040# - 1, bus_address_type'length)),
+            mapping => bus_map_constant(bus_address_type'high - 6, '0') & bus_map_range(6, 0)
+        ),
+        address_range_and_map(
+            low => std_logic_vector(to_unsigned(spiMemStartAddress, bus_address_type'length)),
             high => std_logic_vector(to_unsigned(16#160000# - 1, bus_address_type'length)),
             mapping => bus_map_constant(bus_address_type'high - 18, '0') & bus_map_range(18, 0)
         )
@@ -44,17 +52,26 @@ architecture Behavioral of main_file is
 
     signal rst          : STD_LOGIC;
 
-    signal depp2demux : bus_mst2slv_type := BUS_MST2SLV_IDLE;
-    signal demux2depp : bus_slv2mst_type := BUS_SLV2MST_IDLE;
+    signal depp2arbiter : bus_mst2slv_type;
+    signal arbiter2depp : bus_slv2mst_type;
 
-    signal demux2ss   : bus_mst2slv_type := BUS_MST2SLV_IDLE;
-    signal ss2demux   : bus_slv2mst_type := BUS_SLV2MST_IDLE;
+    signal instructionFetch2arbiter : bus_mst2slv_type;
+    signal arbiter2instructionFetch : bus_slv2mst_type;
 
-    signal demux2mem  : bus_mst2slv_type := BUS_MST2SLV_IDLE;
-    signal mem2demux  : bus_slv2mst_type := BUS_SLV2MST_IDLE;
+    signal memory2arbiter : bus_mst2slv_type;
+    signal arbiter2memory : bus_slv2mst_type;
 
-    signal demux2spimem : bus_mst2slv_type := BUS_MST2SLV_IDLE;
-    signal spimem2demux : bus_slv2mst_type := BUS_SLV2MST_IDLE;
+    signal arbiter2demux : bus_mst2slv_type;
+    signal demux2arbiter : bus_slv2mst_type;
+
+    signal demux2ss   : bus_mst2slv_type;
+    signal ss2demux   : bus_slv2mst_type;
+
+    signal demux2spimem : bus_mst2slv_type;
+    signal spimem2demux : bus_slv2mst_type;
+
+    signal demux2control : bus_mst2slv_type;
+    signal control2demux : bus_slv2mst_type;
 
     signal mem_spi_sio_out : std_logic_vector(3 downto 0);
     signal mem_spi_sio_in : std_logic_vector(3 downto 0);
@@ -79,8 +96,8 @@ begin
     port map (
         rst => rst,
         clk => clk,
-        mst2slv => depp2demux,
-        slv2mst => demux2depp,
+        mst2slv => depp2arbiter,
+        slv2mst => arbiter2depp,
         USB_DB => usb_db,
         USB_WRITE => usb_write,
         USB_ASTB => usb_astb,
@@ -88,17 +105,48 @@ begin
         USB_WAIT => usb_wait
     );
 
+    processor : entity work.mips32_processor
+    generic map (
+        resetAddress => procResetAddress
+    ) port map (
+        clk => clk,
+        rst => rst,
+        mst2control => demux2control,
+        control2mst => control2demux,
+        instructionFetch2slv => instructionFetch2arbiter,
+        slv2instructionFetch => arbiter2instructionFetch,
+        memory2slv => memory2arbiter,
+        slv2memory => arbiter2memory
+    );
+
+    arbiter : entity work.bus_arbiter
+    generic map (
+        masterCount => 3
+   ) port map (
+        clk => clk,
+        mst2arbiter(0) => instructionFetch2arbiter,
+        mst2arbiter(1) => memory2arbiter,
+        mst2arbiter(2) => depp2arbiter,
+        arbiter2mst(0) => arbiter2instructionFetch,
+        arbiter2mst(1) => arbiter2memory,
+        arbiter2mst(2) => arbiter2depp,
+        arbiter2slv => arbiter2demux,
+        slv2arbiter => demux2arbiter
+    );
+
     demux : entity work.bus_demux
     generic map (
         ADDRESS_MAP => address_map
     )
     port map (
-        mst2demux => depp2demux,
-        demux2mst => demux2depp,
+        mst2demux => arbiter2demux,
+        demux2mst => demux2arbiter,
         demux2slv(0) => demux2ss,
-        demux2slv(1) => demux2spimem,
+        demux2slv(1) => demux2control,
+        demux2slv(2) => demux2spimem,
         slv2demux(0) => ss2demux,
-        slv2demux(1) => spimem2demux
+        slv2demux(1) => control2demux,
+        slv2demux(2) => spimem2demux
     );
 
     ss : entity work.seven_seg_controller

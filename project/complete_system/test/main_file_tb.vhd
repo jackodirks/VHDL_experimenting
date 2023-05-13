@@ -46,6 +46,8 @@ architecture tb of main_file_tb is
 begin
     clk <= not clk after (clk_period/2);
     process
+        constant processor_controller_start_address : bus_address_type := std_logic_vector(to_unsigned(16#2000#, bus_address_type'length));
+
         constant spimem0_start_address : bus_address_type := std_logic_vector(to_unsigned(16#100000#, bus_address_type'length));
         constant spimem1_start_address : bus_address_type := std_logic_vector(to_unsigned(16#120000#, bus_address_type'length));
         constant spimem2_start_address : bus_address_type := std_logic_vector(to_unsigned(16#140000#, bus_address_type'length));
@@ -58,6 +60,10 @@ begin
         variable spimem1_test_output_data : bus_data_array(15 downto 0);
         variable spimem2_test_input_data : bus_data_array(15 downto 0);
         variable spimem2_test_output_data : bus_data_array(15 downto 0);
+
+        variable data : bus_data_type;
+        variable expectedData : bus_data_type;
+        variable address : bus_address_type;
     begin
         test_runner_setup(runner, runner_cfg);
         while test_suite loop
@@ -113,12 +119,36 @@ begin
                 for i in 0 to spimem2_test_input_data'high loop
                     check_equal(spimem2_test_input_data(i), spimem2_test_input_data(i));
                 end loop;
+            elsif run("processor: Looped add") then
+                simulated_depp_master_pkg.write_file_to_address(
+                    net => net,
+                    actor => deppMasterActor,
+                    addr => to_integer(unsigned(spimem0_start_address)),
+                    fileName => "./mips32_processor/test/programs/loopedAdd.txt");
+                data := (others => '0');
+                simulated_depp_master_pkg.write_to_address(
+                    net => net,
+                    actor => deppMasterActor,
+                    addr => processor_controller_start_address,
+                    mask => (others => '1'),
+                    data => data);
+                wait for 1000*clk_period;
+                expectedData := X"00000003";
+                address := std_logic_vector(to_unsigned(to_integer(unsigned(spimem0_start_address)) + 16#24#, address'length));
+                simulated_depp_master_pkg.read_from_address(
+                    net => net,
+                    actor => deppMasterActor,
+                    addr => address,
+                    data => data);
+                check_equal(data, expectedData);
             end if;
         end loop;
         wait until rising_edge(clk) or falling_edge(clk);
         test_runner_cleanup(runner);
         wait;
     end process;
+
+    test_runner_watchdog(runner, 200 us);
 
     mem_pcb : entity tb.triple_M23LC1024
     port map (
