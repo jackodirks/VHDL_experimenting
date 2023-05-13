@@ -1,6 +1,7 @@
 library ieee;
 use ieee.std_logic_1164.all;
 use ieee.numeric_std.all;
+use std.textio.all;
 
 library vunit_lib;
 context vunit_lib.vunit_context;
@@ -78,6 +79,12 @@ package simulated_depp_master_pkg is
               variable data : out bus_pkg.bus_data_array;
               variable faultData : out bus_pkg.bus_fault_type;
               variable faultAddress : out bus_pkg.bus_address_type);
+
+    procedure write_file_to_address (
+              signal net : inout network_t;
+              constant actor : in actor_t;
+              constant addr : in natural;
+              constant fileName : in string);
 
 end package;
 
@@ -296,5 +303,28 @@ package body simulated_depp_master_pkg is
         else
             unexpected_msg_type(msg_type);
         end if;
+    end;
+
+    procedure write_file_to_address(
+              signal net : inout network_t;
+              constant actor : in actor_t;
+              constant addr : in natural;
+              constant fileName : in string) is
+        file read_file : text;
+        variable line_v : line;
+        variable data : bus_pkg.bus_data_type;
+        variable address : natural := addr;
+        variable busAddress : bus_pkg.bus_address_type;
+        constant mask : bus_pkg.bus_write_mask := (others => '1');
+    begin
+        file_open(read_file, fileName, read_mode);
+        while not endfile(read_file) loop
+            readline(read_file, line_v);
+            hread(line_v, data);
+            busAddress := std_logic_vector(to_unsigned(address, busAddress'length));
+            write_to_address(net, actor, busAddress, data, mask);
+            address := address + 4;
+        end loop;
+        file_close(read_file);
     end;
 end package body;
