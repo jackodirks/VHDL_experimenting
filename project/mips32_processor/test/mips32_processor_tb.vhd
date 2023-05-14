@@ -7,8 +7,7 @@ context vunit_lib.vunit_context;
 context vunit_lib.vc_context;
 
 library src;
-use src.bus_pkg;
-use src.bus_pkg."&";
+use src.bus_pkg.all;
 use src.mips32_pkg;
 
 library tb;
@@ -29,42 +28,42 @@ architecture tb of mips32_processor_tb is
 
     signal clk : std_logic := '0';
     signal rst : std_logic := '0';
-    signal demux2control : bus_pkg.bus_mst2slv_type;
-    signal control2demux : bus_pkg.bus_slv2mst_type;
+    signal demux2control : bus_mst2slv_type;
+    signal control2demux : bus_slv2mst_type;
 
-    signal instructionFetch2arbiter : bus_pkg.bus_mst2slv_type;
-    signal arbiter2instructionFetch : bus_pkg.bus_slv2mst_type;
+    signal instructionFetch2arbiter : bus_mst2slv_type;
+    signal arbiter2instructionFetch : bus_slv2mst_type;
 
-    signal memory2arbiter : bus_pkg.bus_mst2slv_type;
-    signal arbiter2memory : bus_pkg.bus_slv2mst_type;
+    signal memory2arbiter : bus_mst2slv_type;
+    signal arbiter2memory : bus_slv2mst_type;
 
-    signal arbiter2demux : bus_pkg.bus_mst2slv_type;
-    signal demux2arbiter : bus_pkg.bus_slv2mst_type;
+    signal arbiter2demux : bus_mst2slv_type;
+    signal demux2arbiter : bus_slv2mst_type;
 
-    signal demux2mem : bus_pkg.bus_mst2slv_type;
-    signal mem2demux : bus_pkg.bus_slv2mst_type;
+    signal demux2mem : bus_mst2slv_type;
+    signal mem2demux : bus_slv2mst_type;
 
-    signal test2slv : bus_pkg.bus_mst2slv_type := bus_pkg.BUS_MST2SLV_IDLE;
-    signal slv2test : bus_pkg.bus_slv2mst_type;
+    signal test2slv : bus_mst2slv_type := BUS_MST2SLV_IDLE;
+    signal slv2test : bus_slv2mst_type;
 
-    constant address_map : bus_pkg.addr_range_and_mapping_array := (
-        bus_pkg.address_range_and_map(
-            low => std_logic_vector(to_unsigned(controllerAddress, bus_pkg.bus_address_type'length)),
-            high => std_logic_vector(to_unsigned(16#2040# - 1, bus_pkg.bus_address_type'length)),
-            mapping => bus_pkg.bus_map_constant(bus_pkg.bus_address_type'high - 6, '0') & bus_pkg.bus_map_range(6, 0)
+    constant address_map : addr_range_and_mapping_array := (
+        address_range_and_map(
+            low => std_logic_vector(to_unsigned(controllerAddress, bus_address_type'length)),
+            high => std_logic_vector(to_unsigned(16#2040# - 1, bus_address_type'length)),
+            mapping => bus_map_constant(bus_address_type'high - 6, '0') & bus_map_range(6, 0)
         ),
-        bus_pkg.address_range_and_map(
-            low => std_logic_vector(to_unsigned(memoryAddress, bus_pkg.bus_address_type'length)),
-            high => std_logic_vector(to_unsigned(16#160000# - 1, bus_pkg.bus_address_type'length)),
-            mapping => bus_pkg.bus_map_constant(bus_pkg.bus_address_type'high - 18, '0') & bus_pkg.bus_map_range(18, 0)
+        address_range_and_map(
+            low => std_logic_vector(to_unsigned(memoryAddress, bus_address_type'length)),
+            high => std_logic_vector(to_unsigned(16#160000# - 1, bus_address_type'length)),
+            mapping => bus_map_constant(bus_address_type'high - 18, '0') & bus_map_range(18, 0)
         )
     );
 begin
     clk <= not clk after (clk_period/2);
     main : process
-        variable readAddr : bus_pkg.bus_address_type;
-        variable readData : bus_pkg.bus_data_type;
-        variable expectedReadData : bus_pkg.bus_data_type;
+        variable readAddr : bus_address_type;
+        variable readData : bus_data_type;
+        variable expectedReadData : bus_data_type;
     begin
         test_runner_setup(runner, runner_cfg);
         while test_suite loop
@@ -75,16 +74,16 @@ begin
                     addr => 0,
                     fileName => "./mips32_processor/test/programs/loopedAdd.txt");
                 -- Clear CPU internal reset
-                test2slv <= bus_pkg.bus_mst2slv_write(
-                    address => std_logic_vector(to_unsigned(controllerAddress, bus_pkg.bus_address_type'length)),
+                test2slv <= bus_mst2slv_write(
+                    address => std_logic_vector(to_unsigned(controllerAddress, bus_address_type'length)),
                     write_data => (others => '0'),
                     write_mask => (others => '1'));
-                wait until rising_edge(clk) and bus_pkg.any_transaction(test2slv, slv2test);
-                check(bus_pkg.write_transaction(test2slv, slv2test));
-                test2slv <= bus_pkg.BUS_MST2SLV_IDLE;
+                wait until rising_edge(clk) and any_transaction(test2slv, slv2test);
+                check(write_transaction(test2slv, slv2test));
+                test2slv <= BUS_MST2SLV_IDLE;
                 wait for 102*clk_period;
                 expectedReadData := X"00000003";
-                readAddr := std_logic_vector(to_unsigned(16#24#, bus_pkg.bus_address_type'length));
+                readAddr := std_logic_vector(to_unsigned(16#24#, bus_address_type'length));
                 simulated_bus_memory_pkg.read_from_address(
                     net => net,
                     actor => memActor,

@@ -7,7 +7,7 @@ context vunit_lib.vunit_context;
 context vunit_lib.vc_context;
 
 library src;
-use src.bus_pkg;
+use src.bus_pkg.all;
 use src.mips32_pkg;
 
 entity mips32_if2bus_tb is
@@ -24,11 +24,11 @@ architecture tb of mips32_if2bus_tb is
     signal forbidBusInteraction : boolean := false;
     signal flushCache : boolean := false;
 
-    signal mst2slv : bus_pkg.bus_mst2slv_type;
-    signal slv2mst : bus_pkg.bus_slv2mst_type := bus_pkg.BUS_SLV2MST_IDLE;
+    signal mst2slv : bus_mst2slv_type;
+    signal slv2mst : bus_slv2mst_type := BUS_SLV2MST_IDLE;
 
     signal hasFault : boolean;
-    signal faultData : bus_pkg.bus_fault_type;
+    signal faultData : bus_fault_type;
 
     signal requestAddress : mips32_pkg.address_type := (others => '0');
     signal instruction : mips32_pkg.instruction_type := (others => '0');
@@ -38,7 +38,7 @@ begin
     clk <= not clk after (clk_period/2);
 
     main : process
-        variable actualAddress : std_logic_vector(bus_pkg.bus_address_type'range);
+        variable actualAddress : std_logic_vector(bus_address_type'range);
     begin
         test_runner_setup(runner, runner_cfg);
         while test_suite loop
@@ -47,79 +47,79 @@ begin
                 check(stall);
             elsif run("Requesting instruction causes bus request") then
                 requestAddress <= X"00112233";
-                wait until rising_edge(clk) and bus_pkg.bus_requesting(mst2slv);
+                wait until rising_edge(clk) and bus_requesting(mst2slv);
                 check_equal(requestAddress, mst2slv.address);
                 check(mst2slv.readReady = '1');
             elsif run("Resolving bus read finishes request") then
                 requestAddress <= X"00112233";
-                wait until rising_edge(clk) and bus_pkg.bus_requesting(mst2slv);
+                wait until rising_edge(clk) and bus_requesting(mst2slv);
                 slv2mst.readValid <= '1';
                 slv2mst.readData <= X"33221100";
                 wait until rising_edge(clk) and not stall;
                 check_equal(slv2mst.readData, instruction);
             elsif run("Bus fault is acknowledged and communicated") then
                 requestAddress <= X"00112233";
-                wait until rising_edge(clk) and bus_pkg.bus_requesting(mst2slv);
+                wait until rising_edge(clk) and bus_requesting(mst2slv);
                 slv2mst.fault <= '1';
-                slv2mst.faultData <= bus_pkg.bus_fault_address_out_of_range;
-                wait until rising_edge(clk) and bus_pkg.any_transaction(mst2slv, slv2mst);
-                slv2mst <= bus_pkg.BUS_SLV2MST_IDLE;
+                slv2mst.faultData <= bus_fault_address_out_of_range;
+                wait until rising_edge(clk) and any_transaction(mst2slv, slv2mst);
+                slv2mst <= BUS_SLV2MST_IDLE;
                 wait until rising_edge(clk);
-                check(not bus_pkg.bus_requesting(mst2slv));
+                check(not bus_requesting(mst2slv));
                 check(hasFault);
-                check_equal(bus_pkg.bus_fault_address_out_of_range, faultData);
+                check_equal(bus_fault_address_out_of_range, faultData);
                 check(stall);
             elsif run("Requesting the same address twice does not cause two bus requests") then
                 requestAddress <= X"00112233";
-                wait until rising_edge(clk) and bus_pkg.bus_requesting(mst2slv);
+                wait until rising_edge(clk) and bus_requesting(mst2slv);
                 slv2mst.readValid <= '1';
                 slv2mst.readData <= X"33221100";
-                wait until rising_edge(clk) and bus_pkg.any_transaction(mst2slv, slv2mst);
-                slv2mst <= bus_pkg.BUS_SLV2MST_IDLE;
+                wait until rising_edge(clk) and any_transaction(mst2slv, slv2mst);
+                slv2mst <= BUS_SLV2MST_IDLE;
                 wait until rising_edge(clk);
-                check(not bus_pkg.any_transaction(mst2slv, slv2mst));
+                check(not any_transaction(mst2slv, slv2mst));
                 wait until rising_edge(clk);
-                check(not bus_pkg.any_transaction(mst2slv, slv2mst));
+                check(not any_transaction(mst2slv, slv2mst));
                 wait until rising_edge(clk);
-                check(not bus_pkg.any_transaction(mst2slv, slv2mst));
+                check(not any_transaction(mst2slv, slv2mst));
             elsif run("Requesting two different addresses does cause two bus requests") then
                 requestAddress <= X"00112233";
-                wait until rising_edge(clk) and bus_pkg.bus_requesting(mst2slv);
+                wait until rising_edge(clk) and bus_requesting(mst2slv);
                 slv2mst.readValid <= '1';
                 slv2mst.readData <= X"33221100";
-                wait until rising_edge(clk) and bus_pkg.any_transaction(mst2slv, slv2mst);
+                wait until rising_edge(clk) and any_transaction(mst2slv, slv2mst);
                 requestAddress <= X"11223344";
-                slv2mst <= bus_pkg.BUS_SLV2MST_IDLE;
-                wait until rising_edge(clk) and bus_pkg.bus_requesting(mst2slv);
+                slv2mst <= BUS_SLV2MST_IDLE;
+                wait until rising_edge(clk) and bus_requesting(mst2slv);
             elsif run("forbidBusInteraction prevents starting a new interaction but does stall") then
                 requestAddress <= X"00112233";
                 forbidBusInteraction <= true;
                 wait for 5*clk_period;
                 check(stall);
-                check(not bus_pkg.bus_requesting(mst2slv));
+                check(not bus_requesting(mst2slv));
             elsif run("forbidBusInteraction during bus request still finishes the request") then
                 requestAddress <= X"00112233";
-                wait until rising_edge(clk) and bus_pkg.bus_requesting(mst2slv);
+                wait until rising_edge(clk) and bus_requesting(mst2slv);
                 forbidBusInteraction <= true;
                 wait for 5*clk_period;
                 slv2mst.readValid <= '1';
                 slv2mst.readData <= X"33221100";
-                wait until rising_edge(clk) and bus_pkg.any_transaction(mst2slv, slv2mst);
-                slv2mst <= bus_pkg.BUS_SLV2MST_IDLE;
+                wait until rising_edge(clk) and any_transaction(mst2slv, slv2mst);
+                slv2mst <= BUS_SLV2MST_IDLE;
                 wait until rising_edge(clk);
                 check(not stall);
                 requestAddress <= X"00112240";
                 wait until rising_edge(clk);
                 check(stall);
                 wait for 5*clk_period;
-                check(not bus_pkg.bus_requesting(mst2slv));
+                check(not bus_requesting(mst2slv));
             elsif run("flushCache flushes the cache") then
                 requestAddress <= X"00112233";
-                wait until rising_edge(clk) and bus_pkg.bus_requesting(mst2slv);
+                wait until rising_edge(clk) and bus_requesting(mst2slv);
                 slv2mst.readValid <= '1';
                 slv2mst.readData <= X"33221100";
-                wait until rising_edge(clk) and bus_pkg.any_transaction(mst2slv, slv2mst);
-                slv2mst <= bus_pkg.BUS_SLV2MST_IDLE;
+                wait until rising_edge(clk) and any_transaction(mst2slv, slv2mst);
+                slv2mst <= BUS_SLV2MST_IDLE;
                 wait until rising_edge(clk);
                 check(not stall);
                 flushCache <= true;
@@ -127,7 +127,7 @@ begin
                 flushCache <= false;
                 wait until rising_edge(clk);
                 check(stall);
-                wait until rising_edge(clk) and bus_pkg.bus_requesting(mst2slv);
+                wait until rising_edge(clk) and bus_requesting(mst2slv);
             end if;
         end loop;
         wait until rising_edge(clk);

@@ -3,28 +3,28 @@ use IEEE.std_logic_1164.all;
 use IEEE.numeric_std.all;
 
 library work;
-use work.bus_pkg;
+use work.bus_pkg.all;
 use work.mips32_pkg;
 
 entity mips32_processor is
     generic (
-        startAddress : bus_pkg.bus_address_type
+        startAddress : bus_address_type
     );
     port (
         clk : in std_logic;
         rst : in std_logic;
 
         -- Control slave
-        mst2control : in bus_pkg.bus_mst2slv_type;
-        control2mst : out bus_pkg.bus_slv2mst_type;
+        mst2control : in bus_mst2slv_type;
+        control2mst : out bus_slv2mst_type;
 
         -- Instruction fetch master
-        instructionFetch2slv : out bus_pkg.bus_mst2slv_type;
-        slv2instructionFetch : in bus_pkg.bus_slv2mst_type;
+        instructionFetch2slv : out bus_mst2slv_type;
+        slv2instructionFetch : in bus_slv2mst_type;
 
         -- Memory master
-        memory2slv : out bus_pkg.bus_mst2slv_type;
-        slv2memory : in bus_pkg.bus_slv2mst_type
+        memory2slv : out bus_mst2slv_type;
+        slv2memory : in bus_slv2mst_type
     );
 end entity;
 
@@ -44,11 +44,11 @@ architecture behaviourial of mips32_processor is
     signal controllerStall : boolean;
 
     signal instructionFetchHasFault : boolean;
-    signal instructionFetchFaultData : bus_pkg.bus_fault_type;
+    signal instructionFetchFaultData : bus_fault_type;
     signal instructionStall : boolean;
 
     signal memoryHasFault : boolean;
-    signal memoryFaultData : bus_pkg.bus_fault_type;
+    signal memoryFaultData : bus_fault_type;
     signal memoryStall : boolean;
     signal forbidBusInteraction : boolean;
 begin

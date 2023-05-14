@@ -3,7 +3,7 @@ use IEEE.std_logic_1164.all;
 use IEEE.numeric_std.all;
 
 library work;
-use work.bus_pkg;
+use work.bus_pkg.all;
 use work.mips32_pkg;
 
 entity mips32_mem2bus is
@@ -14,11 +14,11 @@ entity mips32_mem2bus is
         forbidBusInteraction : in boolean;
         flushCache : in boolean;
 
-        mst2slv : out bus_pkg.bus_mst2slv_type;
-        slv2mst : in bus_pkg.bus_slv2mst_type;
+        mst2slv : out bus_mst2slv_type;
+        slv2mst : in bus_slv2mst_type;
 
         hasFault : out boolean;
-        faultData : out bus_pkg.bus_fault_type;
+        faultData : out bus_fault_type;
 
         address : in mips32_pkg.address_type;
         dataIn : in mips32_pkg.data_type;
@@ -69,41 +69,41 @@ begin
     end process;
 
     bus_handling : process(clk)
-        variable mst2slv_buf : bus_pkg.bus_mst2slv_type := bus_pkg.BUS_MST2SLV_IDLE;
+        variable mst2slv_buf : bus_mst2slv_type := BUS_MST2SLV_IDLE;
         variable hasFault_buf : boolean := false;
         variable bus_active : boolean := false;
-        constant fullWordWriteMask : bus_pkg.bus_write_mask := (others => '1');
+        constant fullWordWriteMask : bus_write_mask := (others => '1');
     begin
         if rising_edge(clk) then
             if rst = '1' then
-                mst2slv_buf := bus_pkg.BUS_MST2SLV_IDLE;
+                mst2slv_buf := BUS_MST2SLV_IDLE;
                 hasFault_buf := false;
                 bus_active := false;
                 read_cache_valid <= false;
                 write_cache_valid <= false;
-            elsif bus_pkg.any_transaction(mst2slv_buf, slv2mst) then
-                if bus_pkg.fault_transaction(mst2slv_buf, slv2mst) then
+            elsif any_transaction(mst2slv_buf, slv2mst) then
+                if fault_transaction(mst2slv_buf, slv2mst) then
                     hasFault_buf := true;
                     faultData <= slv2mst.faultData;
-                elsif bus_pkg.read_transaction(mst2slv_buf, slv2mst) then
+                elsif read_transaction(mst2slv_buf, slv2mst) then
                     bus_active := false;
                     read_cache_valid <= true;
                     read_cache_address <= mst2slv_buf.address;
                     read_cache_data <= slv2mst.readData;
-                elsif bus_pkg.write_transaction(mst2slv_buf, slv2mst) then
+                elsif write_transaction(mst2slv_buf, slv2mst) then
                     bus_active := false;
                     write_cache_valid <= true;
                     write_cache_address <= mst2slv_buf.address;
                     write_cache_data <= mst2slv_buf.writeData;
                 end if;
-                mst2slv_buf := bus_pkg.BUS_MST2SLV_IDLE;
+                mst2slv_buf := BUS_MST2SLV_IDLE;
             elsif stall_buf and not bus_active and not hasFault_buf and not forbidBusInteraction then
                 bus_active := true;
                 if doRead then
-                    mst2slv_buf := bus_pkg.bus_mst2slv_read(address => address);
+                    mst2slv_buf := bus_mst2slv_read(address => address);
                 elsif doWrite then
                     read_cache_valid <= false;
-                    mst2slv_buf := bus_pkg.bus_mst2slv_write(address => address,
+                    mst2slv_buf := bus_mst2slv_write(address => address,
                                                              write_data => dataIn,
                                                              write_mask => fullWordWriteMask);
                 end if;

@@ -3,7 +3,7 @@ use IEEE.std_logic_1164.all;
 use IEEE.numeric_std.all;
 
 library work;
-use work.bus_pkg;
+use work.bus_pkg.all;
 use work.mips32_pkg;
 
 entity mips32_debug_controller is
@@ -11,8 +11,8 @@ entity mips32_debug_controller is
         clk : in std_logic;
         rst : in std_logic;
 
-        mst2debug : in bus_pkg.bus_mst2slv_type;
-        debug2mst : out bus_pkg.bus_slv2mst_type;
+        mst2debug : in bus_mst2slv_type;
+        debug2mst : out bus_slv2mst_type;
 
         controllerReset : out boolean;
         controllerStall : out boolean
@@ -28,24 +28,24 @@ begin
     controllerStall <= regZero(1) = '1';
 
     process(clk)
-        variable debug2mst_buf : bus_pkg.bus_slv2mst_type := bus_pkg.BUS_SLV2MST_IDLE;
+        variable debug2mst_buf : bus_slv2mst_type := BUS_SLV2MST_IDLE;
         variable regZero_buf : mips32_pkg.data_type := (0 => '1', others => '0');
-        constant acceptableWriteMask : bus_pkg.bus_write_mask := (others => '1');
+        constant acceptableWriteMask : bus_write_mask := (others => '1');
     begin
         if rising_edge(clk) then
             if rst = '1' then
                 regZero_buf(0) := '1';
                 regZero_buf(1) := '0';
-                debug2mst_buf := bus_pkg.BUS_SLV2MST_IDLE;
-            elsif bus_pkg.any_transaction(mst2debug, debug2mst_buf) then
-                debug2mst_buf := bus_pkg.BUS_SLV2MST_IDLE;
-            elsif bus_pkg.bus_requesting(mst2debug) then
+                debug2mst_buf := BUS_SLV2MST_IDLE;
+            elsif any_transaction(mst2debug, debug2mst_buf) then
+                debug2mst_buf := BUS_SLV2MST_IDLE;
+            elsif bus_requesting(mst2debug) then
                 if mst2debug.address(1 downto 0) /= "00" then
                     debug2mst_buf.fault := '1';
-                    debug2mst_buf.faultData := bus_pkg.bus_fault_unaligned_access;
+                    debug2mst_buf.faultData := bus_fault_unaligned_access;
                 elsif mst2debug.writeReady = '1' and mst2debug.writeMask /= acceptableWriteMask then
                     debug2mst_buf.fault := '1';
-                    debug2mst_buf.faultData := bus_pkg.bus_fault_illegal_write_mask;
+                    debug2mst_buf.faultData := bus_fault_illegal_write_mask;
                 elsif mst2debug.address = X"00000000" then
                     if mst2debug.readReady = '1' then
                         debug2mst_buf.readData := regZero_buf;
@@ -56,7 +56,7 @@ begin
                     end if;
                 else
                     debug2mst_buf.fault := '1';
-                    debug2mst_buf.faultData := bus_pkg.bus_fault_address_out_of_range;
+                    debug2mst_buf.faultData := bus_fault_address_out_of_range;
                 end if;
             end if;
         end if;

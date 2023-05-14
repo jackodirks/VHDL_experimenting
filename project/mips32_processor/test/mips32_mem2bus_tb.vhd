@@ -10,7 +10,7 @@ library tb;
 use tb.simulated_bus_memory_pkg;
 
 library src;
-use src.bus_pkg;
+use src.bus_pkg.all;
 use src.mips32_pkg;
 
 entity mips32_mem2bus_tb is
@@ -28,11 +28,11 @@ architecture tb of mips32_mem2bus_tb is
     signal clk : std_logic := '0';
     signal rst : std_logic := '0';
 
-    signal mst2slv : bus_pkg.bus_mst2slv_type;
-    signal slv2mst : bus_pkg.bus_slv2mst_type;
+    signal mst2slv : bus_mst2slv_type;
+    signal slv2mst : bus_slv2mst_type;
 
     signal hasFault : boolean;
-    signal faultData : bus_pkg.bus_fault_type;
+    signal faultData : bus_fault_type;
 
     signal address : mips32_pkg.address_type := (others => '0');
     signal dataIn : mips32_pkg.data_type := (others => '0');
@@ -48,10 +48,10 @@ begin
     main : process
         variable expectedWriteData : mips32_pkg.data_type;
         variable expectedWriteAddress : mips32_pkg.address_type;
-        variable writeAddress : bus_pkg.bus_address_type;
-        variable writeMask : bus_pkg.bus_write_mask;
-        variable writeData : bus_pkg.bus_data_type;
-        variable memReadData : bus_pkg.bus_data_type;
+        variable writeAddress : bus_address_type;
+        variable writeMask : bus_write_mask;
+        variable writeData : bus_data_type;
+        variable memReadData : bus_data_type;
     begin
         test_runner_setup(runner, runner_cfg);
         while test_suite loop
@@ -108,7 +108,7 @@ begin
                 address <= expectedWriteAddress;
                 doWrite <= true;
                 wait until rising_edge(clk) and hasFault;
-                check_equal(faultData, bus_pkg.bus_fault_address_out_of_range);
+                check_equal(faultData, bus_fault_address_out_of_range);
                 check(stall);
             elsif run("Reset fixes bus fault block") then
                 expectedWriteData := X"AABBCCDD";
@@ -156,7 +156,7 @@ begin
                 wait until rising_edge(clk);
                 check(stall);
                 wait until falling_edge(clk);
-                check(not bus_pkg.bus_requesting(mst2slv));
+                check(not bus_requesting(mst2slv));
             elsif run("Flushing the cache does lead to two reads") then
                 writeAddress := X"00000004";
                 writeMask := (others => '1');
@@ -176,7 +176,7 @@ begin
                 wait until rising_edge(clk);
                 check(stall);
                 wait until falling_edge(clk);
-                check(bus_pkg.bus_requesting(mst2slv));
+                check(bus_requesting(mst2slv));
             elsif run("Relevant write after read should reread") then
                 writeAddress := X"00000004";
                 writeMask := (others => '1');
@@ -210,7 +210,7 @@ begin
                 doWrite <= true;
                 wait until rising_edge(clk);
                 wait until falling_edge(clk);
-                check(bus_pkg.bus_requesting(mst2slv));
+                check(bus_requesting(mst2slv));
             elsif run("no-op after write should rewrite") then
                 writeAddress := X"00000004";
                 writeMask := (others => '1');
@@ -223,7 +223,7 @@ begin
                 doRead <= true;
                 wait until rising_edge(clk);
                 wait until falling_edge(clk);
-                check(bus_pkg.bus_requesting(mst2slv));
+                check(bus_requesting(mst2slv));
             end if;
         end loop;
         wait until rising_edge(clk);
