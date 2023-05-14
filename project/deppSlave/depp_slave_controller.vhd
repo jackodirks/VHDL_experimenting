@@ -64,7 +64,7 @@ begin
         variable faultAddress : bus_address_type := (others => '0');
         variable readData : bus_data_type := (others => '0');
         variable writeData : bus_data_type := (others => '0');
-        variable writeMask : bus_write_mask := (others => '0');
+        variable writeMask : bus_write_mask_type := (others => '0');
         variable burstLength : natural range 0 to 255 := 0;
         variable bus_address : bus_address_type := (others => '0');
     begin

@@ -72,7 +72,7 @@ begin
         variable mst2slv_buf : bus_mst2slv_type := BUS_MST2SLV_IDLE;
         variable hasFault_buf : boolean := false;
         variable bus_active : boolean := false;
-        constant fullWordWriteMask : bus_write_mask := (others => '1');
+        constant fullWordWriteMask : bus_write_mask_type := (others => '1');
     begin
         if rising_edge(clk) then
             if rst = '1' then

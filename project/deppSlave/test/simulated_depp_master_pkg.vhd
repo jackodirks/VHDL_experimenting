@@ -25,21 +25,21 @@ package simulated_depp_master_pkg is
               constant actor : in actor_t;
               constant addr : in bus_pkg.bus_address_type;
               constant data : in bus_pkg.bus_data_type;
-              constant mask : in bus_pkg.bus_write_mask);
+              constant mask : in bus_pkg.bus_write_mask_type);
 
     procedure write_to_address(
               signal net : inout network_t;
               constant actor : in actor_t;
               constant addr : in bus_pkg.bus_address_type;
               constant data : in bus_pkg.bus_data_array;
-              constant mask : in bus_pkg.bus_write_mask);
+              constant mask : in bus_pkg.bus_write_mask_type);
 
     procedure write_to_address_expecting_fault(
               signal net : inout network_t;
               constant actor : in actor_t;
               constant addr : in bus_pkg.bus_address_type;
               constant data : in bus_pkg.bus_data_type;
-              constant mask : in bus_pkg.bus_write_mask;
+              constant mask : in bus_pkg.bus_write_mask_type;
               variable faultData : out bus_pkg.bus_fault_type;
               variable faultAddress : out bus_pkg.bus_address_type);
 
@@ -48,7 +48,7 @@ package simulated_depp_master_pkg is
               constant actor : in actor_t;
               constant addr : in bus_pkg.bus_address_type;
               constant data : in bus_pkg.bus_data_array;
-              constant mask : in bus_pkg.bus_write_mask;
+              constant mask : in bus_pkg.bus_write_mask_type;
               variable faultData : out bus_pkg.bus_fault_type;
               variable faultAddress : out bus_pkg.bus_address_type);
 
@@ -94,7 +94,7 @@ package body simulated_depp_master_pkg is
               constant actor : in actor_t;
               constant addr : in bus_pkg.bus_address_type;
               constant data : in bus_pkg.bus_data_type;
-              constant mask : in bus_pkg.bus_write_mask) is
+              constant mask : in bus_pkg.bus_write_mask_type) is
         variable msg : msg_t := new_msg(write_toAddress_msg);
         variable msg_type : msg_type_t;
         variable reply_msg : msg_t;
@@ -121,7 +121,7 @@ package body simulated_depp_master_pkg is
               constant actor : in actor_t;
               constant addr : in bus_pkg.bus_address_type;
               constant data : in bus_pkg.bus_data_array;
-              constant mask : in bus_pkg.bus_write_mask) is
+              constant mask : in bus_pkg.bus_write_mask_type) is
         variable msg : msg_t := new_msg(write_multipleToAddress_msg);
         variable msg_type : msg_type_t;
         variable reply_msg : msg_t;
@@ -151,7 +151,7 @@ package body simulated_depp_master_pkg is
               constant actor : in actor_t;
               constant addr : in bus_pkg.bus_address_type;
               constant data : in bus_pkg.bus_data_type;
-              constant mask : in bus_pkg.bus_write_mask;
+              constant mask : in bus_pkg.bus_write_mask_type;
               variable faultData : out bus_pkg.bus_fault_type;
               variable faultAddress : out bus_pkg.bus_address_type) is
         variable msg : msg_t := new_msg(write_toAddress_msg);
@@ -178,7 +178,7 @@ package body simulated_depp_master_pkg is
               constant actor : in actor_t;
               constant addr : in bus_pkg.bus_address_type;
               constant data : in bus_pkg.bus_data_array;
-              constant mask : in bus_pkg.bus_write_mask;
+              constant mask : in bus_pkg.bus_write_mask_type;
               variable faultData : out bus_pkg.bus_fault_type;
               variable faultAddress : out bus_pkg.bus_address_type) is
         variable msg : msg_t := new_msg(write_multipleToAddress_msg);
@@ -315,7 +315,7 @@ package body simulated_depp_master_pkg is
         variable data : bus_pkg.bus_data_type;
         variable address : natural := addr;
         variable busAddress : bus_pkg.bus_address_type;
-        constant mask : bus_pkg.bus_write_mask := (others => '1');
+        constant mask : bus_pkg.bus_write_mask_type := (others => '1');
     begin
         file_open(read_file, fileName, read_mode);
         while not endfile(read_file) loop

@@ -52,7 +52,7 @@ begin
         constant spimem1_start_address : bus_address_type := std_logic_vector(to_unsigned(16#120000#, bus_address_type'length));
         constant spimem2_start_address : bus_address_type := std_logic_vector(to_unsigned(16#140000#, bus_address_type'length));
 
-        variable writeMask : bus_write_mask := (others => '1');
+        variable writeMask : bus_write_mask_type := (others => '1');
 
         variable spimem0_test_input_data : bus_data_array(15 downto 0);
         variable spimem0_test_output_data : bus_data_array(15 downto 0);

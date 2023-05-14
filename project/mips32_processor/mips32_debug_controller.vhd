@@ -30,7 +30,7 @@ begin
     process(clk)
         variable debug2mst_buf : bus_slv2mst_type := BUS_SLV2MST_IDLE;
         variable regZero_buf : mips32_pkg.data_type := (0 => '1', others => '0');
-        constant acceptableWriteMask : bus_write_mask := (others => '1');
+        constant acceptableWriteMask : bus_write_mask_type := (others => '1');
     begin
         if rising_edge(clk) then
             if rst = '1' then

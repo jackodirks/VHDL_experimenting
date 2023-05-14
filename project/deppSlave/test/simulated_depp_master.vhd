@@ -46,7 +46,7 @@ begin
         variable first_run : boolean := true;
         variable writeAddress : bus_pkg.bus_address_type;
         variable writeData : bus_pkg.bus_data_type;
-        variable writeMask : bus_pkg.bus_write_mask;
+        variable writeMask : bus_pkg.bus_write_mask_type;
         variable readAddress : bus_pkg.bus_address_type;
         variable readData : bus_pkg.bus_data_type;
         variable faultData : bus_pkg.bus_fault_type;
@@ -126,7 +126,7 @@ begin
         end procedure;
 
         procedure prepare_bus_transaction (
-            constant bus_mask : bus_pkg.bus_write_mask;
+            constant bus_mask : bus_pkg.bus_write_mask_type;
             constant bus_address : bus_pkg.bus_address_type;
             constant burstLength : natural range 0 to 255
         ) is

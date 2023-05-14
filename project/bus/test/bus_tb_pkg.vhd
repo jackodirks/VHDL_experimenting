@@ -10,7 +10,7 @@ package bus_tb_pkg is
     pure function bus_tb_mst2slv(
         address : natural := 0;
         writeData    : natural := 0;
-        writeMask : natural range 0 to 2**bus_write_mask'length - 1 := 0;
+        writeMask : natural range 0 to 2**bus_write_mask_type'length - 1 := 0;
         readReady : std_logic := '0';
         writeReady : std_logic := '0';
         burst : std_logic := '0'
@@ -23,7 +23,7 @@ package body bus_tb_pkg is
     pure function bus_tb_mst2slv(
         address : natural := 0;
         writeData    : natural := 0;
-        writeMask : natural range 0 to 2**bus_write_mask'length - 1 := 0;
+        writeMask : natural range 0 to 2**bus_write_mask_type'length - 1 := 0;
         readReady : std_logic := '0';
         writeReady : std_logic := '0';
         burst : std_logic := '0'
@@ -32,7 +32,7 @@ package body bus_tb_pkg is
     begin
         retval.address := std_logic_vector(to_unsigned(address, bus_address_type'length));
         retval.writeData := std_logic_vector(to_unsigned(writeData, bus_data_type'length));
-        retval.writeMask := std_logic_vector(to_unsigned(writeMask, bus_write_mask'length));
+        retval.writeMask := std_logic_vector(to_unsigned(writeMask, bus_write_mask_type'length));
         retval.readReady := readReady;
         retval.writeReady := writeReady;
         retval.burst := burst;

@@ -40,7 +40,7 @@ begin
     clk <= not clk after (clk_period/2);
     main : process
         variable address : bus_pkg.bus_address_type;
-        variable writeMask : bus_pkg.bus_write_mask;
+        variable writeMask : bus_pkg.bus_write_mask_type;
         variable writeData : bus_pkg.bus_data_type;
         variable readData : bus_pkg.bus_data_type;
         variable faultData : bus_pkg.bus_fault_type;

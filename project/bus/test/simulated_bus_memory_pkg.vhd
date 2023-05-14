@@ -40,14 +40,14 @@ package simulated_bus_memory_pkg is
               constant actor : in actor_t;
               constant addr : in bus_pkg.bus_address_type;
               constant data : in bus_pkg.bus_data_type;
-              constant mask : in bus_pkg.bus_write_mask);
+              constant mask : in bus_pkg.bus_write_mask_type);
 
     procedure write_to_address(
               signal net : inout network_t;
               constant actor : in actor_t;
               constant addr : in bus_pkg.bus_address_type;
               constant data : in bus_pkg.bus_data_array;
-              constant mask : in bus_pkg.bus_write_mask);
+              constant mask : in bus_pkg.bus_write_mask_type);
 
     procedure write_file_to_address (
               signal net : inout network_t;
@@ -110,7 +110,7 @@ package body simulated_bus_memory_pkg is
               constant actor : in actor_t;
               constant addr : in bus_pkg.bus_address_type;
               constant data : in bus_pkg.bus_data_type;
-              constant mask : in bus_pkg.bus_write_mask) is
+              constant mask : in bus_pkg.bus_write_mask_type) is
         variable msg : msg_t := new_msg(write_toAddress_msg);
     begin
         push(msg, addr);
@@ -124,7 +124,7 @@ package body simulated_bus_memory_pkg is
               constant actor : in actor_t;
               constant addr : in bus_pkg.bus_address_type;
               constant data : in bus_pkg.bus_data_array;
-              constant mask : in bus_pkg.bus_write_mask) is
+              constant mask : in bus_pkg.bus_write_mask_type) is
         variable address_internal : natural;
         variable output_address : bus_pkg.bus_address_type;
     begin
@@ -149,7 +149,7 @@ package body simulated_bus_memory_pkg is
         variable data : bus_pkg.bus_data_type;
         variable address : natural := addr;
         variable busAddress : bus_pkg.bus_address_type;
-        constant mask : bus_pkg.bus_write_mask := (others => '1');
+        constant mask : bus_pkg.bus_write_mask_type := (others => '1');
     begin
         file_open(read_file, fileName, read_mode);
         while not endfile(read_file) loop

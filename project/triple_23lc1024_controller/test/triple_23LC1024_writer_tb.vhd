@@ -36,7 +36,7 @@ architecture tb of triple_23LC1024_writer_tb is
     signal valid : std_logic;
     signal address : bus_address_type := (others => '0');
     signal write_data : bus_data_type := (others => '0');
-    signal writeMask : bus_write_mask := (others => '1');
+    signal writeMask : bus_write_mask_type := (others => '1');
     signal burst : std_logic := '0';
     signal fault : std_logic;
     signal faultData : std_logic_vector(bus_fault_type'range);

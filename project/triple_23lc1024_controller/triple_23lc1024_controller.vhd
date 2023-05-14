@@ -67,7 +67,7 @@ architecture behavioral of triple_23lc1024_controller is
     -- Bus data
     signal address : bus_address_type;
     signal writeData : bus_data_type;
-    signal writeMask : bus_write_mask;
+    signal writeMask : bus_write_mask_type;
     signal readData : bus_data_type;
 
     -- Bus control

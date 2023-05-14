@@ -47,7 +47,7 @@ package bus_pkg is
     constant bus_bytes_per_word : positive := bus_data_type'length / bus_byte_size;
     constant bus_bytes_per_word_log2b : natural := bus_data_width_log2b - bus_byte_size_log2b;
 
-    subtype bus_write_mask is std_logic_vector(bus_bytes_per_word - 1 downto 0);
+    subtype bus_write_mask_type is std_logic_vector(bus_bytes_per_word - 1 downto 0);
 
     -- Some predefined faults
     constant bus_fault_no_fault : bus_fault_type :=                     std_logic_vector(to_unsigned(0, bus_fault_type'length));
@@ -67,7 +67,7 @@ package bus_pkg is
     type bus_mst2slv_type is record
         address         : bus_address_type;
         writeData       : bus_data_type;
-        writeMask       : bus_write_mask;
+        writeMask       : bus_write_mask_type;
         readReady       : std_logic;
         writeReady      : std_logic;
         burst           : std_logic;
@@ -152,7 +152,7 @@ package bus_pkg is
     pure function bus_mst2slv_write (
         address : bus_address_type;
         write_data : bus_data_type;
-        write_mask : bus_write_mask;
+        write_mask : bus_write_mask_type;
         burst   : std_logic := '0'
     ) return bus_mst2slv_type;
 
@@ -257,7 +257,7 @@ package body bus_pkg is
     pure function bus_mst2slv_write (
         address : bus_address_type;
         write_data : bus_data_type;
-        write_mask : bus_write_mask;
+        write_mask : bus_write_mask_type;
         burst   : std_logic := '0'
     ) return bus_mst2slv_type is
         variable ret_val : bus_mst2slv_type := BUS_MST2SLV_IDLE;

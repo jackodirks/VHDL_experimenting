@@ -49,7 +49,7 @@ begin
         variable expectedWriteData : mips32_pkg.data_type;
         variable expectedWriteAddress : mips32_pkg.address_type;
         variable writeAddress : bus_address_type;
-        variable writeMask : bus_write_mask;
+        variable writeMask : bus_write_mask_type;
         variable writeData : bus_data_type;
         variable memReadData : bus_data_type;
     begin

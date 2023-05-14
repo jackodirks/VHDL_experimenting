@@ -28,7 +28,7 @@ entity triple_23lc1024_writer is
 
         address : in bus_address_type;
         write_data : in bus_data_type;
-        writeMask : in bus_write_mask;
+        writeMask : in bus_write_mask_type;
         burst : in std_logic;
         faultData : out bus_fault_type
     );
@@ -44,7 +44,7 @@ architecture behavioral of triple_23lc1024_writer is
         variable fault_internal : out std_logic;
         signal faultData_internal : out std_logic_vector(faultData'range))
     is
-        constant expWriteMask : bus_write_mask := (others => '1');
+        constant expWriteMask : bus_write_mask_type := (others => '1');
         constant expBusAlignment : std_logic_vector(bus_bytes_per_word_log2b - 1 downto 0) := (others => '0');
     begin
         fault_internal := '0';

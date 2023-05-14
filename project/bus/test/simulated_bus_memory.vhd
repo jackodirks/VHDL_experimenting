@@ -44,7 +44,7 @@ architecture behavioral of simulated_bus_memory is
     signal vcom_write_done : boolean := false;
     signal vcom_request_address : bus_address_type;
     signal vcom_request_data : bus_data_type;
-    signal vcom_request_writeMask : bus_write_mask;
+    signal vcom_request_writeMask : bus_write_mask_type;
 
 begin
     mem2mst <= mem2mst_internal;
@@ -53,7 +53,7 @@ begin
         variable msg_type : msg_type_t;
         variable return_data : bus_data_type;
         variable address : bus_address_type;
-        variable mask : bus_write_mask;
+        variable mask : bus_write_mask_type;
         variable input_data : bus_data_type;
     begin
         receive(net, actor, request_msg);
