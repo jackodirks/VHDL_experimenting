@@ -4,7 +4,7 @@ use IEEE.numeric_std.all;
 
 library work;
 use work.bus_pkg.all;
-use work.mips32_pkg;
+use work.mips32_pkg.all;
 
 entity mips32_mem2bus is
     port (
@@ -20,9 +20,9 @@ entity mips32_mem2bus is
         hasFault : out boolean;
         faultData : out bus_fault_type;
 
-        address : in mips32_pkg.address_type;
-        dataIn : in mips32_pkg.data_type;
-        dataOut : out mips32_pkg.data_type;
+        address : in mips32_address_type;
+        dataIn : in mips32_data_type;
+        dataOut : out mips32_data_type;
         doWrite : in boolean;
         doRead : in boolean;
 
@@ -37,13 +37,13 @@ architecture behaviourial of mips32_mem2bus is
 
     -- Read cache
     signal read_cache_valid : boolean := false;
-    signal read_cache_address : mips32_pkg.address_type;
-    signal read_cache_data : mips32_pkg.data_type;
+    signal read_cache_address : mips32_address_type;
+    signal read_cache_data : mips32_data_type;
 
     -- Write cache
     signal write_cache_valid : boolean := false;
-    signal write_cache_address : mips32_pkg.address_type;
-    signal write_cache_data : mips32_pkg.data_type;
+    signal write_cache_address : mips32_address_type;
+    signal write_cache_data : mips32_data_type;
 begin
     stall_buf <= read_stall or write_stall;
     stall <= stall_buf;

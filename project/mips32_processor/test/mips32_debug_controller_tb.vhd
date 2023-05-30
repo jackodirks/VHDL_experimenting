@@ -8,7 +8,7 @@ context vunit_lib.vc_context;
 
 library src;
 use src.bus_pkg.all;
-use src.mips32_pkg;
+use src.mips32_pkg.all;
 
 entity mips32_debug_controller_tb is
     generic (

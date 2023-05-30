@@ -4,15 +4,15 @@ use IEEE.numeric_std.all;
 
 library work;
 use work.bus_pkg.all;
-use work.mips32_pkg;
+use work.mips32_pkg.all;
 
 entity mips32_alu is
     port (
-        inputA : in mips32_pkg.data_type;
-        inputB : in mips32_pkg.data_type;
-        funct : in mips32_pkg.aluFunction_type;
+        inputA : in mips32_data_type;
+        inputB : in mips32_data_type;
+        funct : in mips32_aluFunction_type;
 
-        output : out mips32_pkg.data_type;
+        output : out mips32_data_type;
         overflow : out boolean
     );
 end entity;
@@ -20,12 +20,12 @@ end entity;
 architecture behaviourial of mips32_alu is
 begin
     process(inputA, inputB, funct)
-        variable additionResult : mips32_pkg.data_type;
+        variable additionResult : mips32_data_type;
         variable additionOverflow : boolean;
-        variable subtractionResult : mips32_pkg.data_type;
+        variable subtractionResult : mips32_data_type;
         variable subtractionOverflow : boolean;
-        variable andResult : mips32_pkg.data_type;
-        variable orResult : mips32_pkg.data_type;
+        variable andResult : mips32_data_type;
+        variable orResult : mips32_data_type;
         variable setLessThanResult : std_logic;
     begin
         additionResult := std_logic_vector(signed(inputA) + signed(inputB));
@@ -41,22 +41,22 @@ begin
         end if;
 
         case funct is
-            when mips32_pkg.aluFunctionAdd =>
+            when mips32_aluFunctionAdd =>
                 output <= additionResult;
                 overflow <= additionOverflow;
-            when mips32_pkg.aluFunctionAddUnsigned =>
+            when mips32_aluFunctionAddUnsigned =>
                 output <= additionResult;
                 overflow <= false;
-            when mips32_pkg.aluFunctionSubtract =>
+            when mips32_aluFunctionSubtract =>
                 output <= subtractionResult;
                 overflow <= subtractionOverflow;
-            when mips32_pkg.aluFunctionAnd =>
+            when mips32_aluFunctionAnd =>
                 output <= andResult;
                 overflow <= false;
-            when mips32_pkg.aluFunctionOr =>
+            when mips32_aluFunctionOr =>
                 output <= orResult;
                 overflow <= false;
-            when mips32_pkg.aluFunctionSetLessThan =>
+            when mips32_aluFunctionSetLessThan =>
                 output(output'high downto 1) <= (others => '0');
                 output(0) <= setLessThanResult;
                 overflow <= false;

@@ -9,7 +9,7 @@ context vunit_lib.com_context;
 use vunit_lib.sync_pkg.all;
 
 library src;
-use src.mips32_pkg;
+use src.mips32_pkg.all;
 
 library tb;
 use tb.mips32_pipeline_simulated_memory_pkg;
@@ -17,7 +17,7 @@ use tb.mips32_pipeline_simulated_memory_pkg;
 entity mips32_pipeline_simulated_memory is
     generic (
         constant actor : actor_t;
-        memory_size_log2b : natural range mips32_pkg.data_width_log2b to 20;
+        memory_size_log2b : natural range mips32_data_width_log2b to 20;
         offset_address : natural := 0;
         constant logger : logger_t := get_logger("pipeline_simulated_bus_memory")
     );
@@ -28,30 +28,30 @@ entity mips32_pipeline_simulated_memory is
 
         if_stall_cycles : in natural;
 
-        ifRequestAddress : in mips32_pkg.address_type;
-        ifData : out mips32_pkg.data_type;
+        ifRequestAddress : in mips32_address_type;
+        ifData : out mips32_data_type;
 
         doMemRead : in boolean;
         doMemWrite : in boolean;
-        memAddress : in mips32_pkg.address_type;
-        dataToMem : in mips32_pkg.data_type;
-        dataFromMem : out mips32_pkg.data_type
+        memAddress : in mips32_address_type;
+        dataToMem : in mips32_data_type;
+        dataFromMem : out mips32_data_type
     );
 end entity;
 
 architecture tb of mips32_pipeline_simulated_memory is
     constant byte_count : natural := 2**memory_size_log2b;
 
-    signal memory : mips32_pkg.byte_array(offset_address to offset_address + byte_count);
+    signal memory : mips32_byte_array(offset_address to offset_address + byte_count);
 
     -- vcom interaction
     signal vcom_request_write : boolean := false;
     signal vcom_write_done : boolean := false;
     signal vcom_request_address : natural;
-    signal vcom_request_data : mips32_pkg.data_type;
+    signal vcom_request_data : mips32_data_type;
 begin
     stall_handling : process(clk, ifRequestAddress, if_stall_cycles)
-        variable cached_address : mips32_pkg.address_type := (others => '0');
+        variable cached_address : mips32_address_type := (others => '0');
         variable stall_cycles_left : natural := 0;
         variable stall_buf : boolean := false;
     begin
@@ -86,8 +86,8 @@ begin
             assert(ifRequestAddress(1 downto 0) = "00");
             actualRequestAddress := to_integer(unsigned(ifRequestAddress));
         end if;
-        for i in 0 to mips32_pkg.bytes_per_data_word - 1 loop
-            ifData((i + 1)*mips32_pkg.byte_type'length - 1 downto i*mips32_pkg.byte_type'length) <= memory(i + actualRequestAddress);
+        for i in 0 to mips32_bytes_per_data_word - 1 loop
+            ifData((i + 1)*mips32_byte_type'length - 1 downto i*mips32_byte_type'length) <= memory(i + actualRequestAddress);
         end loop;
     end process;
 
@@ -97,9 +97,9 @@ begin
         if doMemRead then
             assert(memAddress(1 downto 0) = "00");
             actualRequestAddress := to_integer(unsigned(memAddress));
-            assert(actualRequestAddress + mips32_pkg.bytes_per_data_word - 1 <= memory'high);
-            for i in 0 to mips32_pkg.bytes_per_data_word - 1 loop
-                dataFromMem((i + 1)*mips32_pkg.byte_type'length - 1 downto i*mips32_pkg.byte_type'length) <= memory(i + actualRequestAddress);
+            assert(actualRequestAddress + mips32_bytes_per_data_word - 1 <= memory'high);
+            for i in 0 to mips32_bytes_per_data_word - 1 loop
+                dataFromMem((i + 1)*mips32_byte_type'length - 1 downto i*mips32_byte_type'length) <= memory(i + actualRequestAddress);
             end loop;
         end if;
     end process;
@@ -110,17 +110,17 @@ begin
         if rising_edge(clk) and rst /= '1' and doMemWrite then
             assert(memAddress(1 downto 0) = "00");
             actualRequestAddress := to_integer(unsigned(memAddress));
-            assert(actualRequestAddress + mips32_pkg.bytes_per_data_word - 1 <= memory'high);
-            for i in 0 to mips32_pkg.bytes_per_data_word - 1 loop
+            assert(actualRequestAddress + mips32_bytes_per_data_word - 1 <= memory'high);
+            for i in 0 to mips32_bytes_per_data_word - 1 loop
                 memory(i+actualRequestAddress) <=
-                    dataToMem((i + 1)*mips32_pkg.byte_type'length - 1 downto i*mips32_pkg.byte_type'length);
+                    dataToMem((i + 1)*mips32_byte_type'length - 1 downto i*mips32_byte_type'length);
             end loop;
         end if;
 
         if vcom_request_write then
-            for i in 0 to mips32_pkg.bytes_per_data_word - 1 loop
+            for i in 0 to mips32_bytes_per_data_word - 1 loop
                 memory(i + vcom_request_address) <=
-                    vcom_request_data((i + 1)*mips32_pkg.byte_type'length - 1 downto i*mips32_pkg.byte_type'length);
+                    vcom_request_data((i + 1)*mips32_byte_type'length - 1 downto i*mips32_byte_type'length);
             end loop;
             vcom_write_done <= true;
         else
@@ -132,7 +132,7 @@ begin
         variable request_msg, reply_msg : msg_t;
         variable msg_type : msg_type_t;
         variable address : natural;
-        variable return_data : mips32_pkg.data_type;
+        variable return_data : mips32_data_type;
     begin
         receive(net, actor, request_msg);
         msg_type := message_type(request_msg);
@@ -140,8 +140,8 @@ begin
         if msg_type = mips32_pipeline_simulated_memory_pkg.read_fromAddress_msg then
             reply_msg := new_msg(mips32_pipeline_simulated_memory_pkg.read_reply_msg);
             address := pop(request_msg);
-            for i in 0 to mips32_pkg.bytes_per_data_word - 1 loop
-                return_data((i+1)*mips32_pkg.byte_type'length - 1 downto i*mips32_pkg.byte_type'length) := memory(address + i);
+            for i in 0 to mips32_bytes_per_data_word - 1 loop
+                return_data((i+1)*mips32_byte_type'length - 1 downto i*mips32_byte_type'length) := memory(address + i);
             end loop;
             push(reply_msg, return_data);
             reply(net, request_msg, reply_msg);

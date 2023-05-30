@@ -4,7 +4,7 @@ use IEEE.numeric_std.all;
 
 library work;
 use work.bus_pkg.all;
-use work.mips32_pkg;
+use work.mips32_pkg.all;
 
 entity mips32_processor is
     generic (
@@ -32,13 +32,13 @@ architecture behaviourial of mips32_processor is
     signal pipelineStall : boolean;
 
     signal pipelineRst : std_logic;
-    signal instructionAddress : mips32_pkg.address_type;
-    signal instruction : mips32_pkg.instruction_type;
-    signal dataAddress : mips32_pkg.address_type;
+    signal instructionAddress : mips32_address_type;
+    signal instruction : mips32_instruction_type;
+    signal dataAddress : mips32_address_type;
     signal dataRead : boolean;
     signal dataWrite : boolean;
-    signal dataToBus : mips32_pkg.data_type;
-    signal dataFromBus : mips32_pkg.data_type;
+    signal dataToBus : mips32_data_type;
+    signal dataFromBus : mips32_data_type;
 
     signal controllerReset : boolean;
     signal controllerStall : boolean;

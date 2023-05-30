@@ -9,7 +9,7 @@ context vunit_lib.vc_context;
 
 library src;
 use src.bus_pkg.all;
-use src.mips32_pkg;
+use src.mips32_pkg.all;
 
 entity mips32_control_tb is
     generic (
@@ -18,22 +18,22 @@ end entity;
 
 architecture tb of mips32_control_tb is
     constant clk_period : time := 20 ns;
-    constant illegalOpcode : mips32_pkg.opcode_type := 16#1#;
+    constant illegalOpcode : mips32_opcode_type := 16#1#;
 
     signal clk : std_logic := '0';
 
-    signal opcode : mips32_pkg.opcode_type := illegalOpcode;
+    signal opcode : mips32_opcode_type := illegalOpcode;
 
-    signal instructionDecodeControlWord : mips32_pkg.InstructionDecodeControlWord_type;
-    signal executeControlWord : mips32_pkg.ExecuteControlWord_type;
-    signal memoryControlWord : mips32_pkg.MemoryControlWord_type;
-    signal writeBackControlWord : mips32_pkg.WriteBackControlWord_type;
+    signal instructionDecodeControlWord : mips32_InstructionDecodeControlWord_type;
+    signal executeControlWord : mips32_ExecuteControlWord_type;
+    signal memoryControlWord : mips32_MemoryControlWord_type;
+    signal writeBackControlWord : mips32_WriteBackControlWord_type;
     signal invalidOpcode : boolean;
 begin
     clk <= not clk after (clk_period/2);
 
     main : process
-        variable expectedData : mips32_pkg.data_type := (others => '0');
+        variable expectedData : mips32_data_type := (others => '0');
     begin
         test_runner_setup(runner, runner_cfg);
         while test_suite loop

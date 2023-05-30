@@ -8,7 +8,7 @@ context vunit_lib.vc_context;
 
 library src;
 use src.bus_pkg.all;
-use src.mips32_pkg;
+use src.mips32_pkg.all;
 
 entity mips32_registerFile_tb is
     generic (
@@ -19,22 +19,22 @@ architecture tb of mips32_registerFile_tb is
     constant clk_period : time := 20 ns;
 
     signal clk : std_logic := '0';
-    signal readPortOneAddress : mips32_pkg.registerFileAddress_type := 31;
-    signal readPortOneData : mips32_pkg.data_type;
+    signal readPortOneAddress : mips32_registerFileAddress_type := 31;
+    signal readPortOneData : mips32_data_type;
 
-    signal readPortTwoAddress : mips32_pkg.registerFileAddress_type := 31;
-    signal readPortTwoData : mips32_pkg.data_type;
+    signal readPortTwoAddress : mips32_registerFileAddress_type := 31;
+    signal readPortTwoData : mips32_data_type;
 
     signal writePortDoWrite : boolean := false;
-    signal writePortAddress : mips32_pkg.registerFileAddress_type := 31;
-    signal writePortData : mips32_pkg.data_type;
+    signal writePortAddress : mips32_registerFileAddress_type := 31;
+    signal writePortData : mips32_data_type;
 
 begin
 
     clk <= not clk after (clk_period/2);
 
     main : process
-        variable expectedData : mips32_pkg.data_type := (others => '0');
+        variable expectedData : mips32_data_type := (others => '0');
     begin
         test_runner_setup(runner, runner_cfg);
         while test_suite loop

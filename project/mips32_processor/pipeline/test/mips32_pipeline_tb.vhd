@@ -8,7 +8,7 @@ context vunit_lib.vc_context;
 
 library src;
 use src.bus_pkg.all;
-use src.mips32_pkg;
+use src.mips32_pkg.all;
 
 library tb;
 use tb.mips32_pipeline_simulated_memory_pkg;
@@ -22,7 +22,7 @@ architecture tb of mips32_pipeline_tb is
     constant clk_period : time := 20 ns;
     constant memActor : actor_t := new_actor("Mem");
     constant offset_address : natural := 16#100000#;
-    constant startAddress : mips32_pkg.address_type := std_logic_vector(to_unsigned(offset_address, mips32_pkg.address_type'length));
+    constant startAddress : mips32_address_type := std_logic_vector(to_unsigned(offset_address, mips32_address_type'length));
 
     signal clk : std_logic := '0';
     signal rst : std_logic := '0';
@@ -30,19 +30,19 @@ architecture tb of mips32_pipeline_tb is
 
     signal if_stall_cycles : natural := 0;
 
-    signal instructionAddress : mips32_pkg.address_type;
-    signal instruction : mips32_pkg.instruction_type;
+    signal instructionAddress : mips32_address_type;
+    signal instruction : mips32_instruction_type;
 
-    signal dataAddress : mips32_pkg.address_type;
+    signal dataAddress : mips32_address_type;
     signal dataRead : boolean;
     signal dataWrite : boolean;
-    signal dataOut : mips32_pkg.data_type;
-    signal dataIn : mips32_pkg.data_type;
+    signal dataOut : mips32_data_type;
+    signal dataIn : mips32_data_type;
 begin
     clk <= not clk after (clk_period/2);
     main : process
-        variable readData : mips32_pkg.data_type;
-        variable expectedReadData : mips32_pkg.data_type;
+        variable readData : mips32_data_type;
+        variable expectedReadData : mips32_data_type;
     begin
         test_runner_setup(runner, runner_cfg);
         while test_suite loop

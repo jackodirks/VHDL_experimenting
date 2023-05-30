@@ -8,7 +8,7 @@ context vunit_lib.vc_context;
 
 library src;
 use src.bus_pkg.all;
-use src.mips32_pkg;
+use src.mips32_pkg.all;
 
 entity mips32_pipeline_instructionFetch_tb is
     generic (
@@ -21,13 +21,13 @@ architecture tb of mips32_pipeline_instructionFetch_tb is
     signal clk : std_logic := '0';
     signal rst : std_logic := '0';
 
-    constant startAddress : mips32_pkg.address_type := X"00000014";
-    signal requestFromBusAddress : mips32_pkg.address_type;
-    signal instructionToInstructionDecode : mips32_pkg.instruction_type;
-    signal programCounterPlusFour : mips32_pkg.address_type;
-    signal instructionFromBus : mips32_pkg.instruction_type := (others => '1');
+    constant startAddress : mips32_address_type := X"00000014";
+    signal requestFromBusAddress : mips32_address_type;
+    signal instructionToInstructionDecode : mips32_instruction_type;
+    signal programCounterPlusFour : mips32_address_type;
+    signal instructionFromBus : mips32_instruction_type := (others => '1');
     signal overrideProgramCounter : boolean := false;
-    signal newProgramCounter : mips32_pkg.instruction_type := (others => '1');
+    signal newProgramCounter : mips32_instruction_type := (others => '1');
     signal stall : boolean := false;
 
 
@@ -35,8 +35,8 @@ begin
     clk <= not clk after (clk_period/2);
 
     main : process
-        variable expectedAddress : mips32_pkg.address_type;
-        variable expectedInstruction : mips32_pkg.instruction_type;
+        variable expectedAddress : mips32_address_type;
+        variable expectedInstruction : mips32_instruction_type;
     begin
         test_runner_setup(runner, runner_cfg);
         while test_suite loop
@@ -62,7 +62,7 @@ begin
                 check_equal(expectedAddress, requestFromBusAddress);
             elsif run("On the first rising edge, a nop should be send to ID") then
                 wait until rising_edge(clk);
-                check_equal(instructionToInstructionDecode, mips32_pkg.instructionNop);
+                check_equal(instructionToInstructionDecode, mips32_instructionNop);
             elsif run("On the second rising edge, the expected instruction and pc+4 should be send to ID") then
                 expectedInstruction := X"00000001";
                 instructionFromBus <= expectedInstruction;

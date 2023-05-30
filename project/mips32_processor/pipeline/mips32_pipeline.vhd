@@ -3,67 +3,67 @@ use IEEE.std_logic_1164.all;
 use IEEE.numeric_std.all;
 
 library work;
-use work.mips32_pkg;
+use work.mips32_pkg.all;
 
 entity mips32_pipeline is
     generic (
-        startAddress : mips32_pkg.address_type
+        startAddress : mips32_address_type
     );
     port (
         clk : in std_logic;
         rst : in std_logic;
         stall : in boolean;
 
-        instructionAddress : out mips32_pkg.address_type;
-        instruction : in mips32_pkg.instruction_type;
+        instructionAddress : out mips32_address_type;
+        instruction : in mips32_instruction_type;
 
-        dataAddress : out mips32_pkg.address_type;
+        dataAddress : out mips32_address_type;
         dataRead : out boolean;
         dataWrite : out boolean;
-        dataOut : out mips32_pkg.data_type;
-        dataIn : in mips32_pkg.data_type
+        dataOut : out mips32_data_type;
+        dataIn : in mips32_data_type
     );
 end entity;
 
 architecture behaviourial of mips32_pipeline is
     -- Instruction fetch to instruction decode
-    signal instructionToID : mips32_pkg.instruction_type;
-    signal pcPlusFourToID : mips32_pkg.address_type;
+    signal instructionToID : mips32_instruction_type;
+    signal pcPlusFourToID : mips32_address_type;
     -- Instruction decode to instruction fetch
     signal overridePcToIF : boolean;
-    signal newPcToIF : mips32_pkg.address_type;
+    signal newPcToIF : mips32_address_type;
     signal repeatInstruction : boolean;
     -- Instruction fetch to execute
-    signal exControlWordToEx : mips32_pkg.ExecuteControlWord_type;
-    signal memControlWordToEx : mips32_pkg.MemoryControlWord_type;
-    signal wbControlWordToEx : mips32_pkg.WriteBackControlWord_type;
-    signal immidiateToEx : mips32_pkg.data_type;
-    signal destRegToEx : mips32_pkg.registerFileAddress_type;
-    signal aluFuncToEx : mips32_pkg.aluFunction_type;
-    signal shamtToEx : mips32_pkg.shamt_type;
+    signal exControlWordToEx : mips32_ExecuteControlWord_type;
+    signal memControlWordToEx : mips32_MemoryControlWord_type;
+    signal wbControlWordToEx : mips32_WriteBackControlWord_type;
+    signal immidiateToEx : mips32_data_type;
+    signal destRegToEx : mips32_registerFileAddress_type;
+    signal aluFuncToEx : mips32_aluFunction_type;
+    signal shamtToEx : mips32_shamt_type;
     -- Instruction fetch to forwarding
-    signal rsDataToFwU : mips32_pkg.data_type;
-    signal rsAddressToFwU : mips32_pkg.registerFileAddress_type;
-    signal rtDataToFwU : mips32_pkg.data_type;
-    signal rtAddressToFwU : mips32_pkg.registerFileAddress_type;
+    signal rsDataToFwU : mips32_data_type;
+    signal rsAddressToFwU : mips32_registerFileAddress_type;
+    signal rtDataToFwU : mips32_data_type;
+    signal rtAddressToFwU : mips32_registerFileAddress_type;
     -- Forwarding unit to execute
-    signal rsDataToEx : mips32_pkg.data_type;
-    signal rtDataToEx : mips32_pkg.data_type;
+    signal rsDataToEx : mips32_data_type;
+    signal rtDataToEx : mips32_data_type;
     -- Write back to instruction decode
     signal regWriteToID : boolean;
-    signal regWriteAddrToID : mips32_pkg.registerFileAddress_type;
-    signal regWriteDataToID : mips32_pkg.data_type;
+    signal regWriteAddrToID : mips32_registerFileAddress_type;
+    signal regWriteDataToID : mips32_data_type;
     -- Execute to memory
-    signal memControlWordToMem : mips32_pkg.MemoryControlWord_type;
-    signal wbControlWordToMem : mips32_pkg.WriteBackControlWord_type;
-    signal execResToMem : mips32_pkg.data_type;
-    signal regDataReadToMem : mips32_pkg.data_type;
-    signal destRegToMem : mips32_pkg.registerFileAddress_type;
+    signal memControlWordToMem : mips32_MemoryControlWord_type;
+    signal wbControlWordToMem : mips32_WriteBackControlWord_type;
+    signal execResToMem : mips32_data_type;
+    signal regDataReadToMem : mips32_data_type;
+    signal destRegToMem : mips32_registerFileAddress_type;
     -- Memory to write back
-    signal wbControlWordToWb : mips32_pkg.WriteBackControlWord_type;
-    signal execResToWb : mips32_pkg.data_type;
-    signal memReadToWb : mips32_pkg.data_type;
-    signal destRegToWb : mips32_pkg.registerFileAddress_type;
+    signal wbControlWordToWb : mips32_WriteBackControlWord_type;
+    signal execResToWb : mips32_data_type;
+    signal memReadToWb : mips32_data_type;
+    signal destRegToWb : mips32_registerFileAddress_type;
 
     signal instructionFetchStall : boolean;
     signal instructionDecode_exInstructionIsMemLoad : boolean;

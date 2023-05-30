@@ -8,7 +8,7 @@ context vunit_lib.vc_context;
 
 library src;
 use src.bus_pkg.all;
-use src.mips32_pkg;
+use src.mips32_pkg.all;
 
 entity mips32_if2bus_tb is
     generic (
@@ -30,8 +30,8 @@ architecture tb of mips32_if2bus_tb is
     signal hasFault : boolean;
     signal faultData : bus_fault_type;
 
-    signal requestAddress : mips32_pkg.address_type := (others => '0');
-    signal instruction : mips32_pkg.instruction_type := (others => '0');
+    signal requestAddress : mips32_address_type := (others => '0');
+    signal instruction : mips32_instruction_type := (others => '0');
     signal stall : boolean;
 begin
 

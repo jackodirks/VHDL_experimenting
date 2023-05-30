@@ -8,7 +8,7 @@ context vunit_lib.vc_context;
 
 library src;
 use src.bus_pkg.all;
-use src.mips32_pkg;
+use src.mips32_pkg.all;
 
 library tb;
 use tb.simulated_bus_memory_pkg;
@@ -22,7 +22,7 @@ architecture tb of mips32_processor_tb is
     constant clk_period : time := 20 ns;
     constant memoryAddress : natural := 16#100000#;
     constant controllerAddress : natural := 16#2000#;
-    constant resetAddress : mips32_pkg.address_type := std_logic_vector(to_unsigned(memoryAddress, mips32_pkg.address_type'length));
+    constant resetAddress : mips32_address_type := std_logic_vector(to_unsigned(memoryAddress, mips32_address_type'length));
 
     constant memActor : actor_t := new_actor("slave");
 

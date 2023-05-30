@@ -3,7 +3,7 @@ use IEEE.std_logic_1164.all;
 use IEEE.numeric_std.all;
 
 library work;
-use work.mips32_pkg;
+use work.mips32_pkg.all;
 
 entity mips32_pipeline_memory is
     port (
@@ -12,28 +12,28 @@ entity mips32_pipeline_memory is
         stall : in boolean;
 
         -- From execute stage: control signals
-        writeBackControlWord : in mips32_pkg.WriteBackControlWord_type;
-        memoryControlWord : in mips32_pkg.MemoryControlWord_type;
+        writeBackControlWord : in mips32_WriteBackControlWord_type;
+        memoryControlWord : in mips32_MemoryControlWord_type;
 
         -- From execute stage: data
-        execResult : in mips32_pkg.data_type;
-        regDataRead : in mips32_pkg.data_type;
-        destinationReg : in mips32_pkg.registerFileAddress_type;
+        execResult : in mips32_data_type;
+        regDataRead : in mips32_data_type;
+        destinationReg : in mips32_registerFileAddress_type;
 
         -- To writeback stage: control signals
-        writeBackControlWordToWriteBack : out mips32_pkg.WriteBackControlWord_type;
+        writeBackControlWordToWriteBack : out mips32_WriteBackControlWord_type;
 
         -- To writeback stage: data
-        execResultToWriteback : out mips32_pkg.data_type;
-        memDataReadToWriteback : out mips32_pkg.data_type;
-        destinationRegToWriteback : out mips32_pkg.registerFileAddress_type;
+        execResultToWriteback : out mips32_data_type;
+        memDataReadToWriteback : out mips32_data_type;
+        destinationRegToWriteback : out mips32_registerFileAddress_type;
 
         -- To mem2bus unit
         doMemRead : out boolean;
         doMemWrite : out boolean;
-        memAddress : out mips32_pkg.address_type;
-        dataToMem : out mips32_pkg.data_type;
-        dataFromMem : in mips32_pkg.data_type
+        memAddress : out mips32_address_type;
+        dataToMem : out mips32_data_type;
+        dataFromMem : in mips32_data_type
     );
 end entity;
 
@@ -55,11 +55,11 @@ begin
     end process;
 
     MemWBRegs : process(clk)
-        variable writeBackControlWordToWriteBack_buf : mips32_pkg.WriteBackControlWord_type := mips32_pkg.writeBackControlWordAllFalse;
+        variable writeBackControlWordToWriteBack_buf : mips32_WriteBackControlWord_type := mips32_writeBackControlWordAllFalse;
     begin
         if rising_edge(clk) then
             if rst = '1' then
-                writeBackControlWordToWriteBack_buf := mips32_pkg.writeBackControlWordAllFalse;
+                writeBackControlWordToWriteBack_buf := mips32_writeBackControlWordAllFalse;
             elsif not stall then
                 writeBackControlWordToWriteBack_buf := writeBackControlWord;
                 execResultToWriteback <= execResult;

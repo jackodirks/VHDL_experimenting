@@ -11,7 +11,7 @@ use tb.simulated_bus_memory_pkg;
 
 library src;
 use src.bus_pkg.all;
-use src.mips32_pkg;
+use src.mips32_pkg.all;
 
 entity mips32_mem2bus_tb is
     generic (
@@ -34,9 +34,9 @@ architecture tb of mips32_mem2bus_tb is
     signal hasFault : boolean;
     signal faultData : bus_fault_type;
 
-    signal address : mips32_pkg.address_type := (others => '0');
-    signal dataIn : mips32_pkg.data_type := (others => '0');
-    signal dataOut : mips32_pkg.data_type;
+    signal address : mips32_address_type := (others => '0');
+    signal dataIn : mips32_data_type := (others => '0');
+    signal dataOut : mips32_data_type;
     signal doWrite : boolean := false;
     signal doRead : boolean := false;
 
@@ -46,8 +46,8 @@ begin
     clk <= not clk after (clk_period/2);
 
     main : process
-        variable expectedWriteData : mips32_pkg.data_type;
-        variable expectedWriteAddress : mips32_pkg.address_type;
+        variable expectedWriteData : mips32_data_type;
+        variable expectedWriteAddress : mips32_address_type;
         variable writeAddress : bus_address_type;
         variable writeMask : bus_write_mask_type;
         variable writeData : bus_data_type;

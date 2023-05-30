@@ -10,7 +10,7 @@ context vunit_lib.com_context;
 use vunit_lib.sync_pkg.all;
 
 library src;
-use src.mips32_pkg;
+use src.mips32_pkg.all;
 
 package mips32_pipeline_simulated_memory_pkg is
     constant read_reply_msg : msg_type_t := new_msg_type("read reply");
@@ -22,13 +22,13 @@ package mips32_pipeline_simulated_memory_pkg is
               signal net : inout network_t;
               constant actor : in actor_t;
               constant addr : in natural;
-              variable data : out mips32_pkg.data_type);
+              variable data : out mips32_data_type);
 
     procedure write_to_address(
               signal net : inout network_t;
               constant actor : in actor_t;
               constant addr : in natural;
-              constant data : in mips32_pkg.data_type);
+              constant data : in mips32_data_type);
 
     procedure write_file_to_address (
               signal net : inout network_t;
@@ -42,7 +42,7 @@ package body mips32_pipeline_simulated_memory_pkg is
               signal net : inout network_t;
               constant actor : in actor_t;
               constant addr : in natural;
-              variable data : out mips32_pkg.data_type) is
+              variable data : out mips32_data_type) is
         variable msg : msg_t := new_msg(read_fromaddress_msg);
         variable reply_msg : msg_t;
     begin
@@ -55,7 +55,7 @@ package body mips32_pipeline_simulated_memory_pkg is
               signal net : inout network_t;
               constant actor : in actor_t;
               constant addr : in natural;
-              constant data : in mips32_pkg.data_type) is
+              constant data : in mips32_data_type) is
         variable msg : msg_t := new_msg(write_toAddress_msg);
     begin
         push(msg, addr);
@@ -70,7 +70,7 @@ package body mips32_pipeline_simulated_memory_pkg is
               constant fileName : in string) is
         file read_file : text;
         variable line_v : line;
-        variable data : mips32_pkg.data_type;
+        variable data : mips32_data_type;
         variable address : natural := addr;
     begin
         file_open(read_file, fileName, read_mode);

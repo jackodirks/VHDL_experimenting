@@ -4,26 +4,26 @@ use IEEE.numeric_std.all;
 
 library work;
 use work.bus_pkg.all;
-use work.mips32_pkg;
+use work.mips32_pkg.all;
 
 entity mips32_registerFile is
     port (
         clk : in std_logic;
 
-        readPortOneAddress : in mips32_pkg.registerFileAddress_type;
-        readPortOneData : out mips32_pkg.data_type;
+        readPortOneAddress : in mips32_registerFileAddress_type;
+        readPortOneData : out mips32_data_type;
 
-        readPortTwoAddress : in mips32_pkg.registerFileAddress_type;
-        readPortTwoData : out mips32_pkg.data_type;
+        readPortTwoAddress : in mips32_registerFileAddress_type;
+        readPortTwoData : out mips32_data_type;
 
         writePortDoWrite : in boolean;
-        writePortAddress : in mips32_pkg.registerFileAddress_type;
-        writePortData : in mips32_pkg.data_type
+        writePortAddress : in mips32_registerFileAddress_type;
+        writePortData : in mips32_data_type
     );
 end entity;
 
 architecture behaviourial of mips32_registerFile is
-    signal registerFile : mips32_pkg.data_array(1 to 31);
+    signal registerFile : mips32_data_array(1 to 31);
 begin
 
     readPortOne : process(readPortOneAddress, writePortDoWrite, writePortAddress, writePortData, registerFile)

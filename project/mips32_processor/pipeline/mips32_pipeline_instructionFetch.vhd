@@ -4,32 +4,32 @@ use IEEE.numeric_std.all;
 
 library work;
 use work.bus_pkg.all;
-use work.mips32_pkg;
+use work.mips32_pkg.all;
 
 entity mips32_pipeline_instructionFetch is
     generic (
-        startAddress : mips32_pkg.address_type
+        startAddress : mips32_address_type
     );
     port (
         clk : in std_logic;
         rst : in std_logic;
 
-        requestFromBusAddress : out mips32_pkg.address_type;
-        instructionToInstructionDecode : out mips32_pkg.instruction_type;
-        programCounterPlusFour : out mips32_pkg.address_type;
-        instructionFromBus : in mips32_pkg.instruction_type;
+        requestFromBusAddress : out mips32_address_type;
+        instructionToInstructionDecode : out mips32_instruction_type;
+        programCounterPlusFour : out mips32_address_type;
+        instructionFromBus : in mips32_instruction_type;
 
         overrideProgramCounter : in boolean;
-        newProgramCounter : in mips32_pkg.address_type;
+        newProgramCounter : in mips32_address_type;
 
         stall : in boolean
     );
 end entity;
 
 architecture behaviourial of mips32_pipeline_instructionFetch is
-    signal programCounter : mips32_pkg.address_type := startAddress;
-    signal nextProgramCounter : mips32_pkg.address_type;
-    signal programCounterPlusFour_buf : mips32_pkg.address_type;
+    signal programCounter : mips32_address_type := startAddress;
+    signal nextProgramCounter : mips32_address_type;
+    signal programCounterPlusFour_buf : mips32_address_type;
 begin
 
     requestFromBusAddress <= programCounter;
@@ -62,11 +62,11 @@ begin
     end process;
 
     IFIDRegs : process(clk)
-        variable instructionBuf : mips32_pkg.instruction_type := mips32_pkg.instructionNop;
+        variable instructionBuf : mips32_instruction_type := mips32_instructionNop;
     begin
         if rising_edge(clk) then
             if rst = '1' then
-                instructionBuf := mips32_pkg.instructionNop;
+                instructionBuf := mips32_instructionNop;
             elsif not stall then
                 programCounterPlusFour <= programCounterPlusFour_buf;
                 instructionBuf := instructionFromBus;

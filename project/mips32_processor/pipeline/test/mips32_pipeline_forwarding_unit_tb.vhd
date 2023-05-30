@@ -7,7 +7,7 @@ context vunit_lib.vunit_context;
 context vunit_lib.vc_context;
 
 library src;
-use src.mips32_pkg;
+use src.mips32_pkg.all;
 
 entity mips32_pipeline_forwarding_unit_tb is
     generic (
@@ -18,27 +18,27 @@ architecture tb of mips32_pipeline_forwarding_unit_tb is
     constant clk_period : time := 20 ns;
 
     signal clk : std_logic := '0';
-    signal rsDataFromID : mips32_pkg.data_type := (others => '0');
-    signal rsAddressFromID : mips32_pkg.registerFileAddress_type := 0;
-    signal rtDataFromID : mips32_pkg.data_type := (others => '0');
-    signal rtAddressFromID : mips32_pkg.registerFileAddress_type := 0;
+    signal rsDataFromID : mips32_data_type := (others => '0');
+    signal rsAddressFromID : mips32_registerFileAddress_type := 0;
+    signal rtDataFromID : mips32_data_type := (others => '0');
+    signal rtAddressFromID : mips32_registerFileAddress_type := 0;
 
-    signal regDataFromEx : mips32_pkg.data_type := (others => '0');
-    signal regAddressFromEx : mips32_pkg.registerFileAddress_type := 0;
+    signal regDataFromEx : mips32_data_type := (others => '0');
+    signal regAddressFromEx : mips32_registerFileAddress_type := 0;
     signal regWriteFromEx : boolean := false;
 
-    signal regDataFromMem : mips32_pkg.data_type := (others => '0');
-    signal regAddressFromMem : mips32_pkg.registerFileAddress_type := 0;
+    signal regDataFromMem : mips32_data_type := (others => '0');
+    signal regAddressFromMem : mips32_registerFileAddress_type := 0;
     signal regWriteFromMem : boolean := false;
 
-    signal rsData : mips32_pkg.data_type;
-    signal rtData : mips32_pkg.data_type;
+    signal rsData : mips32_data_type;
+    signal rtData : mips32_data_type;
 begin
     clk <= not clk after (clk_period/2);
 
     main : process
-        variable expectedRsData : mips32_pkg.data_type;
-        variable expectedRtData : mips32_pkg.data_type;
+        variable expectedRsData : mips32_data_type;
+        variable expectedRtData : mips32_data_type;
     begin
         test_runner_setup(runner, runner_cfg);
         while test_suite loop

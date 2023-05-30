@@ -8,7 +8,7 @@ context vunit_lib.vc_context;
 
 library src;
 use src.bus_pkg.all;
-use src.mips32_pkg;
+use src.mips32_pkg.all;
 
 entity mips32_pipeline_writeBack_tb is
     generic (
@@ -20,21 +20,21 @@ architecture tb of mips32_pipeline_writeBack_tb is
 
     signal clk : std_logic := '0';
 
-    signal writeBackControlWord : mips32_pkg.WriteBackControlWord_type;
+    signal writeBackControlWord : mips32_WriteBackControlWord_type;
 
-    signal execResult : mips32_pkg.data_type;
-    signal memDataRead : mips32_pkg.data_type;
-    signal destinationReg : mips32_pkg.registerFileAddress_type;
+    signal execResult : mips32_data_type;
+    signal memDataRead : mips32_data_type;
+    signal destinationReg : mips32_registerFileAddress_type;
 
     signal regWrite : boolean;
-    signal regWriteAddress : mips32_pkg.registerFileAddress_type;
-    signal regWriteData : mips32_pkg.data_type;
+    signal regWriteAddress : mips32_registerFileAddress_type;
+    signal regWriteData : mips32_data_type;
 begin
     clk <= not clk after (clk_period/2);
 
     main : process
-        variable expectedRegWriteAddress : mips32_pkg.registerFileAddress_type;
-        variable expectedRegWriteData : mips32_pkg.data_type;
+        variable expectedRegWriteAddress : mips32_registerFileAddress_type;
+        variable expectedRegWriteData : mips32_data_type;
     begin
         test_runner_setup(runner, runner_cfg);
         while test_suite loop

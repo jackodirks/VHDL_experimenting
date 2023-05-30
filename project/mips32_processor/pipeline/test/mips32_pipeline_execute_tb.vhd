@@ -7,7 +7,7 @@ context vunit_lib.vunit_context;
 context vunit_lib.vc_context;
 
 library src;
-use src.mips32_pkg;
+use src.mips32_pkg.all;
 
 entity mips32_pipeline_execute_tb is
     generic (
@@ -21,29 +21,29 @@ architecture tb of mips32_pipeline_execute_tb is
     signal rst : std_logic := '0';
     signal stall : boolean := false;
 
-    signal writeBackControlWord : mips32_pkg.WriteBackControlWord_type := mips32_pkg.writeBackControlWordAllFalse;
-    signal memoryControlWord : mips32_pkg.MemoryControlWord_type := mips32_pkg.memoryControlWordAllFalse;
-    signal executeControlWord : mips32_pkg.ExecuteControlWord_type := mips32_pkg.executeControlWordAllFalse;
+    signal writeBackControlWord : mips32_WriteBackControlWord_type := mips32_writeBackControlWordAllFalse;
+    signal memoryControlWord : mips32_MemoryControlWord_type := mips32_memoryControlWordAllFalse;
+    signal executeControlWord : mips32_ExecuteControlWord_type := mips32_executeControlWordAllFalse;
 
-    signal rsData : mips32_pkg.data_type;
-    signal rtData : mips32_pkg.data_type;
-    signal immidiate : mips32_pkg.data_type;
-    signal destinationReg : mips32_pkg.registerFileAddress_type;
-    signal aluFunction : mips32_pkg.aluFunction_type;
-    signal shamt : mips32_pkg.shamt_type;
+    signal rsData : mips32_data_type;
+    signal rtData : mips32_data_type;
+    signal immidiate : mips32_data_type;
+    signal destinationReg : mips32_registerFileAddress_type;
+    signal aluFunction : mips32_aluFunction_type;
+    signal shamt : mips32_shamt_type;
 
-    signal memoryControlWordToMem : mips32_pkg.MemoryControlWord_type;
-    signal writeBackControlWordToMem : mips32_pkg.WriteBackControlWord_type;
-    signal execResult : mips32_pkg.data_type;
-    signal regDataRead : mips32_pkg.data_type;
-    signal destinationRegToMem : mips32_pkg.registerFileAddress_type;
+    signal memoryControlWordToMem : mips32_MemoryControlWord_type;
+    signal writeBackControlWordToMem : mips32_WriteBackControlWord_type;
+    signal execResult : mips32_data_type;
+    signal regDataRead : mips32_data_type;
+    signal destinationRegToMem : mips32_registerFileAddress_type;
 begin
     clk <= not clk after (clk_period/2);
 
     main : process
-        variable expectedExecResult : mips32_pkg.data_type;
-        variable expectedDestinationRegToMem : mips32_pkg.registerFileAddress_type;
-        variable expectedRegDataRead : mips32_pkg.data_type;
+        variable expectedExecResult : mips32_data_type;
+        variable expectedDestinationRegToMem : mips32_registerFileAddress_type;
+        variable expectedRegDataRead : mips32_data_type;
     begin
         test_runner_setup(runner, runner_cfg);
         while test_suite loop
@@ -68,7 +68,7 @@ begin
             elsif run("R-type subtract function works") then
                 rsData <= std_logic_vector(to_signed(100, rsData'length));
                 rtData <= std_logic_vector(to_signed(10, rtData'length));
-                aluFunction <= mips32_pkg.aluFunctionSubtract;
+                aluFunction <= mips32_aluFunctionSubtract;
                 destinationReg <= 13;
                 expectedExecResult := std_logic_vector(to_signed(90, expectedExecResult'length));
                 expectedDestinationRegToMem := 13;

@@ -8,7 +8,7 @@ context vunit_lib.vc_context;
 
 library src;
 use src.bus_pkg.all;
-use src.mips32_pkg;
+use src.mips32_pkg.all;
 
 entity mips32_pipeline_memory_tb is
     generic (
@@ -22,32 +22,32 @@ architecture tb of mips32_pipeline_memory_tb is
     signal rst : std_logic := '0';
     signal stall : boolean := false;
 
-    signal writeBackControlWord : mips32_pkg.WriteBackControlWord_type := mips32_pkg.writeBackControlWordAllFalse;
-    signal memoryControlWord : mips32_pkg.MemoryControlWord_type := mips32_pkg.memoryControlWordAllFalse;
+    signal writeBackControlWord : mips32_WriteBackControlWord_type := mips32_writeBackControlWordAllFalse;
+    signal memoryControlWord : mips32_MemoryControlWord_type := mips32_memoryControlWordAllFalse;
 
-    signal execResult : mips32_pkg.data_type;
-    signal regDataRead : mips32_pkg.data_type;
-    signal destinationReg : mips32_pkg.registerFileAddress_type;
+    signal execResult : mips32_data_type;
+    signal regDataRead : mips32_data_type;
+    signal destinationReg : mips32_registerFileAddress_type;
 
-    signal writeBackControlWordToWriteBack : mips32_pkg.WriteBackControlWord_type;
-    signal execResultToWriteback : mips32_pkg.data_type;
-    signal memDataReadToWriteback : mips32_pkg.data_type;
-    signal destinationRegToWriteback : mips32_pkg.registerFileAddress_type;
+    signal writeBackControlWordToWriteBack : mips32_WriteBackControlWord_type;
+    signal execResultToWriteback : mips32_data_type;
+    signal memDataReadToWriteback : mips32_data_type;
+    signal destinationRegToWriteback : mips32_registerFileAddress_type;
 
     signal doMemRead : boolean;
     signal doMemWrite : boolean;
-    signal memAddress : mips32_pkg.address_type;
-    signal dataToMem : mips32_pkg.data_type;
-    signal dataFromMem : mips32_pkg.data_type;
+    signal memAddress : mips32_address_type;
+    signal dataToMem : mips32_data_type;
+    signal dataFromMem : mips32_data_type;
 begin
     clk <= not clk after (clk_period/2);
 
     main : process
-        variable expectedMemAddress : mips32_pkg.address_type;
-        variable expectedDataToMem : mips32_pkg.data_type;
-        variable expectedExecResultToWriteback : mips32_pkg.data_type;
-        variable expectedDestinationRegToWriteback : mips32_pkg.registerFileAddress_type;
-        variable expectedMemDataReadToWriteback : mips32_pkg.data_type;
+        variable expectedMemAddress : mips32_address_type;
+        variable expectedDataToMem : mips32_data_type;
+        variable expectedExecResultToWriteback : mips32_data_type;
+        variable expectedDestinationRegToWriteback : mips32_registerFileAddress_type;
+        variable expectedMemDataReadToWriteback : mips32_data_type;
     begin
         test_runner_setup(runner, runner_cfg);
         while test_suite loop

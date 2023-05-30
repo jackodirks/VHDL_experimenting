@@ -4,7 +4,7 @@ use IEEE.numeric_std.all;
 
 library work;
 use work.bus_pkg.all;
-use work.mips32_pkg;
+use work.mips32_pkg.all;
 
 entity mips32_pipeline_execute is
     port (
@@ -13,46 +13,46 @@ entity mips32_pipeline_execute is
         stall : in boolean;
 
         -- From decode stage: control signals
-        writeBackControlWord : in mips32_pkg.WriteBackControlWord_type;
-        memoryControlWord : in mips32_pkg.MemoryControlWord_type;
-        executeControlWord : in mips32_pkg.ExecuteControlWord_type;
+        writeBackControlWord : in mips32_WriteBackControlWord_type;
+        memoryControlWord : in mips32_MemoryControlWord_type;
+        executeControlWord : in mips32_ExecuteControlWord_type;
 
         -- From decode stage: data
-        rsData : in mips32_pkg.data_type;
-        rtData : in mips32_pkg.data_type;
-        immidiate : in mips32_pkg.data_type;
-        destinationReg : in mips32_pkg.registerFileAddress_type;
-        aluFunction : in mips32_pkg.aluFunction_type;
-        shamt : in mips32_pkg.shamt_type;
+        rsData : in mips32_data_type;
+        rtData : in mips32_data_type;
+        immidiate : in mips32_data_type;
+        destinationReg : in mips32_registerFileAddress_type;
+        aluFunction : in mips32_aluFunction_type;
+        shamt : in mips32_shamt_type;
 
         -- To Memory stage: control signals
-        memoryControlWordToMem : out mips32_pkg.MemoryControlWord_type;
-        writeBackControlWordToMem : out mips32_pkg.WriteBackControlWord_type;
+        memoryControlWordToMem : out mips32_MemoryControlWord_type;
+        writeBackControlWordToMem : out mips32_WriteBackControlWord_type;
 
         -- To Memory stage: data
-        execResult : out mips32_pkg.data_type;
-        regDataRead : out mips32_pkg.data_type;
-        destinationRegToMem : out mips32_pkg.registerFileAddress_type
+        execResult : out mips32_data_type;
+        regDataRead : out mips32_data_type;
+        destinationRegToMem : out mips32_registerFileAddress_type
     );
 end entity;
 
 architecture behaviourial of mips32_pipeline_execute is
-    signal execResult_buf : mips32_pkg.data_type;
-    signal aluResult : mips32_pkg.data_type;
-    signal luiResult : mips32_pkg.data_type;
-    signal aluInputB : mips32_pkg.data_type;
-    signal aluFunctionInput : mips32_pkg.aluFunction_type;
+    signal execResult_buf : mips32_data_type;
+    signal aluResult : mips32_data_type;
+    signal luiResult : mips32_data_type;
+    signal aluInputB : mips32_data_type;
+    signal aluFunctionInput : mips32_aluFunction_type;
 begin
     luiResult <= std_logic_vector(shift_left(unsigned(immidiate), 16));
 
     exMemReg : process(clk)
-        variable memoryControlWordToMem_buf : mips32_pkg.MemoryControlWord_type := mips32_pkg.memoryControlWordAllFalse;
-        variable writeBackControlWordToMem_buf : mips32_pkg.WriteBackControlWord_type := mips32_pkg.writeBackControlWordAllFalse;
+        variable memoryControlWordToMem_buf : mips32_MemoryControlWord_type := mips32_memoryControlWordAllFalse;
+        variable writeBackControlWordToMem_buf : mips32_WriteBackControlWord_type := mips32_writeBackControlWordAllFalse;
     begin
         if rising_edge(clk) then
             if rst = '1' then
-                memoryControlWordToMem_buf := mips32_pkg.memoryControlWordAllFalse;
-                writeBackControlWordToMem_buf := mips32_pkg.writeBackControlWordAllFalse;
+                memoryControlWordToMem_buf := mips32_memoryControlWordAllFalse;
+                writeBackControlWordToMem_buf := mips32_writeBackControlWordAllFalse;
             elsif not stall then
                 memoryControlWordToMem_buf := memoryControlWord;
                 writeBackControlWordToMem_buf := writeBackControlWord;
@@ -77,7 +77,7 @@ begin
     determineAluFunctionInput : process(executeControlWord, aluFunction)
     begin
         if executeControlWord.ALUOpIsAdd then
-            aluFunctionInput <= mips32_pkg.aluFunctionAddUnsigned;
+            aluFunctionInput <= mips32_aluFunctionAddUnsigned;
         else
             aluFunctionInput <= aluFunction;
         end if;

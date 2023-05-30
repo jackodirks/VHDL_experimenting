@@ -4,7 +4,7 @@ use IEEE.numeric_std.all;
 
 library work;
 use work.bus_pkg.all;
-use work.mips32_pkg;
+use work.mips32_pkg.all;
 
 entity mips32_pipeline_instructionDecode is
     port (
@@ -13,59 +13,59 @@ entity mips32_pipeline_instructionDecode is
         stall : in boolean;
 
         -- From/to instruction fetch
-        instructionFromInstructionDecode : in mips32_pkg.instruction_type;
-        programCounterPlusFour : in mips32_pkg.address_type;
+        instructionFromInstructionDecode : in mips32_instruction_type;
+        programCounterPlusFour : in mips32_address_type;
         overrideProgramCounter : out boolean;
         repeatInstruction : out boolean;
-        newProgramCounter : out mips32_pkg.address_type;
+        newProgramCounter : out mips32_address_type;
 
         -- To execute stage: control signals
-        writeBackControlWord : out mips32_pkg.WriteBackControlWord_type;
-        memoryControlWord : out mips32_pkg.MemoryControlWord_type;
-        executeControlWord : out mips32_pkg.ExecuteControlWord_type;
+        writeBackControlWord : out mips32_WriteBackControlWord_type;
+        memoryControlWord : out mips32_MemoryControlWord_type;
+        executeControlWord : out mips32_ExecuteControlWord_type;
 
         -- To execute stage: data
-        rsData : out mips32_pkg.data_type;
-        rsAddress : out mips32_pkg.registerFileAddress_type;
-        rtData : out mips32_pkg.data_type;
-        rtAddress : out mips32_pkg.registerFileAddress_type;
-        immidiate : out mips32_pkg.data_type;
-        destinationReg : out mips32_pkg.registerFileAddress_type;
-        aluFunction : out mips32_pkg.aluFunction_type;
-        shamt : out mips32_pkg.shamt_type;
+        rsData : out mips32_data_type;
+        rsAddress : out mips32_registerFileAddress_type;
+        rtData : out mips32_data_type;
+        rtAddress : out mips32_registerFileAddress_type;
+        immidiate : out mips32_data_type;
+        destinationReg : out mips32_registerFileAddress_type;
+        aluFunction : out mips32_aluFunction_type;
+        shamt : out mips32_shamt_type;
 
         -- From execute stage: Hazard detection data
         exInstructionIsMemLoad : in boolean;
-        exInstructionTargetReg : in mips32_pkg.registerFileAddress_type;
+        exInstructionTargetReg : in mips32_registerFileAddress_type;
 
         -- From writeBack stage: data
         regWrite : in boolean;
-        regWriteAddress : in mips32_pkg.registerFileAddress_type;
-        regWriteData : in mips32_pkg.data_type
+        regWriteAddress : in mips32_registerFileAddress_type;
+        regWriteData : in mips32_data_type
     );
 end entity;
 
 architecture behaviourial of mips32_pipeline_instructionDecode is
     -- Control interaction
-    signal opcode : mips32_pkg.opcode_type;
-    signal decodedInstructionDecodeControlWord : mips32_pkg.InstructionDecodeControlWord_type;
-    signal decodedExecuteControlWord : mips32_pkg.ExecuteControlWord_type;
-    signal decodedMemoryControlWord : mips32_pkg.MemoryControlWord_type;
-    signal decodedWriteBackControlWord : mips32_pkg.WriteBackControlWord_type;
+    signal opcode : mips32_opcode_type;
+    signal decodedInstructionDecodeControlWord : mips32_InstructionDecodeControlWord_type;
+    signal decodedExecuteControlWord : mips32_ExecuteControlWord_type;
+    signal decodedMemoryControlWord : mips32_MemoryControlWord_type;
+    signal decodedWriteBackControlWord : mips32_WriteBackControlWord_type;
 
     -- Registerfile interaction
-    signal readPortOneAddress : mips32_pkg.registerFileAddress_type;
-    signal readPortOneData : mips32_pkg.data_type;
-    signal readPortTwoAddress : mips32_pkg.registerFileAddress_type;
-    signal readPortTwoData : mips32_pkg.data_type;
+    signal readPortOneAddress : mips32_registerFileAddress_type;
+    signal readPortOneData : mips32_data_type;
+    signal readPortTwoAddress : mips32_registerFileAddress_type;
+    signal readPortTwoData : mips32_data_type;
 
-    signal jumpTarget : mips32_pkg.address_type;
-    signal branchTarget : mips32_pkg.address_type;
+    signal jumpTarget : mips32_address_type;
+    signal branchTarget : mips32_address_type;
     signal registerReadsAreEqual : boolean;
-    signal immidiate_buf : mips32_pkg.data_type;
-    signal destinationReg_buf : mips32_pkg.registerFileAddress_type;
-    signal aluFunction_buf : mips32_pkg.aluFunction_type;
-    signal shamt_buf : mips32_pkg.shamt_type;
+    signal immidiate_buf : mips32_data_type;
+    signal destinationReg_buf : mips32_registerFileAddress_type;
+    signal aluFunction_buf : mips32_aluFunction_type;
+    signal shamt_buf : mips32_shamt_type;
 
     signal loadHazardDetected : boolean := false;
 begin
@@ -103,7 +103,7 @@ begin
     end process;
 
     determineJumpTarget : process(instructionFromInstructionDecode, programCounterPlusFour)
-        variable outputAddress : mips32_pkg.address_type;
+        variable outputAddress : mips32_address_type;
     begin
         outputAddress(1 downto 0) := (others => '0');
         outputAddress(27 downto 2) := instructionFromInstructionDecode(25 downto 0);
@@ -112,8 +112,8 @@ begin
     end process;
 
     determineBranchTarget : process(programCounterPlusFour, immidiate_buf)
-        variable pcPlusFourAsSigned : signed(mips32_pkg.address_type'range);
-        variable immidiateAsSigned : signed(mips32_pkg.data_type'range);
+        variable pcPlusFourAsSigned : signed(mips32_address_type'range);
+        variable immidiateAsSigned : signed(mips32_data_type'range);
     begin
         pcPlusFourAsSigned := signed(programCounterPlusFour);
         immidiateAsSigned := signed(immidiate_buf);
@@ -127,20 +127,20 @@ begin
     end process;
 
     handleIDEXReg : process(clk)
-        variable writeBackControlWord_var : mips32_pkg.WriteBackControlWord_type := mips32_pkg.writeBackControlWordAllFalse;
-        variable memoryControlWord_var : mips32_pkg.MemoryControlWord_type := mips32_pkg.memoryControlWordAllFalse;
-        variable executeControlWord_var : mips32_pkg.ExecuteControlWord_type := mips32_pkg.executeControlWordAllFalse;
+        variable writeBackControlWord_var : mips32_WriteBackControlWord_type := mips32_writeBackControlWordAllFalse;
+        variable memoryControlWord_var : mips32_MemoryControlWord_type := mips32_memoryControlWordAllFalse;
+        variable executeControlWord_var : mips32_ExecuteControlWord_type := mips32_executeControlWordAllFalse;
     begin
         if rising_edge(clk) then
             if rst = '1' then
-                writeBackControlWord_var := mips32_pkg.writeBackControlWordAllFalse;
-                memoryControlWord_var := mips32_pkg.memoryControlWordAllFalse;
-                executeControlWord_var := mips32_pkg.executeControlWordAllFalse;
+                writeBackControlWord_var := mips32_writeBackControlWordAllFalse;
+                memoryControlWord_var := mips32_memoryControlWordAllFalse;
+                executeControlWord_var := mips32_executeControlWordAllFalse;
             elsif not stall then
                 if loadHazardDetected then
-                    writeBackControlWord_var := mips32_pkg.writeBackControlWordAllFalse;
-                    memoryControlWord_var := mips32_pkg.memoryControlWordAllFalse;
-                    executeControlWord_var := mips32_pkg.executeControlWordAllFalse;
+                    writeBackControlWord_var := mips32_writeBackControlWordAllFalse;
+                    memoryControlWord_var := mips32_memoryControlWordAllFalse;
+                    executeControlWord_var := mips32_executeControlWordAllFalse;
                 else
                     writeBackControlWord_var := decodedWriteBackControlWord;
                     memoryControlWord_var := decodedMemoryControlWord;

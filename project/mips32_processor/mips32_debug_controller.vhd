@@ -4,7 +4,7 @@ use IEEE.numeric_std.all;
 
 library work;
 use work.bus_pkg.all;
-use work.mips32_pkg;
+use work.mips32_pkg.all;
 
 entity mips32_debug_controller is
     port (
@@ -20,7 +20,7 @@ entity mips32_debug_controller is
 end entity;
 
 architecture behaviourial of mips32_debug_controller is
-    signal regZero : mips32_pkg.data_type := (others => '0');
+    signal regZero : mips32_data_type := (others => '0');
 
 begin
 
@@ -29,7 +29,7 @@ begin
 
     process(clk)
         variable debug2mst_buf : bus_slv2mst_type := BUS_SLV2MST_IDLE;
-        variable regZero_buf : mips32_pkg.data_type := (0 => '1', others => '0');
+        variable regZero_buf : mips32_data_type := (0 => '1', others => '0');
         constant acceptableWriteMask : bus_write_mask_type := (others => '1');
     begin
         if rising_edge(clk) then

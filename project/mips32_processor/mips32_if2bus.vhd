@@ -4,7 +4,7 @@ use IEEE.numeric_std.all;
 
 library work;
 use work.bus_pkg.all;
-use work.mips32_pkg;
+use work.mips32_pkg.all;
 
 entity mips32_if2bus is
     port (
@@ -20,14 +20,14 @@ entity mips32_if2bus is
         hasFault : out boolean;
         faultData : out bus_fault_type;
 
-        requestAddress : in mips32_pkg.address_type;
-        instruction : out mips32_pkg.instruction_type;
+        requestAddress : in mips32_address_type;
+        instruction : out mips32_instruction_type;
         stall : out boolean
     );
 end entity;
 
 architecture behaviourial of mips32_if2bus is
-    signal cachedAddress : mips32_pkg.address_type;
+    signal cachedAddress : mips32_address_type;
     signal cacheValid : boolean := false;
 
     signal stall_buf : boolean := false;
@@ -45,7 +45,7 @@ begin
         variable mst2slv_buf : bus_mst2slv_type := BUS_MST2SLV_IDLE;
         variable hasFault_buf : boolean := false;
         variable faultData_buf : bus_fault_type := bus_fault_no_fault;
-        variable instruction_buf : mips32_pkg.instruction_type := (others => '0');
+        variable instruction_buf : mips32_instruction_type := (others => '0');
         variable transactionFinished_buf : boolean := false;
     begin
         if rising_edge(clk) then
