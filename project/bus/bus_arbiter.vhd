@@ -43,9 +43,9 @@ architecture behaviourial of bus_arbiter is
 begin
     combinatoral : process(mst2arbiter, slv2arbiter, selectedMaster)
     begin
+        arbiter2slv <= mst2arbiter(selectedMaster);
         for i in 0 to masterCount - 1 loop
             if i = selectedMaster then
-                arbiter2slv <= mst2arbiter(i);
                 arbiter2mst(i) <= slv2arbiter;
             else
                 arbiter2mst(i) <= bus_pkg.BUS_SLV2MST_IDLE;
