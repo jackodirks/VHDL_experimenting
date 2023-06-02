@@ -50,13 +50,10 @@ begin
 
     read_handling : process(doRead, address, read_cache_valid, read_cache_address, read_cache_data)
     begin
+        dataOut <= read_cache_data;
         read_stall <= false;
         if doRead then
-            if read_cache_valid and read_cache_address = address then
-                dataOut <= read_cache_data;
-            else
-                read_stall <= true;
-            end if;
+            read_stall <= not read_cache_valid or read_cache_address /= address;
         end if;
     end process;
 
