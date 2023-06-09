@@ -36,11 +36,11 @@ begin
                 data_ready_buf := false;
             elsif count = 0 then
                 data_ready_buf := false;
-                if rx = '0' then
-                    baud_clk_rst_buf := false;
-                end if;
                 if last_baud_clk = '1' and baud_clk = '0' and not baud_clk_rst_buf then
                     count := count + 1;
+                end if;
+                if rx = '0' then
+                    baud_clk_rst_buf := false;
                 end if;
             elsif count < 9 then
                 if last_baud_clk = '0' and baud_clk = '1' then

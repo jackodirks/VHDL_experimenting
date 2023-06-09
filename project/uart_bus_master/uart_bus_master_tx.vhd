@@ -39,6 +39,7 @@ begin
                 if data_ready and not busy_buf then
                     busy_buf := true;
                     transmit_byte_buf := transmit_byte;
+                elsif busy_buf then
                     tx_buf := '0';
                 end if;
                 if last_baud_clk = '1' and baud_clk = '0' and busy_buf then

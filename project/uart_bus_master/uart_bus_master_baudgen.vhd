@@ -17,7 +17,7 @@ end entity;
 architecture behaviourial of uart_bus_master_baudgen is
     constant baud_period : time := (1 sec)/baud_rate;
     constant baud_half_period : time := baud_period / 2;
-    constant baud_half_period_ticks : positive := (baud_half_period + (clk_period/2))/clk_period;
+    constant baud_half_period_ticks : positive range 5 to positive'high := (baud_half_period + (clk_period/2))/clk_period;
 
     signal half_period_tick : std_logic;
 begin
