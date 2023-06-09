@@ -1,16 +1,17 @@
 library ieee;
 use ieee.std_logic_1164.all;
 use ieee.numeric_std.all;
+use std.textio.all;
 
 library vunit_lib;
 context vunit_lib.vunit_context;
 context vunit_lib.vc_context;
 
 library tb;
-use tb.simulated_depp_master_pkg;
 
 library src;
 use src.bus_pkg.all;
+use src.uart_bus_master_pkg;
 
 entity main_file_tb is
     generic (
@@ -19,14 +20,15 @@ end entity;
 
 architecture tb of main_file_tb is
     constant clk_period : time := 20 ns;
-    constant deppMasterActor : actor_t := new_actor("Depp Master");
+    constant baud_rate : positive := 1000000;
+    constant uart_slave_bfm : uart_slave_t := new_uart_slave(initial_baud_rate => baud_rate);
+    constant uart_slave_stream : stream_slave_t := as_stream(uart_slave_bfm);
+
+    constant uart_master_bfm : uart_master_t := new_uart_master(initial_baud_rate => baud_rate);
+    constant uart_master_stream : stream_master_t := as_stream(uart_master_bfm);
     signal clk : std_logic := '0';
-    -- Depp
-    signal usb_db : std_logic_vector(7 downto 0) := (others => 'Z');
-    signal usb_write : std_logic := '1';
-    signal usb_astb : std_logic := '1';
-    signal usb_dstb : std_logic := '1';
-    signal usb_wait : std_logic;
+    signal rx : std_logic;
+    signal tx : std_logic;
     -- SPI mem
     signal cs_n : std_logic_vector(2 downto 0);
     signal so_sio1 : std_logic;
@@ -34,15 +36,62 @@ architecture tb of main_file_tb is
     signal hold_n_sio3 : std_logic;
     signal sck : std_logic;
     signal si_sio0 : std_logic;
-    -- Seven segment display
-    signal seven_segment_an : std_logic_vector(3 downto 0);
-    signal seven_segment_kath : std_logic_vector(7 downto 0);
-    -- Slide switches
-    signal slide_switch : std_logic_vector(7 downto 0) := (others => '0');
-    -- Leds
-    signal led : std_logic_vector(7 downto 0);
-    -- Button
-    signal push_button : std_logic := '0';
+
+    signal rst : std_logic := '0';
+
+    procedure write(
+        signal net : inout network_t;
+        constant addr : in bus_address_type;
+        constant data : in bus_data_type) is
+    begin
+        push_stream(net, uart_master_stream, uart_bus_master_pkg.COMMAND_WRITE_WORD);
+        check_stream(net, uart_slave_stream, uart_bus_master_pkg.ERROR_NO_ERROR);
+        for i in 0 to bus_bytes_per_word - 1 loop
+            push_stream(net, uart_master_stream, addr(i*8 + 7 downto i*8));
+        end loop;
+        for i in 0 to bus_bytes_per_word - 1 loop
+            push_stream(net, uart_master_stream, data(i*8 + 7 downto i*8));
+        end loop;
+        check_stream(net, uart_slave_stream, uart_bus_master_pkg.ERROR_NO_ERROR);
+    end procedure;
+
+    procedure read(
+        signal net : inout network_t;
+        constant addr : in bus_address_type;
+        constant data : in bus_data_type) is
+    begin
+        push_stream(net, uart_master_stream, uart_bus_master_pkg.COMMAND_READ_WORD);
+        check_stream(net, uart_slave_stream, uart_bus_master_pkg.ERROR_NO_ERROR);
+        for i in 0 to bus_bytes_per_word - 1 loop
+            push_stream(net, uart_master_stream, addr(i*8 + 7 downto i*8));
+        end loop;
+        check_stream(net, uart_slave_stream, uart_bus_master_pkg.ERROR_NO_ERROR);
+        for i in 0 to bus_bytes_per_word - 1 loop
+            check_stream(net, uart_slave_stream, data(i*8 + 7 downto i*8));
+        end loop;
+    end procedure;
+
+    procedure write_file(
+            signal net : inout network_t;
+            constant addr : in bus_address_type;
+            constant fileName : in string) is
+        file read_file : text;
+        variable line_v : line;
+        variable data : bus_data_type;
+        variable address : natural;
+        variable busAddress : bus_address_type;
+    begin
+        address := to_integer(unsigned(addr));
+        file_open(read_file, fileName, read_mode);
+        while not endfile(read_file) loop
+            readline(read_file, line_v);
+            hread(line_v, data);
+            busAddress := std_logic_vector(to_unsigned(address, busAddress'length));
+            write(net, busAddress, data);
+            address := address + 4;
+        end loop;
+        file_close(read_file);
+    end;
 begin
     clk <= not clk after (clk_period/2);
     process
@@ -52,95 +101,19 @@ begin
         constant spimem1_start_address : bus_address_type := std_logic_vector(to_unsigned(16#120000#, bus_address_type'length));
         constant spimem2_start_address : bus_address_type := std_logic_vector(to_unsigned(16#140000#, bus_address_type'length));
 
-        variable writeMask : bus_write_mask_type := (others => '1');
-
-        variable spimem0_test_input_data : bus_data_array(15 downto 0);
-        variable spimem0_test_output_data : bus_data_array(15 downto 0);
-        variable spimem1_test_input_data : bus_data_array(15 downto 0);
-        variable spimem1_test_output_data : bus_data_array(15 downto 0);
-        variable spimem2_test_input_data : bus_data_array(15 downto 0);
-        variable spimem2_test_output_data : bus_data_array(15 downto 0);
-
-        variable data : bus_data_type;
-        variable expectedData : bus_data_type;
         variable address : bus_address_type;
     begin
         test_runner_setup(runner, runner_cfg);
         while test_suite loop
             if run("Spi mem is usable") then
-                for i in 0 to spimem0_test_input_data'high loop
-                    spimem0_test_input_data(i) := std_logic_vector(to_unsigned(i, spimem0_test_input_data(i)'length));
-                end loop;
-                for i in 0 to spimem1_test_input_data'high loop
-                    spimem1_test_input_data(i) := std_logic_vector(to_unsigned(i + 255, spimem1_test_input_data(i)'length));
-                end loop;
-                for i in 0 to spimem2_test_input_data'high loop
-                    spimem2_test_input_data(i) := std_logic_vector(to_unsigned(i + 1024, spimem2_test_input_data(i)'length));
-                end loop;
-                simulated_depp_master_pkg.write_to_address(
-                    net => net,
-                    actor => deppMasterActor,
-                    addr => spimem0_start_address,
-                    mask => writeMask,
-                    data => spimem0_test_input_data);
-                simulated_depp_master_pkg.write_to_address(
-                    net => net,
-                    actor => deppMasterActor,
-                    addr => spimem1_start_address,
-                    mask => writeMask,
-                    data => spimem1_test_input_data);
-                simulated_depp_master_pkg.write_to_address(
-                    net => net,
-                    actor => deppMasterActor,
-                    addr => spimem2_start_address,
-                    mask => writeMask,
-                    data => spimem2_test_input_data);
-                simulated_depp_master_pkg.read_from_address(
-                    net => net,
-                    actor => deppMasterActor,
-                    addr => spimem0_start_address,
-                    data => spimem0_test_output_data);
-                simulated_depp_master_pkg.read_from_address(
-                    net => net,
-                    actor => deppMasterActor,
-                    addr => spimem1_start_address,
-                    data => spimem1_test_output_data);
-                simulated_depp_master_pkg.read_from_address(
-                    net => net,
-                    actor => deppMasterActor,
-                    addr => spimem2_start_address,
-                    data => spimem2_test_output_data);
-                for i in 0 to spimem0_test_input_data'high loop
-                    check_equal(spimem0_test_input_data(i), spimem0_test_input_data(i));
-                end loop;
-                for i in 0 to spimem1_test_input_data'high loop
-                    check_equal(spimem1_test_input_data(i), spimem1_test_input_data(i));
-                end loop;
-                for i in 0 to spimem2_test_input_data'high loop
-                    check_equal(spimem2_test_input_data(i), spimem2_test_input_data(i));
-                end loop;
+                write(net, spimem0_start_address, X"01020304");
+                read(net, spimem0_start_address, X"01020304");
             elsif run("processor: Looped add") then
-                simulated_depp_master_pkg.write_file_to_address(
-                    net => net,
-                    actor => deppMasterActor,
-                    addr => to_integer(unsigned(spimem0_start_address)),
-                    fileName => "./mips32_processor/test/programs/loopedAdd.txt");
-                data := (others => '0');
-                simulated_depp_master_pkg.write_to_address(
-                    net => net,
-                    actor => deppMasterActor,
-                    addr => processor_controller_start_address,
-                    mask => (others => '1'),
-                    data => data);
+                write_file(net, spimem0_start_address, "./mips32_processor/test/programs/loopedAdd.txt");
+                write(net, processor_controller_start_address, X"00000000");
                 wait for 1000*clk_period;
-                expectedData := X"00000003";
                 address := std_logic_vector(to_unsigned(to_integer(unsigned(spimem0_start_address)) + 16#24#, address'length));
-                simulated_depp_master_pkg.read_from_address(
-                    net => net,
-                    actor => deppMasterActor,
-                    addr => address,
-                    data => data);
-                check_equal(data, expectedData);
+                read(net, address, X"00000003");
             end if;
         end loop;
         wait until rising_edge(clk) or falling_edge(clk);
@@ -148,7 +121,7 @@ begin
         wait;
     end process;
 
-    test_runner_watchdog(runner, 200 us);
+    test_runner_watchdog(runner, 20 ms);
 
     mem_pcb : entity tb.triple_M23LC1024
     port map (
@@ -161,34 +134,31 @@ begin
     );
 
     main_file : entity src.main_file
-    port map (
+    generic map (
+        clk_period => clk_period,
+        baud_rate => baud_rate
+    ) port map (
         JA_gpio(0) => si_sio0,
         JA_gpio(1) => so_sio1,
         JA_gpio(2) => sio2,
         JA_gpio(3) => hold_n_sio3,
         JB_gpio(3 downto 1) => cs_n,
         JB_gpio(0) => sck,
-        slide_switch => slide_switch,
-        push_button => push_button,
-        led => led,
-        seven_seg_kath => seven_segment_kath,
-        seven_seg_an => seven_segment_an,
         clk => clk,
-        usb_db => usb_db,
-        usb_write => usb_write,
-        usb_astb => usb_astb,
-        usb_dstb => usb_dstb,
-        usb_wait => usb_wait
+        global_reset => rst,
+        master_rx => rx,
+        master_tx => tx
     );
 
-    depp_master : entity tb.simulated_depp_master
+    uart_slave : entity vunit_lib.uart_slave
     generic map (
-        actor => deppMasterActor
-    ) port map (
-        usb_db => usb_db,
-        usb_write => usb_write,
-        usb_astb => usb_astb,
-        usb_dstb => usb_dstb,
-        usb_wait => usb_wait
-    );
+      uart => uart_slave_bfm)
+    port map (
+      rx => tx);
+
+    uart_master : entity vunit_lib.uart_master
+    generic map (
+      uart => uart_master_bfm)
+    port map (
+      tx => rx);
 end architecture;
