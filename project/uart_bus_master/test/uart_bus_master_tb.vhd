@@ -20,7 +20,7 @@ end entity;
 
 architecture tb of uart_bus_master_tb is
     constant clk_period : time := 20 ns;
-    constant baud_rate : positive := 115200;
+    constant baud_rate : positive := 5000000;
 
     signal clk : std_logic := '0';
     signal rst : std_logic := '0';
@@ -43,37 +43,153 @@ begin
 
     main : process
         variable expected_return : std_logic_vector(7 downto 0);
+        variable return_data : bus_pkg.bus_data_type;
     begin
         test_runner_setup(runner, runner_cfg);
         while test_suite loop
             if run("Erronous command results in command error") then
                 push_stream(net, uart_master_stream, x"ff");
                 check_stream(net, uart_slave_stream, uart_bus_master_pkg.ERROR_UNKOWN_COMMAND);
-            elsif run("Read word works") then
-                simulated_bus_memory_pkg.write_to_address(net, slaveActor, X"00000004", X"67452301", X"f");
+            elsif run("Read command results in no error") then
                 push_stream(net, uart_master_stream, uart_bus_master_pkg.COMMAND_READ_WORD);
-                push_stream(net, uart_master_stream, x"04");
-                push_stream(net, uart_master_stream, x"00");
-                push_stream(net, uart_master_stream, x"00");
-                push_stream(net, uart_master_stream, x"00");
-                check_stream(net, uart_slave_stream, x"01");
-                check_stream(net, uart_slave_stream, x"23");
-                check_stream(net, uart_slave_stream, x"45");
-                check_stream(net, uart_slave_stream, x"67");
                 check_stream(net, uart_slave_stream, uart_bus_master_pkg.ERROR_NO_ERROR);
-            elsif run("Read word erronously returns error") then
+            elsif run("Erronous then legal command works as expected") then
+                push_stream(net, uart_master_stream, x"ff");
+                check_stream(net, uart_slave_stream, uart_bus_master_pkg.ERROR_UNKOWN_COMMAND);
+                push_stream(net, uart_master_stream, uart_bus_master_pkg.COMMAND_READ_WORD);
+                check_stream(net, uart_slave_stream, uart_bus_master_pkg.ERROR_NO_ERROR);
+            elsif run("Unaligned read returns error") then
                 expected_return := uart_bus_master_pkg.ERROR_BUS;
                 expected_return(7 downto 4) := bus_pkg.bus_fault_unaligned_access;
                 push_stream(net, uart_master_stream, uart_bus_master_pkg.COMMAND_READ_WORD);
+                check_stream(net, uart_slave_stream, uart_bus_master_pkg.ERROR_NO_ERROR);
                 push_stream(net, uart_master_stream, x"03");
                 push_stream(net, uart_master_stream, x"00");
                 push_stream(net, uart_master_stream, x"00");
                 push_stream(net, uart_master_stream, x"00");
-                check_stream(net, uart_slave_stream, x"XX");
-                check_stream(net, uart_slave_stream, x"XX");
-                check_stream(net, uart_slave_stream, x"XX");
-                check_stream(net, uart_slave_stream, x"XX");
                 check_stream(net, uart_slave_stream, expected_return);
+            elsif run("Aligned read works as expected") then
+                simulated_bus_memory_pkg.write_to_address(net, slaveActor, X"00000004", X"67452301", X"f");
+                push_stream(net, uart_master_stream, uart_bus_master_pkg.COMMAND_READ_WORD);
+                check_stream(net, uart_slave_stream, uart_bus_master_pkg.ERROR_NO_ERROR);
+                push_stream(net, uart_master_stream, x"04");
+                push_stream(net, uart_master_stream, x"00");
+                push_stream(net, uart_master_stream, x"00");
+                push_stream(net, uart_master_stream, x"00");
+                check_stream(net, uart_slave_stream, uart_bus_master_pkg.ERROR_NO_ERROR);
+                check_stream(net, uart_slave_stream, x"01");
+                check_stream(net, uart_slave_stream, x"23");
+                check_stream(net, uart_slave_stream, x"45");
+                check_stream(net, uart_slave_stream, x"67");
+            elsif run("Unaligned read then aligned read works as expected") then
+                simulated_bus_memory_pkg.write_to_address(net, slaveActor, X"00000004", X"67452301", X"f");
+                expected_return := uart_bus_master_pkg.ERROR_BUS;
+                expected_return(7 downto 4) := bus_pkg.bus_fault_unaligned_access;
+                push_stream(net, uart_master_stream, uart_bus_master_pkg.COMMAND_READ_WORD);
+                check_stream(net, uart_slave_stream, uart_bus_master_pkg.ERROR_NO_ERROR);
+                push_stream(net, uart_master_stream, x"03");
+                push_stream(net, uart_master_stream, x"00");
+                push_stream(net, uart_master_stream, x"00");
+                push_stream(net, uart_master_stream, x"00");
+                check_stream(net, uart_slave_stream, expected_return);
+                push_stream(net, uart_master_stream, uart_bus_master_pkg.COMMAND_READ_WORD);
+                check_stream(net, uart_slave_stream, uart_bus_master_pkg.ERROR_NO_ERROR);
+                push_stream(net, uart_master_stream, x"04");
+                push_stream(net, uart_master_stream, x"00");
+                push_stream(net, uart_master_stream, x"00");
+                push_stream(net, uart_master_stream, x"00");
+                check_stream(net, uart_slave_stream, uart_bus_master_pkg.ERROR_NO_ERROR);
+                check_stream(net, uart_slave_stream, x"01");
+                check_stream(net, uart_slave_stream, x"23");
+                check_stream(net, uart_slave_stream, x"45");
+                check_stream(net, uart_slave_stream, x"67");
+            elsif run("Write command results in no error") then
+                push_stream(net, uart_master_stream, uart_bus_master_pkg.COMMAND_WRITE_WORD);
+                check_stream(net, uart_slave_stream, uart_bus_master_pkg.ERROR_NO_ERROR);
+            elsif run("Normal write command works") then
+                push_stream(net, uart_master_stream, uart_bus_master_pkg.COMMAND_WRITE_WORD);
+                check_stream(net, uart_slave_stream, uart_bus_master_pkg.ERROR_NO_ERROR);
+                push_stream(net, uart_master_stream, x"04");
+                push_stream(net, uart_master_stream, x"00");
+                push_stream(net, uart_master_stream, x"00");
+                push_stream(net, uart_master_stream, x"00");
+                push_stream(net, uart_master_stream, x"01");
+                push_stream(net, uart_master_stream, x"23");
+                push_stream(net, uart_master_stream, x"45");
+                push_stream(net, uart_master_stream, x"67");
+                check_stream(net, uart_slave_stream, uart_bus_master_pkg.ERROR_NO_ERROR);
+                simulated_bus_memory_pkg.read_from_address(net, slaveActor, X"00000004", return_data);
+                check(return_data = X"67452301");
+            elsif run("Write then read") then
+                push_stream(net, uart_master_stream, uart_bus_master_pkg.COMMAND_WRITE_WORD);
+                check_stream(net, uart_slave_stream, uart_bus_master_pkg.ERROR_NO_ERROR);
+                push_stream(net, uart_master_stream, x"04");
+                push_stream(net, uart_master_stream, x"00");
+                push_stream(net, uart_master_stream, x"00");
+                push_stream(net, uart_master_stream, x"00");
+                push_stream(net, uart_master_stream, x"01");
+                push_stream(net, uart_master_stream, x"23");
+                push_stream(net, uart_master_stream, x"45");
+                push_stream(net, uart_master_stream, x"67");
+                check_stream(net, uart_slave_stream, uart_bus_master_pkg.ERROR_NO_ERROR);
+                push_stream(net, uart_master_stream, uart_bus_master_pkg.COMMAND_READ_WORD);
+                check_stream(net, uart_slave_stream, uart_bus_master_pkg.ERROR_NO_ERROR);
+                push_stream(net, uart_master_stream, x"04");
+                push_stream(net, uart_master_stream, x"00");
+                push_stream(net, uart_master_stream, x"00");
+                push_stream(net, uart_master_stream, x"00");
+                check_stream(net, uart_slave_stream, uart_bus_master_pkg.ERROR_NO_ERROR);
+                check_stream(net, uart_slave_stream, x"01");
+                check_stream(net, uart_slave_stream, x"23");
+                check_stream(net, uart_slave_stream, x"45");
+                check_stream(net, uart_slave_stream, x"67");
+            elsif run("Double write") then
+                push_stream(net, uart_master_stream, uart_bus_master_pkg.COMMAND_WRITE_WORD);
+                check_stream(net, uart_slave_stream, uart_bus_master_pkg.ERROR_NO_ERROR);
+                push_stream(net, uart_master_stream, x"00");
+                push_stream(net, uart_master_stream, x"00");
+                push_stream(net, uart_master_stream, x"00");
+                push_stream(net, uart_master_stream, x"00");
+                push_stream(net, uart_master_stream, x"01");
+                push_stream(net, uart_master_stream, x"23");
+                push_stream(net, uart_master_stream, x"45");
+                push_stream(net, uart_master_stream, x"67");
+                check_stream(net, uart_slave_stream, uart_bus_master_pkg.ERROR_NO_ERROR);
+                push_stream(net, uart_master_stream, uart_bus_master_pkg.COMMAND_WRITE_WORD);
+                check_stream(net, uart_slave_stream, uart_bus_master_pkg.ERROR_NO_ERROR);
+                push_stream(net, uart_master_stream, x"04");
+                push_stream(net, uart_master_stream, x"00");
+                push_stream(net, uart_master_stream, x"00");
+                push_stream(net, uart_master_stream, x"00");
+                push_stream(net, uart_master_stream, x"89");
+                push_stream(net, uart_master_stream, x"ab");
+                push_stream(net, uart_master_stream, x"cd");
+                push_stream(net, uart_master_stream, x"ef");
+                check_stream(net, uart_slave_stream, uart_bus_master_pkg.ERROR_NO_ERROR);
+                simulated_bus_memory_pkg.read_from_address(net, slaveActor, X"00000000", return_data);
+                check(return_data = X"67452301");
+                simulated_bus_memory_pkg.read_from_address(net, slaveActor, X"00000004", return_data);
+                check(return_data = X"efcdab89");
+            elsif run("rst interruped write") then
+                push_stream(net, uart_master_stream, uart_bus_master_pkg.COMMAND_WRITE_WORD);
+                check_stream(net, uart_slave_stream, uart_bus_master_pkg.ERROR_NO_ERROR);
+                rst <= '1';
+                wait for 2*clk_period;
+                rst <= '0';
+                wait for clk_period;
+                push_stream(net, uart_master_stream, uart_bus_master_pkg.COMMAND_WRITE_WORD);
+                check_stream(net, uart_slave_stream, uart_bus_master_pkg.ERROR_NO_ERROR);
+                push_stream(net, uart_master_stream, x"00");
+                push_stream(net, uart_master_stream, x"00");
+                push_stream(net, uart_master_stream, x"00");
+                push_stream(net, uart_master_stream, x"00");
+                push_stream(net, uart_master_stream, x"01");
+                push_stream(net, uart_master_stream, x"23");
+                push_stream(net, uart_master_stream, x"45");
+                push_stream(net, uart_master_stream, x"67");
+                check_stream(net, uart_slave_stream, uart_bus_master_pkg.ERROR_NO_ERROR);
+                simulated_bus_memory_pkg.read_from_address(net, slaveActor, X"00000000", return_data);
+                check(return_data = X"67452301");
             end if;
         end loop;
         wait until rising_edge(clk);
@@ -111,7 +227,7 @@ begin
 
     bus_slave : entity tb.simulated_bus_memory
     generic map (
-        depth_log2b => 11,
+        depth_log2b => 4,
         allow_unaligned_access => false,
         actor => slaveActor,
         read_delay => 5,
