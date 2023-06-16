@@ -15,7 +15,7 @@ RELEASE_TARGET := final
 DEBUG_TARGET := final_debug
 WERROR_CONFIG := -Werror -Wno-error=unused-variable
 
-.DEFAULT_GOAL := all
+.DEFAULT_GOAL := release
 
 .PHONY: all clean debug release
 
