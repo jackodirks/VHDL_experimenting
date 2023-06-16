@@ -5,7 +5,8 @@ use IEEE.NUMERIC_STD.ALL;
 
 entity simple_multishot_timer is
     generic (
-        match_val   : natural range 1 to natural'high
+        match_val   : natural range 1 to natural'high;
+        reset_val   : natural range 0 to match_val := 0
     );
     port (
         clk         : in STD_LOGIC;
@@ -21,7 +22,7 @@ begin
     begin
         if rising_edge(clk) then
             if (rst = '1') then
-                    timer_value := 0;
+                    timer_value := reset_val;
                     done <= '0';
             elsif timer_value >= match_val then
                     done <= '1';

@@ -6,7 +6,7 @@
 
 class DeppUartMaster {
     public:
-        DeppUartMaster(const std::string& devName = "/dev/ttyUSB1", speed_t baudRate = B1152000);
+        DeppUartMaster(const std::string& devName = "/dev/ttyUSB1", speed_t baudRate = B2000000);
 
         DeppUartMaster(const DeppUartMaster&) = delete;
 

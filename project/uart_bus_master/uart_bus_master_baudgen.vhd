@@ -40,7 +40,8 @@ begin
 
     baud_ticker : entity work.simple_multishot_timer
     generic map (
-        match_val => baud_half_period_ticks
+        match_val => baud_half_period_ticks,
+        reset_val => 2
     ) port map (
         clk => clk,
         rst => rst,

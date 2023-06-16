@@ -21,6 +21,7 @@ end entity;
 architecture behaviourial of uart_bus_master_rx is
     signal baud_clk_rst : std_logic := '1';
     signal baud_clk : std_logic;
+    signal count_buf : natural range 0 to 9 := 0;
 begin
     process(clk)
         variable count : natural range 0 to 9 := 0;
@@ -62,6 +63,7 @@ begin
         baud_clk_rst <= '1' when baud_clk_rst_buf else '0';
         receive_byte <= receive_byte_buf;
         data_ready <= data_ready_buf;
+        count_buf <= count;
     end process;
 
     baudgen : entity work.uart_bus_master_baudgen
