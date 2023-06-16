@@ -39,6 +39,11 @@ depp_master/final
 depp_master/final_debug
 depp_master/obj/*
 
+#UartMaster project
+uart_master/final
+uart_master/final_debug
+uart_master/obj/*
+
 #Hal project
 hal/final*
 hal/obj/*
