@@ -9,5 +9,4 @@ package uart_bus_master_pkg is
 
     constant COMMAND_READ_WORD : std_logic_vector(7 downto 0) := X"01";
     constant COMMAND_WRITE_WORD : std_logic_vector(7 downto 0) := X"02";
-
 end package;

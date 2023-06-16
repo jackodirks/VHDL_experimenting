@@ -148,6 +148,8 @@ begin
                     clear_internal_state <= true;
                 elsif bytes_transmitted > 1 and bytes_transmitted <= 5 then
                     byte_ready_for_transmission <= slv2mst_buf.readData((bytes_transmitted - 2)*8 + 7 downto (bytes_transmitted - 2)*8);
+                elsif bytes_transmitted > 5 then
+                    clear_internal_state <= true;
                 end if;
             end if;
         end if;
