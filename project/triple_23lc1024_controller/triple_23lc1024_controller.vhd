@@ -9,9 +9,10 @@ use work.triple_23lc1024_pkg.all;
 
 entity triple_23lc1024_controller is
     generic (
-        spi_clk_half_period_ticks : natural := 2;
-        spi_cs_setup_ticks : natural := 2;
-        spi_cs_hold_ticks : natural := 3
+        system_clock_period : time;
+        min_spi_clock_period : time := 50 ns;
+        min_spi_cs_setup : time := 25 ns;
+        min_spi_cs_hold : time := 50 ns
     );
     port (
         clk : in std_logic;
@@ -28,6 +29,11 @@ entity triple_23lc1024_controller is
 end triple_23lc1024_controller;
 
 architecture behavioral of triple_23lc1024_controller is
+    constant min_spi_clk_half_period : time := min_spi_clock_period / 2;
+    constant spi_clk_half_period_ticks : natural := (min_spi_clk_half_period + (system_clock_period - 1 fs))/(system_clock_period);
+    constant spi_cs_setup_ticks : natural := (min_spi_cs_setup + (system_clock_period - 1 fs))/system_clock_period;
+    constant spi_cs_hold_ticks : natural := (min_spi_cs_hold + (system_clock_period - 1 fs)) / system_clock_period;
+
     -- Config specific signals
     signal config_done : boolean := false;
     signal spi_clk_config : std_logic;

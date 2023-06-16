@@ -130,9 +130,7 @@ begin
 
     spimem : entity work.triple_23lc1024_controller
     generic map (
-        spi_clk_half_period_ticks => 2,
-        spi_cs_setup_ticks => 2,
-        spi_cs_hold_ticks => 3
+        system_clock_period => clk_period
     ) port map (
         clk => clk,
         rst => rst,
