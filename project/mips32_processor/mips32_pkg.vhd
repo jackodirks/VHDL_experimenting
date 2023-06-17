@@ -82,6 +82,7 @@ package mips32_pkg is
     constant mips32_aluFunctionAdd : mips32_aluFunction_type := 16#20#;
     constant mips32_aluFunctionAddUnsigned : mips32_aluFunction_type := 16#21#;
     constant mips32_aluFunctionSubtract : mips32_aluFunction_type := 16#22#;
+    constant mips32_aluFunctionSubtractUnsigned : mips32_aluFunction_type := 16#23#;
     constant mips32_aluFunctionAnd : mips32_aluFunction_type := 16#24#;
     constant mips32_aluFunctionOr : mips32_aluFunction_type := 16#25#;
     constant mips32_aluFunctionSetLessThan : mips32_aluFunction_type := 16#2a#;

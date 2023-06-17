@@ -72,6 +72,13 @@ begin
                 expectedOutput := std_logic_vector(to_signed(2147483647, expectedOutput'length));
                 wait for clk_period;
                 check(overflow);
+            elsif run("Unsigned subtraction overflow is not marked") then
+                inputA <= std_logic_vector(to_signed(-2147483648, inputA'length));
+                inputB <= std_logic_vector(to_signed(1, inputB'length));
+                funct <= mips32_aluFunctionSubtractUnsigned;
+                expectedOutput := std_logic_vector(to_signed(2147483647, expectedOutput'length));
+                wait for clk_period;
+                check(not overflow);
             elsif run("And function works") then
                 inputA <= X"F0F0FFFF";
                 inputB <= X"0A0ABCDE";

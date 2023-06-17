@@ -50,6 +50,9 @@ begin
             when mips32_aluFunctionSubtract =>
                 output <= subtractionResult;
                 overflow <= subtractionOverflow;
+            when mips32_aluFunctionSubtractUnsigned =>
+                output <= subtractionResult;
+                overflow <= false;
             when mips32_aluFunctionAnd =>
                 output <= andResult;
                 overflow <= false;
