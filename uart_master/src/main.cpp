@@ -28,12 +28,12 @@ int main(int argc, char* argv[]) {
     }
     uint32_t cpuStatus = master.readWord(cpuBaseAddress);
     std::cout << std::hex << "cpuStatus, pre run: 0x" << cpuStatus << std::endl;
-    uint32_t result = master.readWord(spiMemStartAddress + 0x24);
+    uint32_t result = master.readWord(spiMemStartAddress + 0x2C);
     std::cout << std::hex << "result, pre run: 0x" << result << std::endl;
     master.writeWord(cpuBaseAddress, 0x0);
     usleep(200000);
     master.writeWord(cpuBaseAddress, 0x1);
-    result = master.readWord(spiMemStartAddress + 0x24);
+    result = master.readWord(spiMemStartAddress + 0x2C);
     std::cout << std::hex << "result, post run: 0x" << result << std::endl;
     cpuStatus = master.readWord(cpuBaseAddress);
     std::cout << std::hex << "cpuStatus, post run: 0x" << cpuStatus << std::endl;

@@ -22,7 +22,7 @@ architecture tb of mips32_pipeline_instructionDecode_tb is
     signal rst : std_logic := '0';
     signal stall : boolean := false;
 
-    signal instructionFromInstructionDecode : mips32_instruction_type := (others => '1');
+    signal instructionFromInstructionFetch : mips32_instruction_type := (others => '1');
     signal programCounterPlusFour : mips32_address_type := (others => '1');
     signal overrideProgramCounter : boolean;
     signal newProgramCounter : mips32_address_type;
@@ -47,6 +47,8 @@ architecture tb of mips32_pipeline_instructionDecode_tb is
     signal regWrite : boolean := false;
     signal regWriteAddress : mips32_registerFileAddress_type := 16#0#;
     signal regWriteData : mips32_data_type := (others => '0');
+
+    signal ignoreCurrentInstruction : boolean := false;
 begin
     clk <= not clk after (clk_period/2);
 
@@ -72,10 +74,8 @@ begin
                 expectedJumpTarget := (others => '0');
                 expectedJumpTarget(31 downto 28) := (others => '1');
                 expectedJumpTarget(2) := '1';
+                instructionFromInstructionFetch <= instructionIn;
                 wait until rising_edge(clk);
-                instructionFromInstructionDecode <= instructionIn;
-                programCounterPlusFour <= (others => '1');
-                wait until falling_edge(clk);
                 check(overrideProgramCounter);
                 check_equal(newProgramCounter, expectedJumpTarget);
             elsif run("R-type instructions work") then
@@ -94,11 +94,11 @@ begin
                 regWriteAddress <= 2;
                 regWriteData <= expectedRsData;
                 wait until rising_edge(clk);
-                instructionFromInstructionDecode <= instructionIn;
+                instructionFromInstructionFetch <= instructionIn;
                 regWriteAddress <= 1;
                 regWriteData <= expectedRtData;
                 wait until rising_edge(clk);
-                instructionFromInstructionDecode <= (others => '1');
+                instructionFromInstructionFetch <= (others => '1');
                 regWrite <= false;
                 wait until falling_edge(clk);
                 check_equal(rsData, expectedRsData);
@@ -121,7 +121,7 @@ begin
                 instructionIn(15 downto 11) := std_logic_vector(to_unsigned(3, 5));
                 instructionIn(10 downto 6) := std_logic_vector(to_unsigned(10, 5));
                 instructionIn(5 downto 0) := std_logic_vector(to_unsigned(4, 6));
-                instructionFromInstructionDecode <= instructionIn;
+                instructionFromInstructionFetch <= instructionIn;
                 rst <= '0';
                 wait until rising_edge(clk);
                 rst <= '1';
@@ -138,11 +138,11 @@ begin
                 instructionIn(10 downto 6) := std_logic_vector(to_unsigned(10, 5));
                 instructionIn(5 downto 0) := std_logic_vector(to_unsigned(4, 6));
                 expectedAluFunction := 4;
-                instructionFromInstructionDecode <= instructionIn;
+                instructionFromInstructionFetch <= instructionIn;
                 stall <= false;
                 wait until rising_edge(clk);
                 instructionIn(5 downto 0) := std_logic_vector(to_unsigned(5, 6));
-                instructionFromInstructionDecode <= instructionIn;
+                instructionFromInstructionFetch <= instructionIn;
                 stall <= true;
                 wait until rising_edge(clk);
                 wait until falling_edge(clk);
@@ -154,13 +154,13 @@ begin
                 instructionIn(15 downto 0) := std_logic_vector(to_signed(-32, 16));
                 expectedDestinationReg := 6;
                 expectedImmidiate := std_logic_vector(to_signed(-32, expectedImmidiate'length));
-                instructionFromInstructionDecode <= instructionIn;
+                instructionFromInstructionFetch <= instructionIn;
                 wait until rising_edge(clk);
                 wait until falling_edge(clk);
                 check_equal(destinationReg, expectedDestinationReg);
                 check_equal(immidiate, expectedImmidiate);
                 check(executeControlWord.ALUSrc);
-                check(executeControlWord.ALUOpIsAdd);
+                check(executeControlWord.ALUOpDirective = exec_add);
                 check(memoryControlWord.MemOp);
                 check(not memoryControlWord.MemOpIsWrite);
                 check(writeBackControlWord.regWrite);
@@ -172,13 +172,13 @@ begin
                 instructionIn(15 downto 0) := std_logic_vector(to_signed(128, 16));
                 expectedDestinationReg := 12;
                 expectedImmidiate := std_logic_vector(to_signed(128, expectedImmidiate'length));
-                instructionFromInstructionDecode <= instructionIn;
+                instructionFromInstructionFetch <= instructionIn;
                 wait until rising_edge(clk);
                 wait until falling_edge(clk);
                 check_equal(destinationReg, expectedDestinationReg);
                 check_equal(immidiate, expectedImmidiate);
                 check(executeControlWord.ALUSrc);
-                check(executeControlWord.ALUOpIsAdd);
+                check(executeControlWord.ALUOpDirective = exec_add);
                 check(memoryControlWord.MemOp);
                 check(memoryControlWord.MemOpIsWrite);
                 check(writeBackControlWord = mips32_writeBackControlWordAllFalse);
@@ -189,7 +189,7 @@ begin
                 instructionIn(15 downto 11) := std_logic_vector(to_unsigned(3, 5));
                 instructionIn(10 downto 6) := std_logic_vector(to_unsigned(10, 5));
                 instructionIn(5 downto 0) := std_logic_vector(to_unsigned(4, 6));
-                instructionFromInstructionDecode <= instructionIn;
+                instructionFromInstructionFetch <= instructionIn;
                 expectedRsAddress := 2;
                 expectedRtAddress := 1;
                 wait until rising_edge(clk);
@@ -203,7 +203,7 @@ begin
                 instructionIn(15 downto 11) := std_logic_vector(to_unsigned(3, 5));
                 instructionIn(10 downto 6) := std_logic_vector(to_unsigned(10, 5));
                 instructionIn(5 downto 0) := std_logic_vector(to_unsigned(4, 6));
-                instructionFromInstructionDecode <= instructionIn;
+                instructionFromInstructionFetch <= instructionIn;
                 exInstructionIsMemLoad <= true;
                 exInstructionTargetReg <= 2;
                 wait until rising_edge(clk);
@@ -219,7 +219,7 @@ begin
                 instructionIn(15 downto 11) := std_logic_vector(to_unsigned(3, 5));
                 instructionIn(10 downto 6) := std_logic_vector(to_unsigned(10, 5));
                 instructionIn(5 downto 0) := std_logic_vector(to_unsigned(4, 6));
-                instructionFromInstructionDecode <= instructionIn;
+                instructionFromInstructionFetch <= instructionIn;
                 exInstructionIsMemLoad <= false;
                 exInstructionTargetReg <= 2;
                 wait until rising_edge(clk);
@@ -237,12 +237,24 @@ begin
                 instructionIn(15 downto 11) := std_logic_vector(to_unsigned(3, 5));
                 instructionIn(10 downto 6) := std_logic_vector(to_unsigned(10, 5));
                 instructionIn(5 downto 0) := std_logic_vector(to_unsigned(4, 6));
-                instructionFromInstructionDecode <= instructionIn;
+                instructionFromInstructionFetch <= instructionIn;
                 exInstructionIsMemLoad <= true;
                 exInstructionTargetReg <= 6;
                 wait until rising_edge(clk);
                 wait until falling_edge(clk);
                 check(not repeatInstruction);
+            elsif run("ignoreCurrentInstruction works") then
+                instructionIn(31 downto 26) := std_logic_vector(to_unsigned(mips32_opcodeRType, 6));
+                instructionIn(25 downto 21) := std_logic_vector(to_unsigned(2, 5));
+                instructionIn(20 downto 16) := std_logic_vector(to_unsigned(1, 5));
+                instructionIn(15 downto 11) := std_logic_vector(to_unsigned(3, 5));
+                instructionIn(10 downto 6) := std_logic_vector(to_unsigned(10, 5));
+                instructionIn(5 downto 0) := std_logic_vector(to_unsigned(4, 6));
+                instructionFromInstructionFetch <= instructionIn;
+                ignoreCurrentInstruction <= true;
+                wait until rising_edge(clk);
+                wait until falling_edge(clk);
+                check(not writeBackControlWord.regWrite);
             end if;
         end loop;
         wait until rising_edge(clk);
@@ -258,7 +270,7 @@ begin
         clk => clk,
         rst => rst,
         stall => stall,
-        instructionFromInstructionDecode => instructionFromInstructionDecode,
+        instructionFromInstructionFetch => instructionFromInstructionFetch,
         programCounterPlusFour => programCounterPlusFour,
         overrideProgramCounter => overrideProgramCounter,
         repeatInstruction => repeatInstruction,
@@ -278,6 +290,7 @@ begin
         exInstructionTargetReg => exInstructionTargetReg,
         regWrite => regWrite,
         regWriteAddress => regWriteAddress,
-        regWriteData => regWriteData
+        regWriteData => regWriteData,
+        ignoreCurrentInstruction => ignoreCurrentInstruction
     );
 end architecture;

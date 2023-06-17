@@ -19,8 +19,11 @@ entity mips32_pipeline_instructionFetch is
         programCounterPlusFour : out mips32_address_type;
         instructionFromBus : in mips32_instruction_type;
 
-        overrideProgramCounter : in boolean;
-        newProgramCounter : in mips32_address_type;
+        overrideProgramCounterFromID : in boolean;
+        newProgramCounterFromID : in mips32_address_type;
+
+        overrideProgramCounterFromEx : in boolean;
+        newProgramCounterFromEx : in mips32_address_type;
 
         stall : in boolean
     );
@@ -28,8 +31,8 @@ end entity;
 
 architecture behaviourial of mips32_pipeline_instructionFetch is
     signal programCounter : mips32_address_type := startAddress;
-    signal nextProgramCounter : mips32_address_type;
     signal programCounterPlusFour_buf : mips32_address_type;
+    signal nextProgramCounter : mips32_address_type;
 begin
 
     requestFromBusAddress <= programCounter;
@@ -39,10 +42,13 @@ begin
         programCounterPlusFour_buf <= std_logic_vector(unsigned(programCounter) + 4);
     end process;
 
-    determineNextProgramCounter : process(programCounter, overrideProgramCounter, newProgramCounter, programCounterPlusFour_buf)
+    determineNextProgramCounter : process(overrideProgramCounterFromID, newProgramCounterFromID, overrideProgramCounterFromEx, 
+                                          newProgramCounterFromEx, programCounterPlusFour_buf)
     begin
-        if overrideProgramCounter then
-            nextProgramCounter <= newProgramCounter;
+        if overrideProgramCounterFromEx then
+            nextProgramCounter <= newProgramCounterFromEx;
+        elsif overrideProgramCounterFromID then
+            nextProgramCounter <= newProgramCounterFromID;
         else
             nextProgramCounter <= programCounterPlusFour_buf;
         end if;

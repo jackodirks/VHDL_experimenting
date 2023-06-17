@@ -31,12 +31,18 @@ architecture tb of mips32_pipeline_execute_tb is
     signal destinationReg : mips32_registerFileAddress_type;
     signal aluFunction : mips32_aluFunction_type;
     signal shamt : mips32_shamt_type;
+    signal programCounterPlusFour : mips32_address_type;
 
     signal memoryControlWordToMem : mips32_MemoryControlWord_type;
     signal writeBackControlWordToMem : mips32_WriteBackControlWord_type;
     signal execResult : mips32_data_type;
     signal regDataRead : mips32_data_type;
     signal destinationRegToMem : mips32_registerFileAddress_type;
+
+    signal overrideProgramCounter : boolean;
+    signal newProgramCounter : mips32_address_type;
+
+    signal justBranched : boolean;
 begin
     clk <= not clk after (clk_period/2);
 
@@ -44,6 +50,7 @@ begin
         variable expectedExecResult : mips32_data_type;
         variable expectedDestinationRegToMem : mips32_registerFileAddress_type;
         variable expectedRegDataRead : mips32_data_type;
+        variable expectedBranchTarget : mips32_address_type;
     begin
         test_runner_setup(runner, runner_cfg);
         while test_suite loop
@@ -52,6 +59,7 @@ begin
                 check(not memoryControlWordToMem.MemOpIsWrite);
                 check(not writeBackControlWordToMem.regWrite);
                 check(not writeBackControlWordToMem.MemtoReg);
+                check(not justBranched);
             elsif run("Input memory, writeback control is forwarded") then
                 memoryControlWord.MemOpIsWrite <= true;
                 wait until rising_edge(clk);
@@ -81,7 +89,7 @@ begin
                 rtData <= std_logic_vector(to_signed(255, rtData'length));
                 immidiate <= std_logic_vector(to_signed(-4, immidiate'length));
                 executeControlWord.ALUSrc <= true;
-                executeControlWord.ALUOpIsAdd <= true;
+                executeControlWord.ALUOpDirective <= exec_add;
                 destinationReg <= 26;
                 expectedExecResult := std_logic_vector(to_signed(28, expectedExecResult'length));
                 expectedDestinationRegToMem := 26;
@@ -107,6 +115,30 @@ begin
                 wait until rising_edge(clk);
                 wait until falling_edge(clk);
                 check_equal(execResult, expectedExecResult);
+            elsif run("branch on equal branches when equal") then
+                rsData <= std_logic_vector(to_signed(100, rsData'length));
+                rtData <= std_logic_vector(to_signed(100, rtData'length));
+                immidiate <= std_logic_vector(to_signed(-1, immidiate'length));
+                programCounterPlusFour <= std_logic_vector(to_unsigned(16, programCounterPlusFour'length));
+                executeControlWord.ALUOpDirective <= exec_sub;
+                executeControlWord.branchEq <= true;
+                expectedBranchTarget := std_logic_vector(to_unsigned(12, expectedBranchTarget'length));
+                wait until rising_edge(clk);
+                check(overrideProgramCounter);
+                check_equal(newProgramCounter, expectedBranchTarget);
+                check(not justBranched);
+                wait until falling_edge(clk);
+                check(justBranched);
+            elsif run("branch on equal does not branch when not equal") then
+                rsData <= std_logic_vector(to_signed(20, rsData'length));
+                rtData <= std_logic_vector(to_signed(100, rtData'length));
+                immidiate <= std_logic_vector(to_signed(-1, immidiate'length));
+                programCounterPlusFour <= std_logic_vector(to_unsigned(16, programCounterPlusFour'length));
+                executeControlWord.ALUOpDirective <= exec_sub;
+                executeControlWord.branchEq <= true;
+                expectedBranchTarget := std_logic_vector(to_unsigned(12, expectedBranchTarget'length));
+                wait until rising_edge(clk);
+                check(not overrideProgramCounter);
             end if;
         end loop;
         wait until rising_edge(clk);
@@ -131,11 +163,15 @@ begin
         destinationReg => destinationReg,
         aluFunction => aluFunction,
         shamt => shamt,
+        programCounterPlusFour => programCounterPlusFour,
         memoryControlWordToMem => memoryControlWordToMem,
         writeBackControlWordToMem => writeBackControlWordToMem,
         execResult => execResult,
         regDataRead => regDataRead,
-        destinationRegToMem => destinationRegToMem
+        destinationRegToMem => destinationRegToMem,
+        overrideProgramCounter => overrideProgramCounter,
+        newProgramCounter => newProgramCounter,
+        justBranched => justBranched
     );
 
 end architecture;

@@ -26,11 +26,11 @@ architecture tb of mips32_pipeline_instructionFetch_tb is
     signal instructionToInstructionDecode : mips32_instruction_type;
     signal programCounterPlusFour : mips32_address_type;
     signal instructionFromBus : mips32_instruction_type := (others => '1');
-    signal overrideProgramCounter : boolean := false;
-    signal newProgramCounter : mips32_instruction_type := (others => '1');
+    signal overrideProgramCounterFromID : boolean := false;
+    signal newProgramCounterFromID : mips32_instruction_type := (others => '1');
+    signal overrideProgramCounterFromEx : boolean := false;
+    signal newProgramCounterFromEx : mips32_instruction_type := (others => '1');
     signal stall : boolean := false;
-
-
 begin
     clk <= not clk after (clk_period/2);
 
@@ -53,10 +53,26 @@ begin
                 wait until rising_edge(clk);
                 wait until rising_edge(clk);
                 check_equal(expectedAddress, requestFromBusAddress);
-            elsif run("The override address should be respected") then
+            elsif run("The override address from ID should be respected") then
                 expectedAddress := std_logic_vector(unsigned(startAddress) + 40);
-                overrideProgramCounter <= true;
-                newProgramCounter <= expectedAddress;
+                overrideProgramCounterFromID <= true;
+                newProgramCounterFromID <= expectedAddress;
+                wait until rising_edge(clk);
+                wait until rising_edge(clk);
+                check_equal(expectedAddress, requestFromBusAddress);
+            elsif run("The override address from EX should be respected") then
+                expectedAddress := std_logic_vector(unsigned(startAddress) + 40);
+                overrideProgramCounterFromEx <= true;
+                newProgramCounterFromEx <= expectedAddress;
+                wait until rising_edge(clk);
+                wait until rising_edge(clk);
+                check_equal(expectedAddress, requestFromBusAddress);
+            elsif run("The override address from EX should take precedence") then
+                expectedAddress := std_logic_vector(unsigned(startAddress) + 40);
+                overrideProgramCounterFromEx <= true;
+                newProgramCounterFromEx <= expectedAddress;
+                overrideProgramCounterFromID <= true;
+                newProgramCounterFromID <= std_logic_vector(unsigned(startAddress) + 16);
                 wait until rising_edge(clk);
                 wait until rising_edge(clk);
                 check_equal(expectedAddress, requestFromBusAddress);
@@ -72,6 +88,7 @@ begin
                 wait until rising_edge(clk);
                 check_equal(expectedInstruction, instructionToInstructionDecode);
                 check_equal(expectedAddress, requestFromBusAddress);
+
             end if;
         end loop;
         wait until rising_edge(clk);
@@ -92,8 +109,10 @@ begin
         instructionToInstructionDecode => instructionToInstructionDecode,
         programCounterPlusFour => programCounterPlusFour,
         instructionFromBus => instructionFromBus,
-        overrideProgramCounter => overrideProgramCounter,
-        newProgramCounter => newProgramCounter,
+        overrideProgramCounterFromID => overrideProgramCounterFromID,
+        newProgramCounterFromID => newProgramCounterFromID,
+        overrideProgramCounterFromEx => overrideProgramCounterFromEx,
+        newProgramCounterFromEx => newProgramCounterFromEx,
         stall => stall
     );
 

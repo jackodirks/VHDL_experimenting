@@ -37,19 +37,19 @@ begin
                 instructionDecodeControlWord_buf.regDst := true;
                 writeBackControlWord_buf.regWrite := true;
             when mips32_opcodeAddiu =>
-                executeControlWord_buf.ALUOpIsAdd := true;
+                executeControlWord_buf.ALUOpDirective := exec_add;
                 executeControlWord_buf.ALUSrc := true;
                 writeBackControlWord_buf.regWrite := true;
             when mips32_opcodeLw =>
-                executeControlWord_buf.ALUOpIsAdd := true;
+                executeControlWord_buf.ALUOpDirective := exec_add;
                 executeControlWord_buf.ALUSrc := true;
                 writeBackControlWord_buf.MemtoReg := true;
                 writeBackControlWord_buf.regWrite := true;
                 memoryControlWord_buf.memOp := true;
             when mips32_opcodeBeq =>
-                -- Pass, unsupported for now
+                executeControlWord_buf.branchEq := true;
             when mips32_opcodeSw =>
-                executeControlWord_buf.ALUOpIsAdd := true;
+                executeControlWord_buf.ALUOpDirective := exec_add;
                 executeControlWord_buf.ALUSrc := true;
                 memoryControlWord_buf.MemOp := true;
                 memoryControlWord_buf.MemOpIsWrite := true;

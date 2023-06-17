@@ -24,6 +24,7 @@ entity mips32_pipeline_execute is
         destinationReg : in mips32_registerFileAddress_type;
         aluFunction : in mips32_aluFunction_type;
         shamt : in mips32_shamt_type;
+        programCounterPlusFour : in mips32_address_type;
 
         -- To Memory stage: control signals
         memoryControlWordToMem : out mips32_MemoryControlWord_type;
@@ -32,7 +33,14 @@ entity mips32_pipeline_execute is
         -- To Memory stage: data
         execResult : out mips32_data_type;
         regDataRead : out mips32_data_type;
-        destinationRegToMem : out mips32_registerFileAddress_type
+        destinationRegToMem : out mips32_registerFileAddress_type;
+
+        -- To instruction fetch: branch
+        overrideProgramCounter : out boolean;
+        newProgramCounter : out mips32_address_type;
+
+        -- To instrucion decode
+        justBranched : out boolean
     );
 end entity;
 
@@ -42,8 +50,10 @@ architecture behaviourial of mips32_pipeline_execute is
     signal luiResult : mips32_data_type;
     signal aluInputB : mips32_data_type;
     signal aluFunctionInput : mips32_aluFunction_type;
+    signal overrideProgramCounter_buf : boolean;
 begin
     luiResult <= std_logic_vector(shift_left(unsigned(immidiate), 16));
+    overrideProgramCounter <= overrideProgramCounter_buf;
 
     exMemReg : process(clk)
         variable memoryControlWordToMem_buf : mips32_MemoryControlWord_type := mips32_memoryControlWordAllFalse;
@@ -53,16 +63,31 @@ begin
             if rst = '1' then
                 memoryControlWordToMem_buf := mips32_memoryControlWordAllFalse;
                 writeBackControlWordToMem_buf := mips32_writeBackControlWordAllFalse;
+                justBranched <= false;
             elsif not stall then
                 memoryControlWordToMem_buf := memoryControlWord;
                 writeBackControlWordToMem_buf := writeBackControlWord;
                 execResult <= execResult_buf;
                 regDataRead <= rtData;
                 destinationRegToMem <= destinationReg;
+                justBranched <= overrideProgramCounter_buf;
             end if;
         end if;
         memoryControlWordToMem <= memoryControlWordToMem_buf;
         writeBackControlWordToMem <= writeBackControlWordToMem_buf;
+    end process;
+
+    determineBranchTarget : process(programCounterPlusFour, immidiate)
+    begin
+        newProgramCounter <= std_logic_vector(signed(programCounterPlusFour) + shift_left(signed(immidiate), 2));
+    end process;
+
+    determineOverridePC : process(executeControlWord, rsData, aluInputB)
+    begin
+        overrideProgramCounter_buf <= false;
+        if executeControlWord.branchEq and rsData = aluInputB then
+            overrideProgramCounter_buf <= true;
+        end if;
     end process;
 
     determineAluInputB : process(executeControlWord, immidiate, rtData)
@@ -76,11 +101,14 @@ begin
 
     determineAluFunctionInput : process(executeControlWord, aluFunction)
     begin
-        if executeControlWord.ALUOpIsAdd then
-            aluFunctionInput <= mips32_aluFunctionAddUnsigned;
-        else
-            aluFunctionInput <= aluFunction;
-        end if;
+        case executeControlWord.ALUOpDirective is
+            when exec_add =>
+                aluFunctionInput <= mips32_aluFunctionAddUnsigned;
+            when exec_sub =>
+                aluFunctionInput <= mips32_aluFunctionSubtractUnsigned;
+            when others =>
+                aluFunctionInput <= aluFunction;
+        end case;
     end process;
 
     determineExecResult : process(aluResult, luiResult, executeControlWord)

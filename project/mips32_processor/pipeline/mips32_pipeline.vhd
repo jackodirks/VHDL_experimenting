@@ -30,10 +30,10 @@ architecture behaviourial of mips32_pipeline is
     signal instructionToID : mips32_instruction_type;
     signal pcPlusFourToID : mips32_address_type;
     -- Instruction decode to instruction fetch
-    signal overridePcToIF : boolean;
-    signal newPcToIF : mips32_address_type;
+    signal overrideProgramCounterFromID : boolean;
+    signal newProgramCounterFromID : mips32_address_type;
     signal repeatInstruction : boolean;
-    -- Instruction fetch to execute
+    -- Instruction decode to execute
     signal exControlWordToEx : mips32_ExecuteControlWord_type;
     signal memControlWordToEx : mips32_MemoryControlWord_type;
     signal wbControlWordToEx : mips32_WriteBackControlWord_type;
@@ -41,7 +41,8 @@ architecture behaviourial of mips32_pipeline is
     signal destRegToEx : mips32_registerFileAddress_type;
     signal aluFuncToEx : mips32_aluFunction_type;
     signal shamtToEx : mips32_shamt_type;
-    -- Instruction fetch to forwarding
+    signal pcPlusFourToEx : mips32_address_type;
+    -- Instruction decode to forwarding
     signal rsDataToFwU : mips32_data_type;
     signal rsAddressToFwU : mips32_registerFileAddress_type;
     signal rtDataToFwU : mips32_data_type;
@@ -59,6 +60,11 @@ architecture behaviourial of mips32_pipeline is
     signal execResToMem : mips32_data_type;
     signal regDataReadToMem : mips32_data_type;
     signal destRegToMem : mips32_registerFileAddress_type;
+    -- Execute to instruction fetch
+    signal overrideProgramCounterFromEx : boolean;
+    signal newProgramCounterFromEx : mips32_address_type;
+    -- Execute to instruction decode
+    signal ignoreCurrentInstruction : boolean;
     -- Memory to write back
     signal wbControlWordToWb : mips32_WriteBackControlWord_type;
     signal execResToWb : mips32_data_type;
@@ -86,8 +92,10 @@ begin
         instructionToInstructionDecode => instructionToID,
         programCounterPlusFour => pcPlusFourToID,
 
-        overrideProgramCounter => overridePcToIF,
-        newProgramCounter => newPcToIF
+        overrideProgramCounterFromID => overrideProgramCounterFromID,
+        newProgramCounterFromID => newProgramCounterFromID,
+        overrideProgramCounterFromEx => overrideProgramCounterFromEx,
+        newProgramCounterFromEx => newProgramCounterFromEx
     );
 
     instructionDecode : entity work.mips32_pipeline_instructionDecode
@@ -96,31 +104,34 @@ begin
         rst => rst,
         stall => stall,
 
-        instructionFromInstructionDecode => instructionToID,
+        instructionFromInstructionFetch => instructionToID,
         programCounterPlusFour => pcPlusFourToID,
 
-        overrideProgramCounter => overridePcToIF,
+        overrideProgramCounter => overrideProgramCounterFromID,
         repeatInstruction => repeatInstruction,
-        newProgramCounter => newPcToIF,
+        newProgramCounter => newProgramCounterFromID,
+
+        rsAddress => rsAddressToFwU,
+        rtAddress => rtAddressToFwU,
 
         executeControlWord => exControlWordToEx,
         memoryControlWord => memControlWordToEx,
         writeBackControlWord => wbControlWordToEx,
         rsData => rsDataToFwU,
-        rsAddress => rsAddressToFwU,
         rtData => rtDataToFwU,
-        rtAddress => rtAddressToFwU,
         immidiate => immidiateToEx,
         destinationReg => destRegToEx,
         aluFunction => aluFuncToEx,
         shamt => shamtToEx,
+        programCounterPlusFourToEx => pcPlusFourToEx,
 
         exInstructionIsMemLoad => instructionDecode_exInstructionIsMemLoad,
         exInstructionTargetReg => destRegToEx,
 
         regWrite => regWriteToID,
         regWriteAddress => regWriteAddrToID,
-        regWriteData => regWriteDataToID
+        regWriteData => regWriteDataToID,
+        ignoreCurrentInstruction => ignoreCurrentInstruction
     );
 
     execute : entity work.mips32_pipeline_execute
@@ -138,12 +149,18 @@ begin
         destinationReg => destRegToEx,
         aluFunction => aluFuncToEx,
         shamt => shamtToEx,
+        programCounterPlusFour => pcPlusFourToEx,
 
         memoryControlWordToMem => memControlWordToMem,
         writeBackControlWordToMem => wbControlWordToMem,
         execResult => execResToMem,
         regDataRead => regDataReadToMem,
-        destinationRegToMem => destRegToMem
+        destinationRegToMem => destRegToMem,
+
+        overrideProgramCounter => overrideProgramCounterFromEx,
+        newProgramCounter => newProgramCounterFromEx,
+
+       justBranched => ignoreCurrentInstruction
     );
 
     memory : entity work.mips32_pipeline_memory
