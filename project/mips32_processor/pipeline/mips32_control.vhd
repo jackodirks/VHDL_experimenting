@@ -47,7 +47,7 @@ begin
                 writeBackControlWord_buf.regWrite := true;
                 memoryControlWord_buf.memOp := true;
             when mips32_opcodeBeq =>
-                instructionDecodeControlWord_buf.branch := true;
+                -- Pass, unsupported for now
             when mips32_opcodeSw =>
                 executeControlWord_buf.ALUOpIsAdd := true;
                 executeControlWord_buf.ALUSrc := true;

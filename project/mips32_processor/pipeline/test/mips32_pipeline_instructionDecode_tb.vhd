@@ -78,32 +78,6 @@ begin
                 wait until falling_edge(clk);
                 check(overrideProgramCounter);
                 check_equal(newProgramCounter, expectedJumpTarget);
-            elsif run("beq should branch on equal") then
-                instructionIn(31 downto 26) := std_logic_vector(to_unsigned(mips32_opcodeBeq, 6));
-                instructionIn(25 downto 16) := (others => '0');
-                instructionIn(15 downto 0) := std_logic_vector(to_signed(-1, 16));
-                inputAddress := std_logic_vector(to_unsigned(16, inputAddress'length));
-                expectedJumpTarget := std_logic_vector(to_unsigned(12, expectedJumpTarget'length));
-                wait until rising_edge(clk);
-                programCounterPlusFour <= inputAddress;
-                instructionFromInstructionDecode <= instructionIn;
-                wait until falling_edge(clk);
-                check(overrideProgramCounter);
-                check_equal(newProgramCounter, expectedJumpTarget);
-            elsif run("beq should not branch on not equal") then
-                instructionIn(31 downto 26) := std_logic_vector(to_unsigned(mips32_opcodeBeq, 6));
-                instructionIn(25 downto 21) := (others => '0');
-                instructionIn(20 downto 16) := std_logic_vector(to_unsigned(1, 5));
-                instructionIn(15 downto 0) := std_logic_vector(to_signed(10, 16));
-                inputAddress := std_logic_vector(to_unsigned(16, inputAddress'length));
-                wait until rising_edge(clk);
-                programCounterPlusFour <= inputAddress;
-                instructionFromInstructionDecode <= instructionIn;
-                regWrite <= true;
-                regWriteAddress <= 1;
-                regWriteData <= std_logic_vector(to_unsigned(1, regWriteData'length));
-                wait until falling_edge(clk);
-                check(not overrideProgramCounter);
             elsif run("R-type instructions work") then
                 instructionIn(31 downto 26) := std_logic_vector(to_unsigned(mips32_opcodeRType, 6));
                 instructionIn(25 downto 21) := std_logic_vector(to_unsigned(2, 5));

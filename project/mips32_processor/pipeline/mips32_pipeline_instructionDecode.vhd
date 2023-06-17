@@ -60,8 +60,6 @@ architecture behaviourial of mips32_pipeline_instructionDecode is
     signal readPortTwoData : mips32_data_type;
 
     signal jumpTarget : mips32_address_type;
-    signal branchTarget : mips32_address_type;
-    signal registerReadsAreEqual : boolean;
     signal immidiate_buf : mips32_data_type;
     signal destinationReg_buf : mips32_registerFileAddress_type;
     signal aluFunction_buf : mips32_aluFunction_type;
@@ -72,7 +70,6 @@ begin
     opcode <= to_integer(unsigned(instructionFromInstructionDecode(31 downto 26)));
     readPortOneAddress <= to_integer(unsigned(instructionFromInstructionDecode(25 downto 21)));
     readPortTwoAddress <= to_integer(unsigned(instructionFromInstructionDecode(20 downto 16)));
-    registerReadsAreEqual <= readPortOneData = readPortTwoData;
     immidiate_buf <= std_logic_vector(resize(signed(instructionFromInstructionDecode(15 downto 0)), immidiate'length));
     shamt_buf <= to_integer(unsigned(instructionFromInstructionDecode(10 downto 6)));
     aluFunction_buf <= to_integer(unsigned(instructionFromInstructionDecode(5 downto 0)));
@@ -88,17 +85,13 @@ begin
     end process;
 
 
-    handleProgramCounterOverride : process(decodedInstructionDecodeControlWord, registerReadsAreEqual, jumpTarget, branchTarget)
+    handleProgramCounterOverride : process(decodedInstructionDecodeControlWord, jumpTarget)
     begin
+        newProgramCounter <= jumpTarget;
         if decodedInstructionDecodeControlWord.jump then
             overrideProgramCounter <= true;
-            newProgramCounter <= jumpTarget;
-        elsif decodedInstructionDecodeControlWord.branch and registerReadsAreEqual then
-            overrideProgramCounter <= true;
-            newProgramCounter <= branchTarget;
         else
             overrideProgramCounter <= false;
-            newProgramCounter <= (others => 'X');
         end if;
     end process;
 
@@ -109,15 +102,6 @@ begin
         outputAddress(27 downto 2) := instructionFromInstructionDecode(25 downto 0);
         outputAddress(31 downto 28) := programCounterPlusFour(31 downto 28);
         jumpTarget <= outputAddress;
-    end process;
-
-    determineBranchTarget : process(programCounterPlusFour, immidiate_buf)
-        variable pcPlusFourAsSigned : signed(mips32_address_type'range);
-        variable immidiateAsSigned : signed(mips32_data_type'range);
-    begin
-        pcPlusFourAsSigned := signed(programCounterPlusFour);
-        immidiateAsSigned := signed(immidiate_buf);
-        branchTarget <= std_logic_vector(pcPlusFourAsSigned + shift_left(immidiateAsSigned, 2));
     end process;
 
     detectLoadHazard : process(exInstructionIsMemLoad, exInstructionTargetReg, readPortOneAddress, readPortTwoAddress)

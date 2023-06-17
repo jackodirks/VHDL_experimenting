@@ -23,7 +23,6 @@ package mips32_pkg is
     type mips32_byte_array is array (natural range <>) of mips32_byte_type;
 
     type mips32_InstructionDecodeControlWord_type is record
-        branch : boolean;
         jump : boolean;
         PCSrc : boolean;
         regDst : boolean;
@@ -46,7 +45,6 @@ package mips32_pkg is
     end record;
 
     constant mips32_instructionDecodeControlWordAllFalse : mips32_InstructionDecodeControlWord_type := (
-        branch => false,
         jump => false,
         PCSrc => false,
         regDst => false
