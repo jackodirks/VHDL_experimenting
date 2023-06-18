@@ -88,6 +88,10 @@ begin
         if executeControlWord.branchEq and rsData = aluInputB then
             overrideProgramCounter_buf <= true;
         end if;
+
+        if executeControlWord.branchNe and rsData /= aluInputB then
+            overrideProgramCounter_buf <= true;
+        end if;
     end process;
 
     determineAluInputB : process(executeControlWord, immidiate, rtData)

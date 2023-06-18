@@ -48,6 +48,8 @@ begin
                 memoryControlWord_buf.memOp := true;
             when mips32_opcodeBeq =>
                 executeControlWord_buf.branchEq := true;
+            when mips32_opcodeBne =>
+                executeControlWord_buf.branchNe := true;
             when mips32_opcodeSw =>
                 executeControlWord_buf.ALUOpDirective := exec_add;
                 executeControlWord_buf.ALUSrc := true;

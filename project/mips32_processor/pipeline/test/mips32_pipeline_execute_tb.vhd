@@ -139,6 +139,27 @@ begin
                 expectedBranchTarget := std_logic_vector(to_unsigned(12, expectedBranchTarget'length));
                 wait until rising_edge(clk);
                 check(not overrideProgramCounter);
+            elsif run("Branch on not equal branches when not equal") then
+                rsData <= std_logic_vector(to_signed(20, rsData'length));
+                rtData <= std_logic_vector(to_signed(100, rtData'length));
+                immidiate <= std_logic_vector(to_signed(-1, immidiate'length));
+                programCounterPlusFour <= std_logic_vector(to_unsigned(16, programCounterPlusFour'length));
+                executeControlWord.ALUOpDirective <= exec_sub;
+                executeControlWord.branchNe <= true;
+                expectedBranchTarget := std_logic_vector(to_unsigned(12, expectedBranchTarget'length));
+                wait until rising_edge(clk);
+                check(overrideProgramCounter);
+                check_equal(newProgramCounter, expectedBranchTarget);
+            elsif run("Branch on not equal does not branch when equal") then
+                rsData <= std_logic_vector(to_signed(20, rsData'length));
+                rtData <= std_logic_vector(to_signed(20, rtData'length));
+                immidiate <= std_logic_vector(to_signed(-1, immidiate'length));
+                programCounterPlusFour <= std_logic_vector(to_unsigned(16, programCounterPlusFour'length));
+                executeControlWord.ALUOpDirective <= exec_sub;
+                executeControlWord.branchNe <= true;
+                expectedBranchTarget := std_logic_vector(to_unsigned(12, expectedBranchTarget'length));
+                wait until rising_edge(clk);
+                check(not overrideProgramCounter);
             end if;
         end loop;
         wait until rising_edge(clk);

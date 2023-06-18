@@ -33,6 +33,7 @@ package mips32_pkg is
         ALUSrc : boolean;
         ALUOpDirective : mips32_exec_directive;
         branchEq : boolean;
+        branchNe : boolean;
         lui : boolean;
     end record;
 
@@ -56,7 +57,8 @@ package mips32_pkg is
         ALUSrc => false,
         ALUOpDirective => exec_rtype,
         lui => false,
-        branchEq => false
+        branchEq => false,
+        branchNe => false
     );
 
     constant mips32_memoryControlWordAllFalse : mips32_MemoryControlWord_type := (
@@ -79,6 +81,7 @@ package mips32_pkg is
     constant mips32_opcodeLw : mips32_opcode_type := 16#23#;
     constant mips32_opcodeSw : mips32_opcode_type := 16#2b#;
     constant mips32_opcodeBeq : mips32_opcode_type := 16#4#;
+    constant mips32_opcodeBne : mips32_opcode_type := 16#5#;
     constant mips32_opcodeJ : mips32_opcode_type := 16#2#;
     constant mips32_opcodeLui : mips32_opcode_type := 16#f#;
 
