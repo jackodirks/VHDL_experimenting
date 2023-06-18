@@ -121,6 +121,37 @@ begin
                     addr => readAddr,
                     data => readData);
                 check_equal(readData, expectedReadData);
+            elsif run("Jump test") then
+                simulated_bus_memory_pkg.write_file_to_address(
+                    net => net,
+                    actor => memActor,
+                    addr => 0,
+                    fileName => "./mips32_processor/test/programs/jumpTest.txt");
+                -- Clear CPU internal reset
+                test2slv <= bus_mst2slv_write(
+                    address => std_logic_vector(to_unsigned(controllerAddress, bus_address_type'length)),
+                    write_data => (others => '0'),
+                    write_mask => (others => '1'));
+                wait until rising_edge(clk) and any_transaction(test2slv, slv2test);
+                check(write_transaction(test2slv, slv2test));
+                test2slv <= BUS_MST2SLV_IDLE;
+                wait for 400*clk_period;
+                expectedReadData := X"00000004";
+                readAddr := std_logic_vector(to_unsigned(16#38#, bus_address_type'length));
+                simulated_bus_memory_pkg.read_from_address(
+                    net => net,
+                    actor => memActor,
+                    addr => readAddr,
+                    data => readData);
+                check_equal(readData, expectedReadData);
+                expectedReadData := X"00000008";
+                readAddr := std_logic_vector(to_unsigned(16#3c#, bus_address_type'length));
+                simulated_bus_memory_pkg.read_from_address(
+                    net => net,
+                    actor => memActor,
+                    addr => readAddr,
+                    data => readData);
+                check_equal(readData, expectedReadData);
             end if;
         end loop;
         wait until rising_edge(clk);

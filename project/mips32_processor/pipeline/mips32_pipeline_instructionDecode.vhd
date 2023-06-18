@@ -76,31 +76,39 @@ architecture behaviourial of mips32_pipeline_instructionDecode is
     signal overrideProgramCounter_buf : boolean := false;
 begin
     opcode <= to_integer(unsigned(instructionFromInstructionFetch(31 downto 26)));
-    readPortOneAddress <= to_integer(unsigned(instructionFromInstructionFetch(25 downto 21)));
     readPortTwoAddress <= to_integer(unsigned(instructionFromInstructionFetch(20 downto 16)));
-    immidiate_buf <= std_logic_vector(resize(signed(instructionFromInstructionFetch(15 downto 0)), immidiate'length));
     shamt_buf <= to_integer(unsigned(instructionFromInstructionFetch(10 downto 6)));
     aluFunction_buf <= to_integer(unsigned(instructionFromInstructionFetch(5 downto 0)));
     repeatInstruction <= loadHazardDetected;
-    overrideProgramCounter <= overrideProgramCounter_buf;
+    overrideProgramCounter <= decodedInstructionDecodeControlWord.jump and not ignoreCurrentInstruction;
+    newProgramCounter <= jumpTarget;
 
     determineDestinationReg : process(instructionFromInstructionFetch, decodedInstructionDecodeControlWord)
     begin
-        if decodedInstructionDecodeControlWord.regDst then
+        if decodedInstructionDecodeControlWord.jump then
+            destinationReg_buf <= 31;
+        elsif decodedInstructionDecodeControlWord.regDst then
             destinationReg_buf <= to_integer(unsigned(instructionFromInstructionFetch(15 downto 11)));
         else
             destinationReg_buf <= to_integer(unsigned(instructionFromInstructionFetch(20 downto 16)));
         end if;
     end process;
 
-
-    handleProgramCounterOverride : process(decodedInstructionDecodeControlWord, jumpTarget)
+    determineImmidiate : process(instructionFromInstructionFetch, decodedInstructionDecodeControlWord, programCounterPlusFour)
     begin
-        newProgramCounter <= jumpTarget;
         if decodedInstructionDecodeControlWord.jump then
-            overrideProgramCounter_buf <= true;
+            immidiate_buf <= std_logic_vector(unsigned(programCounterPlusFour) + 4);
         else
-            overrideProgramCounter_buf <= false;
+            immidiate_buf <= std_logic_vector(resize(signed(instructionFromInstructionFetch(15 downto 0)), immidiate'length));
+        end if;
+    end process;
+
+    determineReadPortOne : process(instructionFromInstructionFetch, decodedInstructionDecodeControlWord)
+    begin
+        if decodedInstructionDecodeControlWord.jump then
+            readPortOneAddress <= 0;
+        else
+            readPortOneAddress <= to_integer(unsigned(instructionFromInstructionFetch(25 downto 21)));
         end if;
     end process;
 

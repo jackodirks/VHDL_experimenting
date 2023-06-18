@@ -2,15 +2,18 @@
 __start:
         lui $2,%hi(array)
         addiu $2, $2,%lo(array)
-        add $3, $0, $0
-        lw $10,0x0($2)
-        lw $11,0x4($2)
-        add $12, $10, $11
-        sw $12,0x8($2)
-        beq $0, $3, __start
-        sw $3,0xC($2)
+        li $3, 4
+        li $10, 0
+L1:
+        addiu $10, $10, 1
+        bne $3, $10, L1
+        sw $10,0x0($2)
+        jal func
+        j __start
+func:
+        sll $10, $10, 1
+        sw $10,0x4($2)
+        jr $31
 array:
-    .word 1
-    .word 2
     .word 0
-    .word 5
+    .word 0

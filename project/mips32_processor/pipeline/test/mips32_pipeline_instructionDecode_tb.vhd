@@ -255,6 +255,22 @@ begin
                 wait until rising_edge(clk);
                 wait until falling_edge(clk);
                 check(not writeBackControlWord.regWrite);
+            elsif run("Jump instruction is ignored during ignoreCurrentInstruction") then
+                instructionIn(31 downto 26) := std_logic_vector(to_unsigned(mips32_opcodeJ, 6));
+                instructionIn(25 downto 1) := (others => '0');
+                instructionIn(0) := '1';
+                instructionFromInstructionFetch <= instructionIn;
+                ignoreCurrentInstruction <= true;
+                wait until rising_edge(clk);
+                check(not overrideProgramCounter);
+            elsif run("Test jal") then
+                instructionIn := X"0c04000b";
+                programCounterPlusFour <= X"00100020";
+                instructionFromInstructionFetch <= instructionIn;
+                wait until rising_edge(clk);
+                wait until falling_edge(clk);
+                check(executeControlWord.ALUOpDirective = exec_add);
+                check(immidiate =  X"00100024");
             end if;
         end loop;
         wait until rising_edge(clk);

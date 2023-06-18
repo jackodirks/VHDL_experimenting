@@ -57,6 +57,11 @@ begin
                 memoryControlWord_buf.MemOpIsWrite := true;
             when mips32_opcodeJ =>
                 instructionDecodeControlWord_buf.jump := true;
+            when mips32_opcodeJal =>
+                instructionDecodeControlWord_buf.jump := true;
+                writeBackControlWord_buf.regWrite := true;
+                executeControlWord_buf.ALUOpDirective := exec_add;
+                executeControlWord_buf.ALUSrc := true;
             when mips32_opcodeLui =>
                 executeControlWord_buf.lui := true;
                 writeBackControlWord_buf.regWrite := true;

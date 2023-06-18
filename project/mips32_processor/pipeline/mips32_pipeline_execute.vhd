@@ -77,12 +77,16 @@ begin
         writeBackControlWordToMem <= writeBackControlWordToMem_buf;
     end process;
 
-    determineBranchTarget : process(programCounterPlusFour, immidiate)
+    determineBranchTarget : process(programCounterPlusFour, immidiate, rsData, aluFunction)
     begin
-        newProgramCounter <= std_logic_vector(signed(programCounterPlusFour) + shift_left(signed(immidiate), 2));
+        if aluFunction = mips32_aluFunctionJumpReg then
+            newProgramCounter <= rsData;
+        else
+            newProgramCounter <= std_logic_vector(signed(programCounterPlusFour) + shift_left(signed(immidiate), 2));
+        end if;
     end process;
 
-    determineOverridePC : process(executeControlWord, rsData, rtData)
+    determineOverridePC : process(executeControlWord, rsData, rtData, aluFunction)
     begin
         overrideProgramCounter_buf <= false;
         if executeControlWord.branchEq and rsData = rtData then
@@ -90,6 +94,10 @@ begin
         end if;
 
         if executeControlWord.branchNe and rsData /= rtData then
+            overrideProgramCounter_buf <= true;
+        end if;
+
+        if aluFunction = mips32_aluFunctionJumpReg then
             overrideProgramCounter_buf <= true;
         end if;
     end process;
