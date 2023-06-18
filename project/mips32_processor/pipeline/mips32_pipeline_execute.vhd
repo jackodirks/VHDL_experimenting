@@ -129,6 +129,7 @@ begin
         inputA => rsData,
         inputB => aluInputB,
         funct => aluFunctionInput,
+        shamt => shamt,
         output => aluResult
     );
 end architecture;
