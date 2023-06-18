@@ -82,14 +82,14 @@ begin
         newProgramCounter <= std_logic_vector(signed(programCounterPlusFour) + shift_left(signed(immidiate), 2));
     end process;
 
-    determineOverridePC : process(executeControlWord, rsData, aluInputB)
+    determineOverridePC : process(executeControlWord, rsData, rtData)
     begin
         overrideProgramCounter_buf <= false;
-        if executeControlWord.branchEq and rsData = aluInputB then
+        if executeControlWord.branchEq and rsData = rtData then
             overrideProgramCounter_buf <= true;
         end if;
 
-        if executeControlWord.branchNe and rsData /= aluInputB then
+        if executeControlWord.branchNe and rsData /= rtData then
             overrideProgramCounter_buf <= true;
         end if;
     end process;
