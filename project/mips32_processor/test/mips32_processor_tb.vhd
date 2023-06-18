@@ -64,6 +64,7 @@ begin
         variable readAddr : bus_address_type;
         variable readData : bus_data_type;
         variable expectedReadData : bus_data_type;
+        variable curAddr : natural;
     begin
         test_runner_setup(runner, runner_cfg);
         while test_suite loop
@@ -152,6 +153,33 @@ begin
                     addr => readAddr,
                     data => readData);
                 check_equal(readData, expectedReadData);
+            elsif run("Bubble sort") then
+                simulated_bus_memory_pkg.write_file_to_address(
+                    net => net,
+                    actor => memActor,
+                    addr => 0,
+                    fileName => "./mips32_processor/test/programs/bubbleSort.txt");
+                -- Clear CPU internal reset
+                test2slv <= bus_mst2slv_write(
+                    address => std_logic_vector(to_unsigned(controllerAddress, bus_address_type'length)),
+                    write_data => (others => '0'),
+                    write_mask => (others => '1'));
+                wait until rising_edge(clk) and any_transaction(test2slv, slv2test);
+                check(write_transaction(test2slv, slv2test));
+                test2slv <= BUS_MST2SLV_IDLE;
+                wait for 125 us;
+                curAddr := 16#98#;
+                for i in -5 to 5 loop
+                    expectedReadData := std_logic_vector(to_signed(i, expectedReadData'length));
+                    readAddr := std_logic_vector(to_unsigned(curAddr, bus_address_type'length));
+                    simulated_bus_memory_pkg.read_from_address(
+                        net => net,
+                        actor => memActor,
+                        addr => readAddr,
+                        data => readData);
+                    check_equal(readData, expectedReadData);
+                    curAddr := curAddr + 4;
+                end loop;
             end if;
         end loop;
         wait until rising_edge(clk);
