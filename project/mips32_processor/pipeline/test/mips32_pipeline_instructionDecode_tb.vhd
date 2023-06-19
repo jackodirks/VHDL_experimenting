@@ -243,7 +243,7 @@ begin
                 wait until rising_edge(clk);
                 wait until falling_edge(clk);
                 check(not repeatInstruction);
-            elsif run("ignoreCurrentInstruction works") then
+            elsif run("ignoreCurrentInstruction NOPs current instruction") then
                 instructionIn(31 downto 26) := std_logic_vector(to_unsigned(mips32_opcodeRType, 6));
                 instructionIn(25 downto 21) := std_logic_vector(to_unsigned(2, 5));
                 instructionIn(20 downto 16) := std_logic_vector(to_unsigned(1, 5));
@@ -254,7 +254,9 @@ begin
                 ignoreCurrentInstruction <= true;
                 wait until rising_edge(clk);
                 wait until falling_edge(clk);
-                check(not writeBackControlWord.regWrite);
+                check(executeControlWord = mips32_executeControlWordAllFalse);
+                check(memoryControlWord = mips32_memoryControlWordAllFalse);
+                check(writeBackControlWord = mips32_writeBackControlWordAllFalse);
             elsif run("Jump instruction is ignored during ignoreCurrentInstruction") then
                 instructionIn(31 downto 26) := std_logic_vector(to_unsigned(mips32_opcodeJ, 6));
                 instructionIn(25 downto 1) := (others => '0');
@@ -271,6 +273,20 @@ begin
                 wait until falling_edge(clk);
                 check(executeControlWord.ALUOpDirective = exec_add);
                 check(immidiate =  X"00100024");
+            elsif run("Dependend R-type after load word during ignoreCurrentInstruction does not repeat") then
+                instructionIn(31 downto 26) := std_logic_vector(to_unsigned(mips32_opcodeRType, 6));
+                instructionIn(25 downto 21) := std_logic_vector(to_unsigned(2, 5));
+                instructionIn(20 downto 16) := std_logic_vector(to_unsigned(1, 5));
+                instructionIn(15 downto 11) := std_logic_vector(to_unsigned(3, 5));
+                instructionIn(10 downto 6) := std_logic_vector(to_unsigned(10, 5));
+                instructionIn(5 downto 0) := std_logic_vector(to_unsigned(4, 6));
+                instructionFromInstructionFetch <= instructionIn;
+                exInstructionIsMemLoad <= true;
+                exInstructionTargetReg <= 2;
+                ignoreCurrentInstruction <= true;
+                wait until rising_edge(clk);
+                wait until falling_edge(clk);
+                check(not repeatInstruction);
             end if;
         end loop;
         wait until rising_edge(clk);

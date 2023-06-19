@@ -79,7 +79,7 @@ begin
     readPortTwoAddress <= to_integer(unsigned(instructionFromInstructionFetch(20 downto 16)));
     shamt_buf <= to_integer(unsigned(instructionFromInstructionFetch(10 downto 6)));
     aluFunction_buf <= to_integer(unsigned(instructionFromInstructionFetch(5 downto 0)));
-    repeatInstruction <= loadHazardDetected;
+    repeatInstruction <= loadHazardDetected and not ignoreCurrentInstruction;
     overrideProgramCounter <= decodedInstructionDecodeControlWord.jump and not ignoreCurrentInstruction;
     newProgramCounter <= jumpTarget;
 
