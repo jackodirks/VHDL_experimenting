@@ -80,14 +80,12 @@ architecture behavioral of triple_23lc1024_controller is
     signal burst : std_logic;
 begin
 
-    bus_handling : process(mst2slv, valid_read, fault_read, faultData_read, config_done, write_active, read_active, fault_write, valid_write, faultData_write, readData)
+    bus_handling : process(mst2slv, config_done, write_active, read_active)
     begin
-        slv2mst <= BUS_SLV2MST_IDLE;
         -- data
         address <= mst2slv.address;
         writeData <= mst2slv.writeData;
         writeMask <= mst2slv.writeMask;
-        slv2mst.readData <= readData;
         burst <= mst2slv.burst;
 
         -- control
@@ -100,16 +98,21 @@ begin
             if not read_active then
                 ready_write <= mst2slv.writeReady;
             end if;
+        end if;
+    end process;
 
-            if mst2slv.readReady = '1' then
-                slv2mst.fault <= fault_read;
-                slv2mst.readValid <= valid_read;
-                slv2mst.faultData <= faultData_read;
-            elsif mst2slv.writeReady = '1' then
-                slv2mst.fault <= fault_write;
-                slv2mst.writeValid <= valid_write;
-                slv2mst.faultData <= faultData_write;
-            end if;
+    bus_output : process(valid_read, fault_read, faultData_read, fault_write, valid_write, faultData_write, readData)
+    begin
+        slv2mst <= BUS_SLV2MST_IDLE;
+        slv2mst.readData <= readData;
+        slv2mst.readValid <= valid_read;
+        slv2mst.writeValid <= valid_write;
+        if fault_read = '1' then
+            slv2mst.fault <= fault_read;
+            slv2mst.faultData <= faultData_read;
+        elsif fault_write = '1' then
+            slv2mst.fault <= fault_write;
+            slv2mst.faultData <= faultData_write;
         end if;
     end process;
 
