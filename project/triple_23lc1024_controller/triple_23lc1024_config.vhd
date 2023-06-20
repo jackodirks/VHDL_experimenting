@@ -5,7 +5,8 @@ use IEEE.numeric_std.all;
 entity triple_23lc1024_config is
     generic (
         cs_wait_ticks : natural;
-        spi_clk_half_period_ticks : natural
+        spi_clk_half_period_ticks : natural;
+        spi_cs_hold_ticks : natural
     );
     port (
         clk : in std_logic;
@@ -38,6 +39,9 @@ architecture behavioral of triple_23lc1024_config is
 
     signal cs_timer_rst : std_logic := '1';
     signal cs_timer_done : std_logic;
+
+    signal hold_timer_rst : std_logic := '1';
+    signal hold_timer_done : std_logic;
 
     signal half_period_timer_rst : std_logic := '1';
     signal half_period_timer_done : std_logic;
@@ -139,7 +143,7 @@ begin
     end process;
 
     concurrent: process(cur_state, cur_transmission_state, instruction_index, cur_active_operation,
-        cs_timer_done, half_period_timer_done, transmission_request, transmission_complete)
+        cs_timer_done, half_period_timer_done, transmission_request, transmission_complete, hold_timer_done)
     begin
         -- Main state machine
         next_state <= cur_state;
@@ -191,6 +195,7 @@ begin
             when transmission_waiting_state =>
                 transmission_complete <= false;
                 half_period_timer_rst <= '1';
+                hold_timer_rst <= '1';
                 spi_clk <= '0';
                 spi_sio <= (others => '0');
                 if transmission_request then
@@ -199,6 +204,7 @@ begin
             when transmission_low_state =>
                 transmission_complete <= false;
                 half_period_timer_rst <= '0';
+                hold_timer_rst <= '1';
                 spi_clk <= '0';
                 spi_sio <= get_spi_sio(cur_active_operation, instruction_index);
                 if half_period_timer_done = '1' then
@@ -207,18 +213,22 @@ begin
             when transmission_high_state =>
                 transmission_complete <= false;
                 half_period_timer_rst <= '0';
+                hold_timer_rst <= '0';
                 spi_clk <= '1';
                 spi_sio <= get_spi_sio(cur_active_operation, instruction_index);
-                if half_period_timer_done = '1' then
-                    if is_transmission_complete(cur_active_operation, instruction_index) then
+                if is_transmission_complete(cur_active_operation, instruction_index) then
+                    if hold_timer_done = '1' then
                         next_transmission_state <= transmission_done_state;
-                    else
+                    end if;
+                else
+                    if half_period_timer_done = '1' then
                         next_transmission_state <= transmission_low_state;
                     end if;
                 end if;
             when transmission_done_state =>
                 transmission_complete <= true;
                 half_period_timer_rst <= '1';
+                hold_timer_rst <= '1';
                 spi_clk <= '0';
                 spi_sio <= (others => '0');
                 if not transmission_request then
@@ -245,5 +255,15 @@ begin
         clk => clk,
         rst => cs_timer_rst,
         done => cs_timer_done
+    );
+
+    cs_hold_timer : entity work.simple_multishot_timer
+    generic map (
+        match_val => spi_cs_hold_ticks
+    )
+    port map (
+        clk => clk,
+        rst => hold_timer_rst,
+        done => hold_timer_done
     );
 end behavioral;

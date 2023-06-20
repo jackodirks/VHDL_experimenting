@@ -22,6 +22,7 @@ architecture tb of triple_23LC1024_config_tb is
 
     constant cs_wait_ticks : natural := 4;
     constant spi_clk_half_period_ticks : natural := 2;
+    constant spi_cs_hold_ticks : natural := 3;
 
     signal clk : std_logic := '0';
     signal rst : std_logic := '1';
@@ -108,7 +109,8 @@ begin
     config : entity src.triple_23lc1024_config
     generic map (
         cs_wait_ticks => cs_wait_ticks,
-        spi_clk_half_period_ticks => spi_clk_half_period_ticks
+        spi_clk_half_period_ticks => spi_clk_half_period_ticks,
+        spi_cs_hold_ticks => spi_cs_hold_ticks
     )
     port map (
         clk => clk,

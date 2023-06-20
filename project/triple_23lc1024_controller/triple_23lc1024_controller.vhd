@@ -162,7 +162,8 @@ begin
     config : entity work.triple_23lc1024_config
     generic map (
         cs_wait_ticks => spi_cs_hold_ticks,
-        spi_clk_half_period_ticks => spi_clk_half_period_ticks
+        spi_clk_half_period_ticks => spi_clk_half_period_ticks,
+        spi_cs_hold_ticks => spi_cs_hold_ticks
     )
     port map (
         clk => clk,
