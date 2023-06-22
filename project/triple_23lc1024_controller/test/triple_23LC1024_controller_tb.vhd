@@ -72,11 +72,11 @@ begin
                 rst <= '0';
                 triple_23lc1024_tb_pkg.write_bus_word(net, actor_mem0, std_logic_vector(to_unsigned(0, 17)), X"01020304");
                 triple_23lc1024_tb_pkg.write_bus_word(net, actor_mem0, std_logic_vector(to_unsigned(4, 17)), X"F1F2F3F4");
-                mst2slv <= bus_pkg.bus_mst2slv_read(std_logic_vector(to_unsigned(0, bus_pkg.bus_address_type'length)), '1');
+                mst2slv <= bus_pkg.bus_mst2slv_read(std_logic_vector(to_unsigned(0, bus_pkg.bus_address_type'length)), burst => '1');
                 expected_data := X"01020304";
                 wait until rising_edge(clk) and bus_pkg.read_transaction(mst2slv, slv2mst);
                 check_equal(slv2mst.readData, expected_data);
-                mst2slv <= bus_pkg.bus_mst2slv_read(std_logic_vector(to_unsigned(4, bus_pkg.bus_address_type'length)), '0');
+                mst2slv <= bus_pkg.bus_mst2slv_read(std_logic_vector(to_unsigned(4, bus_pkg.bus_address_type'length)), burst => '0');
                 expected_data := X"F1F2F3F4";
                 wait until rising_edge(clk) and bus_pkg.read_transaction(mst2slv, slv2mst);
                 check_equal(slv2mst.readData, expected_data);
@@ -104,7 +104,7 @@ begin
                 check_equal(read_data, expected_data);
             elsif run("Read faults happen when expected") then
                 rst <= '0';
-                mst2slv <= bus_pkg.bus_mst2slv_read(std_logic_vector(to_unsigned(1, bus_pkg.bus_address_type'length)), '0');
+                mst2slv <= bus_pkg.bus_mst2slv_read(std_logic_vector(to_unsigned(1, bus_pkg.bus_address_type'length)), burst => '0');
                 wait until rising_edge(clk) and bus_pkg.fault_transaction(mst2slv, slv2mst);
                 check_equal(slv2mst.faultData, bus_pkg.bus_fault_unaligned_access);
             elsif run("Write faults happen when expected") then
@@ -129,7 +129,7 @@ begin
                     wait until rising_edge(clk) and bus_pkg.write_transaction(mst2slv, slv2mst);
                 end loop;
                 for i in 0 to burst_size - 1 loop
-                    mst2slv <= bus_pkg.bus_mst2slv_read(std_logic_vector(to_unsigned(i*4, bus_pkg.bus_address_type'length)), '1');
+                    mst2slv <= bus_pkg.bus_mst2slv_read(std_logic_vector(to_unsigned(i*4, bus_pkg.bus_address_type'length)), burst => '1');
                     if i = burst_size - 1 then
                         mst2slv.burst <= '0';
                     end if;
@@ -164,19 +164,19 @@ begin
                 end loop;
                 -- Now read it back
                 for i in 0 to burst_size - 1 loop
-                    mst2slv <= bus_pkg.bus_mst2slv_read(std_logic_vector(to_unsigned(i*4, bus_pkg.bus_address_type'length)), '0');
+                    mst2slv <= bus_pkg.bus_mst2slv_read(std_logic_vector(to_unsigned(i*4, bus_pkg.bus_address_type'length)), burst => '0');
                     wait until rising_edge(clk) and bus_pkg.read_transaction(mst2slv, slv2mst);
                     expected_data := std_logic_vector(to_unsigned(i, bus_pkg.bus_data_type'length));
                     check_equal(slv2mst.readData, expected_data);
                 end loop;
                 for i in 0 to burst_size - 1 loop
-                    mst2slv <= bus_pkg.bus_mst2slv_read(std_logic_vector(to_unsigned(16#20000# + i*4, bus_pkg.bus_address_type'length)), '0');
+                    mst2slv <= bus_pkg.bus_mst2slv_read(std_logic_vector(to_unsigned(16#20000# + i*4, bus_pkg.bus_address_type'length)), burst => '0');
                     wait until rising_edge(clk) and bus_pkg.read_transaction(mst2slv, slv2mst);
                     expected_data := std_logic_vector(to_unsigned(i + burst_size, bus_pkg.bus_data_type'length));
                     check_equal(slv2mst.readData, expected_data);
                 end loop;
                 for i in 0 to burst_size - 1 loop
-                    mst2slv <= bus_pkg.bus_mst2slv_read(std_logic_vector(to_unsigned(16#40000# + i*4, bus_pkg.bus_address_type'length)), '0');
+                    mst2slv <= bus_pkg.bus_mst2slv_read(std_logic_vector(to_unsigned(16#40000# + i*4, bus_pkg.bus_address_type'length)), burst => '0');
                     wait until rising_edge(clk) and bus_pkg.read_transaction(mst2slv, slv2mst);
                     expected_data := std_logic_vector(to_unsigned(i + burst_size + burst_size, bus_pkg.bus_data_type'length));
                     check_equal(slv2mst.readData, expected_data);

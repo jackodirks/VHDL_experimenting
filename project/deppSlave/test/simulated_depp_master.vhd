@@ -46,7 +46,7 @@ begin
         variable first_run : boolean := true;
         variable writeAddress : bus_pkg.bus_address_type;
         variable writeData : bus_pkg.bus_data_type;
-        variable writeMask : bus_pkg.bus_write_mask_type;
+        variable byteMask : bus_pkg.bus_byte_mask_type;
         variable readAddress : bus_pkg.bus_address_type;
         variable readData : bus_pkg.bus_data_type;
         variable faultData : bus_pkg.bus_fault_type;
@@ -118,15 +118,15 @@ begin
             end loop;
         end procedure;
 
-        procedure set_depp_addres_to_writeMask_start is
+        procedure set_depp_addres_to_byteMask_start is
             variable address : depp_pkg.depp_address_type;
         begin
-            address := std_logic_vector(to_unsigned(depp_pkg.depp2bus_writeMask_reg_start, address'length));
+            address := std_logic_vector(to_unsigned(depp_pkg.depp2bus_byteMask_reg_start, address'length));
             write_depp_address(address);
         end procedure;
 
         procedure prepare_bus_transaction (
-            constant bus_mask : bus_pkg.bus_write_mask_type;
+            constant bus_mask : bus_pkg.bus_byte_mask_type;
             constant bus_address : bus_pkg.bus_address_type;
             constant burstLength : natural range 0 to 255
         ) is
@@ -217,9 +217,9 @@ begin
         if msg_type = simulated_depp_master_pkg.write_toAddress_msg then
             writeAddress := pop(request_msg);
             writeData := pop(request_msg);
-            writeMask := pop(request_msg);
+            byteMask := pop(request_msg);
             prepare_bus_transaction (
-                bus_mask => writeMask,
+                bus_mask => byteMask,
                 bus_address => writeAddress,
                 burstLength => 0);
             write_bus_data(writeData);
@@ -235,11 +235,11 @@ begin
                 reply(net, request_msg, reply_msg);
             end if;
         elsif msg_type = simulated_depp_master_pkg.write_multipleToAddress_msg then
-            writeMask := pop(request_msg);
+            byteMask := pop(request_msg);
             writeAddress := pop(request_msg);
             requestSize := pop(request_msg);
             prepare_bus_transaction (
-                bus_mask => writeMask,
+                bus_mask => byteMask,
                 bus_address => writeAddress,
                 burstLength => 0);
             while requestSize > 256 loop
@@ -268,9 +268,9 @@ begin
             end if;
         elsif msg_type = simulated_depp_master_pkg.read_fromAddress_msg then
             readAddress := pop(request_msg);
-            writeMask := (others => '1');
+            byteMask := (others => '1');
             prepare_bus_transaction (
-                bus_mask => writeMask,
+                bus_mask => byteMask,
                 bus_address => readAddress,
                 burstLength => 0);
             read_bus_data(readData);
@@ -289,10 +289,10 @@ begin
         elsif msg_type = simulated_depp_master_pkg.read_multipleFromAddress_msg then
             readAddress := pop(request_msg);
             requestSize := pop(request_msg);
-            writeMask := (others => '1');
+            byteMask := (others => '1');
             reply_msg := new_msg(simulated_depp_master_pkg.read_reply_msg);
             prepare_bus_transaction (
-                bus_mask => writeMask,
+                bus_mask => byteMask,
                 bus_address => readAddress,
                 burstLength => 0);
             while requestSize > 256 loop

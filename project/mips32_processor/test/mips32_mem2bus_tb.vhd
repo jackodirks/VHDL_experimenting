@@ -49,7 +49,7 @@ begin
         variable expectedWriteData : mips32_data_type;
         variable expectedWriteAddress : mips32_address_type;
         variable writeAddress : bus_address_type;
-        variable writeMask : bus_write_mask_type;
+        variable byteMask : bus_byte_mask_type;
         variable writeData : bus_data_type;
         variable memReadData : bus_data_type;
     begin
@@ -61,13 +61,13 @@ begin
                 check(stall);
             elsif run("Requesting read stalls until data is ready") then
                 writeAddress := X"00000004";
-                writeMask := (others => '1');
+                byteMask := (others => '1');
                 writeData := X"01234567";
                 simulated_bus_memory_pkg.write_to_address(
                     net => net,
                     actor => slaveActor,
                     addr => writeAddress,
-                    mask => writeMask,
+                    mask => byteMask,
                     data => writeData);
                 doRead <= true;
                 address <= writeAddress;
@@ -124,13 +124,13 @@ begin
                 check(not stall);
             elsif run("Reading same thing twice results in one stall") then
                 writeAddress := X"00000004";
-                writeMask := (others => '1');
+                byteMask := (others => '1');
                 writeData := X"01234567";
                 simulated_bus_memory_pkg.write_to_address(
                     net => net,
                     actor => slaveActor,
                     addr => writeAddress,
-                    mask => writeMask,
+                    mask => byteMask,
                     data => writeData);
                 doRead <= true;
                 address <= writeAddress;
@@ -159,13 +159,13 @@ begin
                 check(not bus_requesting(mst2slv));
             elsif run("Flushing the cache does lead to two reads") then
                 writeAddress := X"00000004";
-                writeMask := (others => '1');
+                byteMask := (others => '1');
                 writeData := X"01234567";
                 simulated_bus_memory_pkg.write_to_address(
                     net => net,
                     actor => slaveActor,
                     addr => writeAddress,
-                    mask => writeMask,
+                    mask => byteMask,
                     data => writeData);
                 doRead <= true;
                 address <= writeAddress;
@@ -179,13 +179,13 @@ begin
                 check(bus_requesting(mst2slv));
             elsif run("Relevant write after read should reread") then
                 writeAddress := X"00000004";
-                writeMask := (others => '1');
+                byteMask := (others => '1');
                 writeData := X"01234567";
                 simulated_bus_memory_pkg.write_to_address(
                     net => net,
                     actor => slaveActor,
                     addr => writeAddress,
-                    mask => writeMask,
+                    mask => byteMask,
                     data => writeData);
                 doRead <= true;
                 address <= writeAddress;
@@ -213,7 +213,7 @@ begin
                 check(bus_requesting(mst2slv));
             elsif run("no-op after write should rewrite") then
                 writeAddress := X"00000004";
-                writeMask := (others => '1');
+                byteMask := (others => '1');
                 writeData := X"01234567";
                 doRead <= true;
                 address <= writeAddress;

@@ -40,7 +40,7 @@ begin
     clk <= not clk after (clk_period/2);
     main : process
         variable address : bus_pkg.bus_address_type;
-        variable writeMask : bus_pkg.bus_write_mask_type;
+        variable byteMask : bus_pkg.bus_byte_mask_type;
         variable writeData : bus_pkg.bus_data_type;
         variable readData : bus_pkg.bus_data_type;
         variable faultData : bus_pkg.bus_fault_type;
@@ -52,13 +52,13 @@ begin
         while test_suite loop
             if run("Single write") then
                 address := std_logic_vector(to_unsigned(0, address'length));
-                writeMask := (others => '1');
+                byteMask := (others => '1');
                 writeData := std_logic_vector(to_unsigned(512, writeData'length));
                 simulated_depp_master_pkg.write_to_address(
                     net => net,
                     actor => deppMasterActor,
                     addr => address,
-                    mask => writeMask,
+                    mask => byteMask,
                     data => writeData);
                 simulated_bus_memory_pkg.read_from_address(
                     net => net,
@@ -68,22 +68,22 @@ begin
                 check_equal(readData, writeData);
             elsif run("Partial write") then
                 address := std_logic_vector(to_unsigned(0, address'length));
-                writeMask := (others => '1');
+                byteMask := (others => '1');
                 writeData := (others => '0');
                 simulated_depp_master_pkg.write_to_address(
                     net => net,
                     actor => deppMasterActor,
                     addr => address,
-                    mask => writeMask,
+                    mask => byteMask,
                     data => writeData);
                 address := std_logic_vector(to_unsigned(0, address'length));
-                writeMask := "1010";
+                byteMask := "1010";
                 writeData := (others => '1');
                 simulated_depp_master_pkg.write_to_address(
                     net => net,
                     actor => deppMasterActor,
                     addr => address,
-                    mask => writeMask,
+                    mask => byteMask,
                     data => writeData);
                 simulated_bus_memory_pkg.read_from_address(
                     net => net,
@@ -94,13 +94,13 @@ begin
                 check_equal(readData, writeData);
             elsif run("Single read") then
                 address := std_logic_vector(to_unsigned(0, address'length));
-                writeMask := (others => '1');
+                byteMask := (others => '1');
                 writeData := std_logic_vector(to_unsigned(512, writeData'length));
                 simulated_bus_memory_pkg.write_to_address(
                     net => net,
                     actor => slaveActor,
                     addr => address,
-                    mask => writeMask,
+                    mask => byteMask,
                     data => writeData);
                 simulated_depp_master_pkg.read_from_address(
                     net => net,
@@ -110,13 +110,13 @@ begin
                 check_equal(readData, writeData);
             elsif run("Single faulty write") then
                 address := std_logic_vector(to_unsigned(16#800#, address'length));
-                writeMask := (others => '1');
+                byteMask := (others => '1');
                 writeData := std_logic_vector(to_unsigned(512, writeData'length));
                 simulated_depp_master_pkg.write_to_address_expecting_fault(
                     net => net,
                     actor => deppMasterActor,
                     addr => address,
-                    mask => writeMask,
+                    mask => byteMask,
                     data => writeData,
                     faultData => faultData,
                     faultAddress => faultAddress);
@@ -135,7 +135,7 @@ begin
                 check_equal(faultAddress, address);
             elsif run("Large write transaction") then
                 address := std_logic_vector(to_unsigned(0, address'length));
-                writeMask := (others => '1');
+                byteMask := (others => '1');
                 for i in 0 to writeDataArray'length - 1 loop
                     writeDataArray(i) := std_logic_vector(to_unsigned(i, writeDataArray(i)'length));
                 end loop;
@@ -143,7 +143,7 @@ begin
                     net => net,
                     actor => deppMasterActor,
                     addr => address,
-                    mask => writeMask,
+                    mask => byteMask,
                     data => writeDataArray);
                 simulated_bus_memory_pkg.read_from_address(
                     net => net,
@@ -155,7 +155,7 @@ begin
                 end loop;
             elsif run("Large faulty write transaction") then
                 address := std_logic_vector(to_unsigned(1448, address'length));
-                writeMask := (others => '1');
+                byteMask := (others => '1');
                 for i in 0 to writeDataArray'length - 1 loop
                     writeDataArray(i) := std_logic_vector(to_unsigned(i, writeDataArray(i)'length));
                 end loop;
@@ -163,7 +163,7 @@ begin
                     net => net,
                     actor => deppMasterActor,
                     addr => address,
-                    mask => writeMask,
+                    mask => byteMask,
                     data => writeDataArray,
                     faultData => faultData,
                     faultAddress => faultAddress);
@@ -181,7 +181,7 @@ begin
                 end loop;
             elsif run("Large read transaction") then
                 address := std_logic_vector(to_unsigned(0, address'length));
-                writeMask := (others => '1');
+                byteMask := (others => '1');
                 for i in 0 to writeDataArray'length - 1 loop
                     writeDataArray(i) := std_logic_vector(to_unsigned(i, writeDataArray(i)'length));
                 end loop;
@@ -189,7 +189,7 @@ begin
                     net => net,
                     actor => slaveActor,
                     addr => address,
-                    mask => writeMask,
+                    mask => byteMask,
                     data => writeDataArray);
                 simulated_depp_master_pkg.read_from_address(
                     net => net,
@@ -201,7 +201,7 @@ begin
                 end loop;
             elsif run("Large write transaction then large read transaction") then
                 address := std_logic_vector(to_unsigned(0, address'length));
-                writeMask := (others => '1');
+                byteMask := (others => '1');
                 for i in 0 to writeDataArray'length - 1 loop
                     writeDataArray(i) := std_logic_vector(to_unsigned(i, writeDataArray(i)'length));
                 end loop;
@@ -209,7 +209,7 @@ begin
                     net => net,
                     actor => deppMasterActor,
                     addr => address,
-                    mask => writeMask,
+                    mask => byteMask,
                     data => writeDataArray);
                 simulated_depp_master_pkg.read_from_address(
                     net => net,

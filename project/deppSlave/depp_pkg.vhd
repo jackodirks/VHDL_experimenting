@@ -10,16 +10,16 @@ use work.bus_pkg;
 -- Add a fault register and a fault_address register (make sure that there is a NO_FAULT fault)
 -- Add a burst register, length of 255 seems plenty
 -- Overlay writeData and readData
--- Make a slide: writeMask -> burst -> busAddress -> read/write. Make it so that any read/write updates the internal depp address unless we are in the read/write register
+-- Make a slide: byteMask -> burst -> busAddress -> read/write. Make it so that any read/write updates the internal depp address unless we are in the read/write register
 -- This way, operations will be wayy cheaper since deppAddress will only ever be set once. For any operation.
--- Make another slide: faultData -> faultAddress put it in front of writeMask.
+-- Make another slide: faultData -> faultAddress put it in front of byteMask.
 
 package depp_pkg is
 
     subtype depp_address_type is std_logic_vector(7 downto 0);
     subtype depp_data_type is std_logic_vector(7 downto 0);
 
-    type selected_request_register_type is (reqReg_none, reqReg_faultData, reqReg_faultAddress, reqReg_writeMask, reqReg_burstLength, reqReg_address, reqReg_readWrite);
+    type selected_request_register_type is (reqReg_none, reqReg_faultData, reqReg_faultAddress, reqReg_byteMask, reqReg_burstLength, reqReg_address, reqReg_readWrite);
 
     constant depp_words_per_bus_word : natural := bus_pkg.bus_data_type'length / depp_pkg.depp_data_type'length;
     constant depp_words_per_bus_address : natural := bus_pkg.bus_address_type'length / depp_pkg.depp_data_type'length;
@@ -30,9 +30,9 @@ package depp_pkg is
     constant depp2bus_faultData_reg_end : natural := depp2bus_faultData_reg_start;
     constant depp2bus_faultAddress_reg_start : natural := depp2bus_faultData_reg_end + 1;
     constant depp2bus_faultAddress_reg_end : natural := depp2bus_faultAddress_reg_start + depp_words_per_bus_address - 1;
-    constant depp2bus_writeMask_reg_start : natural := depp2bus_faultAddress_reg_end + 1;
-    constant depp2bus_writeMask_reg_end : natural := depp2bus_writeMask_reg_start;
-    constant depp2bus_burstLength_reg_start : natural := depp2bus_writeMask_reg_end + 1;
+    constant depp2bus_byteMask_reg_start : natural := depp2bus_faultAddress_reg_end + 1;
+    constant depp2bus_byteMask_reg_end : natural := depp2bus_byteMask_reg_start;
+    constant depp2bus_burstLength_reg_start : natural := depp2bus_byteMask_reg_end + 1;
     constant depp2bus_burstLength_reg_end : natural := depp2bus_burstLength_reg_start;
     constant depp2bus_address_reg_start : natural := depp2bus_burstLength_reg_end + 1;
     constant depp2bus_address_reg_end : natural := depp2bus_address_reg_start + depp_words_per_bus_address - 1;
@@ -64,9 +64,9 @@ package body depp_pkg is
         elsif address >= depp2bus_faultAddress_reg_start and address <= depp2bus_faultAddress_reg_end then
             selected_request_register := reqReg_faultAddress;
             relative_address := address - depp2bus_faultAddress_reg_start;
-        elsif address >= depp2bus_writeMask_reg_start and address <= depp2bus_writeMask_reg_end then
-            selected_request_register := reqReg_writeMask;
-            relative_address := address - depp2bus_writeMask_reg_start;
+        elsif address >= depp2bus_byteMask_reg_start and address <= depp2bus_byteMask_reg_end then
+            selected_request_register := reqReg_byteMask;
+            relative_address := address - depp2bus_byteMask_reg_start;
         elsif address >= depp2bus_burstLength_reg_start and address <= depp2bus_burstLength_reg_end then
             selected_request_register := reqReg_burstLength;
             relative_address := address - depp2bus_burstLength_reg_start;

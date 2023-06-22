@@ -47,13 +47,13 @@ package bus_pkg is
     constant bus_bytes_per_word : positive := bus_data_type'length / bus_byte_size;
     constant bus_bytes_per_word_log2b : natural := bus_data_width_log2b - bus_byte_size_log2b;
 
-    subtype bus_write_mask_type is std_logic_vector(bus_bytes_per_word - 1 downto 0);
+    subtype bus_byte_mask_type is std_logic_vector(bus_bytes_per_word - 1 downto 0);
 
     -- Some predefined faults
     constant bus_fault_no_fault : bus_fault_type :=                     std_logic_vector(to_unsigned(0, bus_fault_type'length));
     constant bus_fault_unaligned_access : bus_fault_type :=             std_logic_vector(to_unsigned(1, bus_fault_type'length));
     constant bus_fault_address_out_of_range : bus_fault_type :=         std_logic_vector(to_unsigned(2, bus_fault_type'length));
-    constant bus_fault_illegal_write_mask : bus_fault_type :=           std_logic_vector(to_unsigned(3, bus_fault_type'length));
+    constant bus_fault_illegal_byte_mask : bus_fault_type :=           std_logic_vector(to_unsigned(3, bus_fault_type'length));
     constant bus_fault_illegal_address_for_burst : bus_fault_type :=    std_logic_vector(to_unsigned(4, bus_fault_type'length));
 
     -- The remapping logic.
@@ -67,7 +67,7 @@ package bus_pkg is
     type bus_mst2slv_type is record
         address         : bus_address_type;
         writeData       : bus_data_type;
-        writeMask       : bus_write_mask_type;
+        byteMask       : bus_byte_mask_type;
         readReady       : std_logic;
         writeReady      : std_logic;
         burst           : std_logic;
@@ -100,7 +100,7 @@ package bus_pkg is
     constant BUS_MST2SLV_IDLE : bus_mst2slv_type := (
         address => (others => 'X'),
         writeData => (others => 'X'),
-        writeMask => (others => 'X'),
+        byteMask => (others => 'X'),
         readReady => '0',
         writeReady => '0',
         burst => '0'
@@ -146,13 +146,14 @@ package bus_pkg is
 
     pure function bus_mst2slv_read (
         address : bus_address_type;
+        byte_mask : bus_byte_mask_type := (others => '1');
         burst   : std_logic := '0'
     ) return bus_mst2slv_type;
 
     pure function bus_mst2slv_write (
         address : bus_address_type;
         write_data : bus_data_type;
-        write_mask : bus_write_mask_type;
+        byte_mask : bus_byte_mask_type := (others => '1');
         burst   : std_logic := '0'
     ) return bus_mst2slv_type;
 
@@ -244,6 +245,7 @@ package body bus_pkg is
 
     pure function bus_mst2slv_read (
         address : bus_address_type;
+        byte_mask : bus_byte_mask_type := (others => '1');
         burst   : std_logic := '0'
     ) return bus_mst2slv_type is
         variable ret_val : bus_mst2slv_type := BUS_MST2SLV_IDLE;
@@ -251,20 +253,21 @@ package body bus_pkg is
         ret_val.address := address;
         ret_val.burst := burst;
         ret_val.readReady := '1';
+        ret_val.byteMask := byte_mask;
         return ret_val;
     end bus_mst2slv_read;
 
     pure function bus_mst2slv_write (
         address : bus_address_type;
         write_data : bus_data_type;
-        write_mask : bus_write_mask_type;
+        byte_mask : bus_byte_mask_type := (others => '1');
         burst   : std_logic := '0'
     ) return bus_mst2slv_type is
         variable ret_val : bus_mst2slv_type := BUS_MST2SLV_IDLE;
     begin
         ret_val.address := address;
         ret_val.writeData := write_data;
-        ret_val.writeMask := write_mask;
+        ret_val.byteMask := byte_mask;
         ret_val.burst := burst;
         ret_val.writeReady := '1';
         return ret_val;

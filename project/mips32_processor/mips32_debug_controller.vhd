@@ -30,7 +30,7 @@ begin
     process(clk)
         variable debug2mst_buf : bus_slv2mst_type := BUS_SLV2MST_IDLE;
         variable regZero_buf : mips32_data_type := (0 => '1', others => '0');
-        constant acceptableWriteMask : bus_write_mask_type := (others => '1');
+        constant acceptableWriteMask : bus_byte_mask_type := (others => '1');
     begin
         if rising_edge(clk) then
             if rst = '1' then
@@ -43,9 +43,9 @@ begin
                 if mst2debug.address(1 downto 0) /= "00" then
                     debug2mst_buf.fault := '1';
                     debug2mst_buf.faultData := bus_fault_unaligned_access;
-                elsif mst2debug.writeReady = '1' and mst2debug.writeMask /= acceptableWriteMask then
+                elsif mst2debug.writeReady = '1' and mst2debug.byteMask /= acceptableWriteMask then
                     debug2mst_buf.fault := '1';
-                    debug2mst_buf.faultData := bus_fault_illegal_write_mask;
+                    debug2mst_buf.faultData := bus_fault_illegal_byte_mask;
                 elsif mst2debug.address = X"00000000" then
                     if mst2debug.readReady = '1' then
                         debug2mst_buf.readData := regZero_buf;

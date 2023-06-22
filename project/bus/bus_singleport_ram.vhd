@@ -57,7 +57,7 @@ begin
             ramb_addr(DEPTH_LOG2B - 1 downto bus_bytes_per_word_log2b) := mst2mem.address(DEPTH_LOG2B - 1 downto bus_bytes_per_word_log2b);
 
             if not fault then
-                if (mst2mem.writeReady and mst2mem.writeMask(b)) = '1' then
+                if (mst2mem.writeReady and mst2mem.byteMask(b)) = '1' then
                     ram(to_integer(unsigned(ramb_addr))) <= mst2mem.writeData(b*bus_byte_size + (bus_byte_size - 1) downto b*bus_byte_size);
                 end if;
                 ramb_data_out := ram(to_integer(unsigned(ramb_addr)));

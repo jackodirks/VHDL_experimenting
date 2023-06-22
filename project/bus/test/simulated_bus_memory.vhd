@@ -44,7 +44,7 @@ architecture behavioral of simulated_bus_memory is
     signal vcom_write_done : boolean := false;
     signal vcom_request_address : bus_address_type;
     signal vcom_request_data : bus_data_type;
-    signal vcom_request_writeMask : bus_write_mask_type;
+    signal vcom_request_byteMask : bus_byte_mask_type;
 
 begin
     mem2mst <= mem2mst_internal;
@@ -53,7 +53,7 @@ begin
         variable msg_type : msg_type_t;
         variable return_data : bus_data_type;
         variable address : bus_address_type;
-        variable mask : bus_write_mask_type;
+        variable mask : bus_byte_mask_type;
         variable input_data : bus_data_type;
     begin
         receive(net, actor, request_msg);
@@ -64,7 +64,7 @@ begin
             reply_msg := new_msg(read_reply_msg);
             push(reply_msg, last_mst2mem_request.address);
             push(reply_msg, last_mst2mem_request.writeData);
-            push(reply_msg, last_mst2mem_request.writeMask);
+            push(reply_msg, last_mst2mem_request.byteMask);
             push(reply_msg, last_mst2mem_request.readReady);
             push(reply_msg, last_mst2mem_request.writeReady);
             push(reply_msg, last_mst2mem_request.burst);
@@ -80,7 +80,7 @@ begin
         elsif msg_type = write_toAddress_msg then
             vcom_request_address <= pop(request_msg);
             vcom_request_data <= pop(request_msg);
-            vcom_request_writeMask <= pop(request_msg);
+            vcom_request_byteMask <= pop(request_msg);
             vcom_request_write <= '1';
             wait until vcom_write_done;
             vcom_request_write <= '0';
@@ -143,7 +143,7 @@ begin
     begin
         if rising_edge(vcom_request_write) then
             for i in 0 to bus_bytes_per_word - 1 loop
-                if vcom_request_writeMask(i) = '1' then
+                if vcom_request_byteMask(i) = '1' then
                     ram(to_integer(unsigned(vcom_request_address)) + i) <= vcom_request_data((i+1)*bus_byte_type'length - 1 downto i*bus_byte_type'length);
                 end if;
             end loop;
@@ -155,7 +155,7 @@ begin
         if rising_edge(clk) then
             if write_transaction(mst2mem, mem2mst_internal) then
                 for i in 0 to bus_bytes_per_word - 1 loop
-                    if mst2mem.writeMask(i) = '1' then
+                    if mst2mem.byteMask(i) = '1' then
                         ram(to_integer(unsigned(mst2mem.address)) + i) <= mst2mem.writeData((i+1)*bus_byte_type'length - 1 downto i*bus_byte_type'length);
                     end if;
                 end loop;

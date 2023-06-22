@@ -78,7 +78,7 @@ begin
                 test2slv <= bus_mst2slv_write(
                     address => std_logic_vector(to_unsigned(controllerAddress, bus_address_type'length)),
                     write_data => (others => '0'),
-                    write_mask => (others => '1'));
+                    byte_mask => (others => '1'));
                 wait until rising_edge(clk) and any_transaction(test2slv, slv2test);
                 check(write_transaction(test2slv, slv2test));
                 test2slv <= BUS_MST2SLV_IDLE;
@@ -101,7 +101,7 @@ begin
                 test2slv <= bus_mst2slv_write(
                     address => std_logic_vector(to_unsigned(controllerAddress, bus_address_type'length)),
                     write_data => (others => '0'),
-                    write_mask => (others => '1'));
+                    byte_mask => (others => '1'));
                 wait until rising_edge(clk) and any_transaction(test2slv, slv2test);
                 check(write_transaction(test2slv, slv2test));
                 test2slv <= BUS_MST2SLV_IDLE;
@@ -132,7 +132,7 @@ begin
                 test2slv <= bus_mst2slv_write(
                     address => std_logic_vector(to_unsigned(controllerAddress, bus_address_type'length)),
                     write_data => (others => '0'),
-                    write_mask => (others => '1'));
+                    byte_mask => (others => '1'));
                 wait until rising_edge(clk) and any_transaction(test2slv, slv2test);
                 check(write_transaction(test2slv, slv2test));
                 test2slv <= BUS_MST2SLV_IDLE;
@@ -163,7 +163,7 @@ begin
                 test2slv <= bus_mst2slv_write(
                     address => std_logic_vector(to_unsigned(controllerAddress, bus_address_type'length)),
                     write_data => (others => '0'),
-                    write_mask => (others => '1'));
+                    byte_mask => (others => '1'));
                 wait until rising_edge(clk) and any_transaction(test2slv, slv2test);
                 check(write_transaction(test2slv, slv2test));
                 test2slv <= BUS_MST2SLV_IDLE;

@@ -64,7 +64,7 @@ begin
         variable faultAddress : bus_address_type := (others => '0');
         variable readData : bus_data_type := (others => '0');
         variable writeData : bus_data_type := (others => '0');
-        variable writeMask : bus_write_mask_type := (others => '0');
+        variable byteMask : bus_byte_mask_type := (others => '0');
         variable burstLength : natural range 0 to 255 := 0;
         variable bus_address : bus_address_type := (others => '0');
     begin
@@ -119,8 +119,8 @@ begin
                             faultData := usb_db(faultData'range);
                         when reqReg_faultAddress =>
                             faultAddress((depp_address_relative + 1)*depp_data_type'length - 1 downto depp_address_relative*depp_data_type'length) := usb_db;
-                        when reqReg_writeMask =>
-                            writeMask := usb_db(writeMask'range);
+                        when reqReg_byteMask =>
+                            byteMask := usb_db(byteMask'range);
                         when reqReg_burstLength =>
                             burstLength := to_integer(unsigned(usb_db));
                         when reqReg_address =>
@@ -130,7 +130,7 @@ begin
                             if depp_address_relative = depp_words_per_bus_word - 1 then
                                 mst2slv_internal := bus_mst2slv_write(address => bus_address,
                                                                       write_data => writeData,
-                                                                      write_mask => writeMask);
+                                                                      byte_mask => byteMask);
                                 if burstLength > 0 then
                                     burstActive := true;
                                     mst2slv_internal.burst := '1';
@@ -149,8 +149,8 @@ begin
                             usb_db_internal(faultData'range) := faultData;
                         when reqReg_faultAddress =>
                             usb_db_internal := faultAddress(depp_address_relative*depp_data_type'length + (depp_data_type'length - 1) downto depp_address_relative*depp_data_type'length);
-                        when reqReg_writeMask =>
-                            usb_db_internal(writeMask'range) := writeMask;
+                        when reqReg_byteMask =>
+                            usb_db_internal(byteMask'range) := byteMask;
                         when reqReg_burstLength =>
                             usb_db_internal := std_logic_vector(to_unsigned(burstLength, usb_db_internal'length));
                         when reqReg_address =>

@@ -71,7 +71,7 @@ begin
                     for b in 0 to bus_pkg.bus_bytes_per_word - 1 loop
                         if (full_addr + b < digit_count) then
                             addr := full_addr + b;
-                            if mst2slv.writeReady = '1' and mst2slv.writeMask(b) = '1' then
+                            if mst2slv.writeReady = '1' and mst2slv.byteMask(b) = '1' then
                                 digit_storage(addr) <= mst2slv.writeData((b+1) * bus_pkg.bus_byte_size - 1 downto b*bus_pkg.bus_byte_size);
                             end if;
                             slv2mst_internal.readData((b+1) * bus_pkg.bus_byte_size - 1 downto b*bus_pkg.bus_byte_size) := digit_storage(addr);

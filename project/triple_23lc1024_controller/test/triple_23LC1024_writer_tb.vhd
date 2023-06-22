@@ -36,7 +36,7 @@ architecture tb of triple_23LC1024_writer_tb is
     signal valid : std_logic;
     signal address : bus_address_type := (others => '0');
     signal write_data : bus_data_type := (others => '0');
-    signal writeMask : bus_write_mask_type := (others => '1');
+    signal byteMask : bus_byte_mask_type := (others => '1');
     signal burst : std_logic := '0';
     signal fault : std_logic;
     signal faultData : std_logic_vector(bus_fault_type'range);
@@ -206,9 +206,9 @@ begin
                 write_data <= std_logic_vector(to_unsigned(255, address'length));
                 rst <= '0';
                 ready <= '1';
-                writeMask <= X"7";
+                byteMask <= X"7";
                 wait until rising_edge(clk) and fault = '1';
-                check_equal(faultData, bus_fault_illegal_write_mask);
+                check_equal(faultData, bus_fault_illegal_byte_mask);
             elsif run("Unaligned address error is detected") then
                 address <= std_logic_vector(to_unsigned(1, address'length));
                 write_data <= std_logic_vector(to_unsigned(255, address'length));
@@ -232,13 +232,13 @@ begin
                 write_data <= std_logic_vector(to_unsigned(255, address'length));
                 rst <= '0';
                 ready <= '1';
-                writeMask <= X"7";
+                byteMask <= X"7";
                 wait until rising_edge(clk) and fault = '1';
                 address <= std_logic_vector(to_unsigned(4, address'length));
                 write_data <= std_logic_vector(to_unsigned(255, address'length));
                 rst <= '0';
                 ready <= '1';
-                writeMask <= X"F";
+                byteMask <= X"F";
                 wait until rising_edge(clk) and (valid = '1' or fault = '1');
                 check_equal('0', fault);
                 wait until rising_edge(cs_n(0));
@@ -259,11 +259,11 @@ begin
                 wait until rising_edge(clk) and (valid = '1' or fault = '1');
                 check_equal('0', fault);
                 address <= std_logic_vector(to_unsigned(4, address'length));
-                writeMask <= X"7";
+                byteMask <= X"7";
                 wait until rising_edge(clk) and (valid = '1' or fault = '1');
                 check_equal('1', fault);
                 address <= std_logic_vector(to_unsigned(8, address'length));
-                writeMask <= X"F";
+                byteMask <= X"F";
                 burst <= '0';
                 wait until rising_edge(clk) and (valid = '1' or fault = '1');
                 check_equal('0', fault);
@@ -286,7 +286,7 @@ begin
                 wait until rising_edge(clk) and (valid = '1' or fault = '1');
                 check_equal('0', fault);
                 address <= std_logic_vector(to_unsigned(4, address'length));
-                writeMask <= X"7";
+                byteMask <= X"7";
                 wait until rising_edge(clk) and (valid = '1' or fault = '1');
                 check_equal('1', fault);
                 ready <= '0';
@@ -369,7 +369,7 @@ begin
         fault => fault,
         address => address,
         write_data => write_data,
-        writeMask => writeMask,
+        byteMask => byteMask,
         burst => burst,
         faultData => faultData
     );

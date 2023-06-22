@@ -55,26 +55,26 @@ begin
             elsif run("Writing 0 to address 0 clears controllerReset") then
                 mst2slv <= bus_mst2slv_write(address => (others => '0'),
                                                      write_data => (others => '0'),
-                                                     write_mask => (others => '1'));
+                                                     byte_mask => (others => '1'));
                 wait until rising_edge(clk) and write_transaction(mst2slv, slv2mst);
                 check(not controllerReset);
             elsif run("Writing 1 to address 0 sets controllerReset") then
                 mst2slv <= bus_mst2slv_write(address => (others => '0'),
                                                      write_data => (others => '0'),
-                                                     write_mask => (others => '1'));
+                                                     byte_mask => (others => '1'));
                 wait until rising_edge(clk) and write_transaction(mst2slv, slv2mst);
                 mst2slv <= bus_mst2slv_write(address => (others => '0'),
                                                      write_data => (others => '1'),
-                                                     write_mask => (others => '1'));
+                                                     byte_mask => (others => '1'));
                 wait until rising_edge(clk) and write_transaction(mst2slv, slv2mst);
                 check(controllerReset);
-            elsif run("Debug controller errors on invalid writeMask") then
+            elsif run("Debug controller errors on invalid byteMask") then
                mst2slv <= bus_mst2slv_write(address => (others => '0'),
                                                     write_data => (others => '0'),
-                                                    write_mask => (others => '0'));
+                                                    byte_mask => (others => '0'));
                wait until rising_edge(clk) and any_transaction(mst2slv, slv2mst);
                 check(fault_transaction(mst2slv, slv2mst));
-                check_equal(slv2mst.faultData, bus_fault_illegal_write_mask);
+                check_equal(slv2mst.faultData, bus_fault_illegal_byte_mask);
             elsif run("Reading back register works") then
                 mst2slv <= bus_mst2slv_read(address => (others => '0'));
                 wait until rising_edge(clk) and read_transaction(mst2slv, slv2mst);
@@ -86,23 +86,23 @@ begin
             elsif run("Writing 0x2 to address 0 sets controllerStall") then
                 mst2slv <= bus_mst2slv_write(address => (others => '0'),
                                                      write_data => X"00000002",
-                                                     write_mask => (others => '1'));
+                                                     byte_mask => (others => '1'));
                 wait until rising_edge(clk) and write_transaction(mst2slv, slv2mst);
                 check(controllerStall);
             elsif run("Writing 0x0 to address 0 clears controllerStall") then
                 mst2slv <= bus_mst2slv_write(address => (others => '0'),
                                                      write_data => X"00000002",
-                                                     write_mask => (others => '1'));
+                                                     byte_mask => (others => '1'));
                 wait until rising_edge(clk) and write_transaction(mst2slv, slv2mst);
                 mst2slv <= bus_mst2slv_write(address => (others => '0'),
                                                      write_data => X"00000000",
-                                                     write_mask => (others => '1'));
+                                                     byte_mask => (others => '1'));
                 wait until rising_edge(clk) and write_transaction(mst2slv, slv2mst);
                 check(not controllerStall);
             elsif run("rst clears controllerStall") then
                 mst2slv <= bus_mst2slv_write(address => (others => '0'),
                                                      write_data => X"00000002",
-                                                     write_mask => (others => '1'));
+                                                     byte_mask => (others => '1'));
                 wait until rising_edge(clk) and write_transaction(mst2slv, slv2mst);
                 mst2slv <= BUS_MST2SLV_IDLE;
                 rst <= '1';
@@ -112,7 +112,7 @@ begin
             elsif run("rst sets controllerReset") then
                 mst2slv <= bus_mst2slv_write(address => (others => '0'),
                                                      write_data => X"00000000",
-                                                     write_mask => (others => '1'));
+                                                     byte_mask => (others => '1'));
                 wait until rising_edge(clk) and write_transaction(mst2slv, slv2mst);
                 mst2slv <= BUS_MST2SLV_IDLE;
                 rst <= '1';
@@ -122,7 +122,7 @@ begin
             elsif run("rst sets bus slave to idle") then
                 mst2slv <= bus_mst2slv_write(address => (others => '0'),
                                                      write_data => X"00000000",
-                                                     write_mask => (others => '1'));
+                                                     byte_mask => (others => '1'));
                 wait until falling_edge(clk) and write_transaction(mst2slv, slv2mst);
                 rst <= '1';
                 wait until rising_edge(clk);
