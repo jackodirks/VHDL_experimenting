@@ -22,7 +22,7 @@ architecture tb of mips32_alu_tb is
     signal rst : std_logic := '0';
     signal inputA : mips32_data_type;
     signal inputB : mips32_data_type;
-    signal funct : mips32_aluFunction_type;
+    signal cmd : mips32_alu_cmd;
     signal shamt : mips32_shamt_type;
     signal output : mips32_data_type;
     signal overflow : boolean;
@@ -36,81 +36,66 @@ begin
     begin
         test_runner_setup(runner, runner_cfg);
         while test_suite loop
-            if run("Signed addition works") then
+            if run("Addition works") then
                 inputA <= std_logic_vector(to_signed(-4, inputA'length));
                 inputB <= std_logic_vector(to_signed(-6, inputB'length));
-                funct <= mips32_aluFunctionAdd;
+                cmd <= cmd_add;
                 expectedOutput := std_logic_vector(to_signed(-10, expectedOutput'length));
                 wait for clk_period;
                 check_equal(output, expectedOutput);
-            elsif run("Signed addition can overflow") then
+            elsif run("Addition can overflow") then
                 inputA <= std_logic_vector(to_signed(-2147483648, inputA'length));
                 inputB <= std_logic_vector(to_signed(-1, inputB'length));
-                funct <= mips32_aluFunctionAdd;
+                cmd <= cmd_add;
                 expectedOutput := std_logic_vector(to_signed(2147483647, expectedOutput'length));
                 wait for clk_period;
                 check_equal(output, expectedOutput);
                 check(overflow);
-            elsif run("Unsigned addition overflow is not marked") then
+            elsif run("Subtraction works") then
                 inputA <= std_logic_vector(to_signed(-2147483648, inputA'length));
-                inputB <= std_logic_vector(to_signed(-1, inputB'length));
-                funct <= mips32_aluFunctionAddUnsigned;
+                inputB <= std_logic_vector(to_signed(1, inputB'length));
+                cmd <= cmd_sub;
                 expectedOutput := std_logic_vector(to_signed(2147483647, expectedOutput'length));
                 wait for clk_period;
                 check_equal(output, expectedOutput);
-                check(not overflow);
-            elsif run("Signed subtraction works") then
+            elsif run("Subtraction overflows") then
                 inputA <= std_logic_vector(to_signed(-2147483648, inputA'length));
                 inputB <= std_logic_vector(to_signed(1, inputB'length));
-                funct <= mips32_aluFunctionSubtract;
-                expectedOutput := std_logic_vector(to_signed(2147483647, expectedOutput'length));
-                wait for clk_period;
-                check_equal(output, expectedOutput);
-            elsif run("Signed subtraction overflows") then
-                inputA <= std_logic_vector(to_signed(-2147483648, inputA'length));
-                inputB <= std_logic_vector(to_signed(1, inputB'length));
-                funct <= mips32_aluFunctionSubtract;
+                cmd <= cmd_sub;
                 expectedOutput := std_logic_vector(to_signed(2147483647, expectedOutput'length));
                 wait for clk_period;
                 check(overflow);
-            elsif run("Unsigned subtraction overflow is not marked") then
-                inputA <= std_logic_vector(to_signed(-2147483648, inputA'length));
-                inputB <= std_logic_vector(to_signed(1, inputB'length));
-                funct <= mips32_aluFunctionSubtractUnsigned;
-                expectedOutput := std_logic_vector(to_signed(2147483647, expectedOutput'length));
-                wait for clk_period;
-                check(not overflow);
             elsif run("And function works") then
                 inputA <= X"F0F0FFFF";
                 inputB <= X"0A0ABCDE";
-                funct <= mips32_aluFunctionAnd;
+                cmd <= cmd_and;
                 expectedOutput := X"0000BCDE";
                 wait for clk_period;
                 check_equal(output, expectedOutput);
             elsif run("Or function works") then
                 inputA <= X"A0B0C0D0";
                 inputB <= X"0E0F0102";
-                funct <= mips32_aluFunctionOr;
+                cmd <= cmd_or;
                 expectedOutput := X"AEBFC1D2";
                 wait for clk_period;
                 check_equal(output, expectedOutput);
             elsif run("Nor function works") then
                 inputA <= X"F0F0F0F0";
                 inputB <= X"0F0F0F00";
-                funct <= mips32_aluFunctionNor;
+                cmd <= cmd_nor;
                 expectedOutput := X"0000000F";
                 wait for clk_period;
                 check_equal(output, expectedOutput);
             elsif run("set less than function works") then
                 inputA <= std_logic_vector(to_signed(1, inputA'length));
                 inputB <= std_logic_vector(to_signed(-1, inputA'length));
-                funct <= mips32_aluFunctionSetLessThan;
+                cmd <= cmd_slt;
                 expectedOutput := (others => '0');
                 wait for clk_period;
                 check_equal(output, expectedOutput);
                 inputA <= std_logic_vector(to_signed(-1, inputA'length));
                 inputB <= std_logic_vector(to_signed(1, inputA'length));
-                funct <= mips32_aluFunctionSetLessThan;
+                cmd <= cmd_slt;
                 expectedOutput := (others => '0');
                 expectedOutput(0) := '1';
                 wait for clk_period;
@@ -119,20 +104,20 @@ begin
                 inputB <= X"F0F0F0F0";
                 shamt <= 4;
                 expectedOutput := X"0F0F0F00";
-                funct <= mips32_aluFunctionSll;
+                cmd <= cmd_sll;
                 wait for clk_period;
                 check_equal(output, expectedOutput);
             elsif run("Srl works") then
                 inputB <= X"F0F0F0F0";
                 shamt <= 4;
                 expectedOutput := X"0F0F0F0F";
-                funct <= mips32_aluFunctionSrl;
+                cmd <= cmd_srl;
                 wait for clk_period;
                 check_equal(output, expectedOutput);
             elsif run("set less than unsigned function works") then
                 inputA <= std_logic_vector(to_signed(2, inputA'length));
                 inputB <= std_logic_vector(to_signed(-1, inputA'length));
-                funct <= mips32_aluFunctionSetLessThanUnsigned;
+                cmd <= cmd_sltu;
                 expectedOutput := (others => '0');
                 expectedOutput(0) := '1';
                 wait for clk_period;
@@ -156,7 +141,7 @@ begin
     port map (
         inputA,
         inputB,
-        funct,
+        cmd,
         shamt,
         output,
         overflow

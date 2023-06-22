@@ -10,7 +10,7 @@ entity mips32_alu is
     port (
         inputA : in mips32_data_type;
         inputB : in mips32_data_type;
-        funct : in mips32_aluFunction_type;
+        cmd : in mips32_alu_cmd;
         shamt : in mips32_shamt_type;
 
         output : out mips32_data_type;
@@ -20,7 +20,7 @@ end entity;
 
 architecture behaviourial of mips32_alu is
 begin
-    process(inputA, inputB, funct, shamt)
+    process(inputA, inputB, cmd, shamt)
         variable additionResult : mips32_data_type;
         variable additionOverflow : boolean;
         variable subtractionResult : mips32_data_type;
@@ -54,45 +54,37 @@ begin
             setLessThanUnsignedResult := '0';
         end if;
 
-        case funct is
-            when mips32_aluFunctionSll =>
+        if cmd = cmd_add then
+            overflow <= additionOverflow;
+        elsif cmd = cmd_sub then
+            overflow <= subtractionOverflow;
+        else
+            overflow <= false;
+        end if;
+
+        case cmd is
+            when cmd_sll =>
                 output <= sllResult;
-                overflow <= false;
-            when mips32_aluFunctionSrl =>
+            when cmd_srl =>
                 output <= srlResult;
-                overflow <= false;
-            when mips32_aluFunctionAdd =>
+            when cmd_add =>
                 output <= additionResult;
-                overflow <= additionOverflow;
-            when mips32_aluFunctionAddUnsigned =>
-                output <= additionResult;
-                overflow <= false;
-            when mips32_aluFunctionSubtract =>
+            when cmd_sub =>
                 output <= subtractionResult;
-                overflow <= subtractionOverflow;
-            when mips32_aluFunctionSubtractUnsigned =>
-                output <= subtractionResult;
-                overflow <= false;
-            when mips32_aluFunctionAnd =>
+            when cmd_and =>
                 output <= andResult;
-                overflow <= false;
-            when mips32_aluFunctionOr =>
+            when cmd_or =>
                 output <= orResult;
-                overflow <= false;
-            when mips32_aluFunctionNor =>
+            when cmd_nor =>
                 output <= norResult;
-                overflow <= false;
-            when mips32_aluFunctionSetLessThan =>
+            when cmd_slt =>
                 output(output'high downto 1) <= (others => '0');
                 output(0) <= setLessThanResult;
-                overflow <= false;
-            when mips32_aluFunctionSetLessThanUnsigned =>
+            when cmd_sltu =>
                 output(output'high downto 1) <= (others => '0');
                 output(0) <= setLessThanUnsignedResult;
-                overflow <= false;
             when others =>
                 output <= inputA;
-                overflow <= false;
         end case;
     end process;
 

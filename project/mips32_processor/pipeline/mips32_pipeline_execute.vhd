@@ -49,8 +49,37 @@ architecture behaviourial of mips32_pipeline_execute is
     signal aluResult : mips32_data_type;
     signal luiResult : mips32_data_type;
     signal aluInputB : mips32_data_type;
-    signal aluFunctionInput : mips32_aluFunction_type;
+    signal aluCmd : mips32_alu_cmd;
     signal overrideProgramCounter_buf : boolean;
+
+    pure function translateAluFunc( func : mips32_aluFunction_type) return mips32_alu_cmd is
+        variable ret : mips32_alu_cmd := cmd_add;
+    begin
+        case func is
+            when mips32_aluFunctionSll =>
+                ret := cmd_sll;
+            when mips32_aluFunctionSrl =>
+                ret := cmd_srl;
+            when mips32_aluFunctionAdd | mips32_aluFunctionAddUnsigned =>
+                ret := cmd_add;
+            when mips32_aluFunctionSubtract | mips32_aluFunctionSubtractUnsigned =>
+                ret := cmd_sub;
+            when mips32_aluFunctionAnd =>
+                ret := cmd_and;
+            when mips32_aluFunctionOr =>
+                ret := cmd_or;
+            when mips32_aluFunctionNor =>
+                ret := cmd_nor;
+            when mips32_aluFunctionSetLessThan =>
+                ret := cmd_slt;
+            when mips32_aluFunctionSetLessThanUnsigned =>
+                ret := cmd_sltu;
+            when others =>
+                ret := cmd_add;
+        end case;
+        return ret;
+    end function;
+
 begin
     luiResult <= std_logic_vector(shift_left(unsigned(immidiate), 16));
     overrideProgramCounter <= overrideProgramCounter_buf;
@@ -115,11 +144,11 @@ begin
     begin
         case executeControlWord.ALUOpDirective is
             when exec_add =>
-                aluFunctionInput <= mips32_aluFunctionAddUnsigned;
+                aluCmd <= cmd_add;
             when exec_sub =>
-                aluFunctionInput <= mips32_aluFunctionSubtractUnsigned;
+                aluCmd <= cmd_sub;
             when others =>
-                aluFunctionInput <= aluFunction;
+                aluCmd <= translateAluFunc(aluFunction);
         end case;
     end process;
 
@@ -136,7 +165,7 @@ begin
     port map (
         inputA => rsData,
         inputB => aluInputB,
-        funct => aluFunctionInput,
+        cmd => aluCmd,
         shamt => shamt,
         output => aluResult
     );

@@ -22,6 +22,7 @@ package mips32_pkg is
     type mips32_data_array is array (natural range <>) of mips32_data_type;
     type mips32_byte_array is array (natural range <>) of mips32_byte_type;
     type mips32_exec_directive is (exec_rtype, exec_add, exec_sub);
+    type mips32_alu_cmd is (cmd_add, cmd_sub, cmd_and, cmd_or, cmd_nor, cmd_sltu, cmd_slt, cmd_sll, cmd_srl);
 
     type mips32_InstructionDecodeControlWord_type is record
         jump : boolean;
