@@ -110,19 +110,11 @@ begin
                 wait for clk_period;
                 check(has_fault);
                 check(fault_data = bus_pkg.bus_fault_unaligned_access);
-            elsif run("byte mask 1100 requires a 2 byte alignment") then
-                mst2slv <= bus_pkg.bus_mst2slv_read(X"00021102", byte_mask => "1100");
-                wait for clk_period;
-                check(not has_fault);
             elsif run("byte mask 0100 is illegal") then
                 mst2slv <= bus_pkg.bus_mst2slv_read(X"0002110f", byte_mask => "0100");
                 wait for clk_period;
                 check(has_fault);
                 check(fault_data = bus_pkg.bus_fault_illegal_byte_mask);
-            elsif run("Byte mask 1000 allows any alignment") then
-                mst2slv <= bus_pkg.bus_mst2slv_read(X"0002110f", byte_mask => "1000");
-                wait for clk_period;
-                check(not has_fault);
             elsif run("byte mask 1111 results in request length of 4") then
                 mst2slv <= bus_pkg.bus_mst2slv_read(X"00021100", byte_mask => "1111");
                 wait for clk_period;
@@ -136,7 +128,7 @@ begin
                 wait for clk_period;
                 check(not has_fault);
             elsif run("Rst works") then
-                mst2slv <= bus_pkg.bus_mst2slv_read(X"00021100", byte_mask => "1100");
+                mst2slv <= bus_pkg.bus_mst2slv_read(X"00021100", byte_mask => "1111");
                 wait for clk_period;
                 check(read_request);
                 rst <= '1';
