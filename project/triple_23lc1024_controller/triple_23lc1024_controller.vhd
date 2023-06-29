@@ -2,7 +2,6 @@ library IEEE;
 use IEEE.std_logic_1164.all;
 use IEEE.numeric_std.all;
 
-
 library work;
 use work.bus_pkg.all;
 use work.triple_23lc1024_pkg.all;
@@ -46,11 +45,8 @@ architecture behavioral of triple_23lc1024_controller is
     signal spi_sio_read_in : std_logic_vector(3 downto 0);
     signal spi_sio_read_out : std_logic_vector(3 downto 0);
     signal cs_set_read  : std_logic;
-    signal cs_request_read : cs_request_type;
-    signal ready_read : std_logic;
+    signal ready_read : boolean;
     signal valid_read : std_logic;
-    signal fault_read : std_logic;
-    signal faultData_read : bus_fault_type;
     signal reading : boolean;
 
     -- Write specific signals
@@ -58,72 +54,52 @@ architecture behavioral of triple_23lc1024_controller is
     signal spi_clk_write : std_logic;
     signal spi_sio_write_out : std_logic_vector(3 downto 0);
     signal cs_set_write  : std_logic;
-    signal cs_request_write : cs_request_type;
-    signal ready_write : std_logic;
+    signal ready_write : boolean;
     signal valid_write : std_logic;
-    signal fault_write : std_logic;
-    signal faultData_write : bus_fault_type;
 
     -- CS control signals
     signal spi_cs_internal : std_logic_vector(2 downto 0);
     signal cs_requested : cs_request_type;
+    signal cs_request_writer : cs_request_type;
+    signal cs_request_reader : cs_request_type;
     signal cs_state : std_logic;
     signal cs_set : std_logic;
 
-    -- Bus data
-    signal address : bus_address_type;
-    signal writeData : bus_data_type;
-    signal byteMask : bus_byte_mask_type;
-    signal readData : bus_data_type;
-
-    -- Bus control
-    signal burst : std_logic;
+    -- Bus parsing
+    signal request_length : positive range 1 to bus_bytes_per_word;
+    signal write_request : boolean;
+    signal read_request : boolean;
+    signal has_fault : boolean;
+    signal cs_request : cs_request_type;
 begin
 
-    bus_handling : process(mst2slv, config_done, write_active, read_active)
-    begin
-        -- data
-        address <= mst2slv.address;
-        writeData <= mst2slv.writeData;
-        byteMask <= mst2slv.byteMask;
-        burst <= mst2slv.burst;
+    slv2mst.fault <= '1' when has_fault else '0';
+    slv2mst.readValid <= valid_read;
+    slv2mst.writeValid <= valid_write;
 
-        -- control
-        ready_read <= '0';
-        ready_write <= '0';
+    ready_handling : process (write_request, read_request, config_done, read_active, write_active)
+    begin
+        ready_write <= false;
+        ready_read <= false;
         if config_done then
-            if not write_active then
-                ready_read <= mst2slv.readReady;
-            end if;
             if not read_active then
-                ready_write <= mst2slv.writeReady;
+                ready_write <= write_request;
+            end if;
+
+            if not write_active then
+                ready_read <= read_request;
             end if;
         end if;
     end process;
 
-    bus_output : process(valid_read, fault_read, faultData_read, fault_write, valid_write, faultData_write, readData)
-    begin
-        slv2mst <= BUS_SLV2MST_IDLE;
-        slv2mst.readData <= readData;
-        slv2mst.readValid <= valid_read;
-        slv2mst.writeValid <= valid_write;
-        if fault_read = '1' then
-            slv2mst.fault <= fault_read;
-            slv2mst.faultData <= faultData_read;
-        elsif fault_write = '1' then
-            slv2mst.fault <= fault_write;
-            slv2mst.faultData <= faultData_write;
-        end if;
-    end process;
-
-    cs_control_handling : process(read_active, write_active, cs_set_read, cs_set_write, cs_request_read, cs_request_write)
+    cs_control_handling : process(read_active, write_active, cs_set_read, cs_set_write, cs_request_reader, cs_request_writer)
     begin
         if read_active then
             cs_set <= cs_set_read;
-            cs_requested <= cs_request_read;
+            cs_requested <= cs_request_reader;
         elsif write_active then
             cs_set <= cs_set_write;
-            cs_requested <= cs_request_write;
+            cs_requested <= cs_request_writer;
         else
             cs_set <= '1';
             cs_requested <= request_none;
@@ -188,17 +164,18 @@ begin
         spi_sio_in => spi_sio_read_in,
         spi_sio_out => spi_sio_read_out,
         cs_set => cs_set_read,
-        cs_request => cs_request_read,
         cs_state => cs_state,
         ready => ready_read,
         valid => valid_read,
         active => read_active,
-        fault => fault_read,
+        fault => has_fault,
         reading => reading,
-        address => address,
-        read_data => readData,
-        burst => burst,
-        faultData => faultData_read
+        address => mst2slv.address(16 downto 0),
+        cs_request_in => cs_request,
+        cs_request_out => cs_request_reader,
+        request_length => request_length,
+        read_data => slv2mst.readData,
+        burst => mst2slv.burst
     );
 
     writer : entity work.triple_23lc1024_writer
@@ -211,17 +188,32 @@ begin
         spi_clk => spi_clk_write,
         spi_sio => spi_sio_write_out,
         cs_set => cs_set_write,
-        cs_request => cs_request_write,
         cs_state => cs_state,
         ready => ready_write,
         valid => valid_write,
         active => write_active,
-        fault => fault_write,
-        address => address,
-        write_data => writeData,
-        byteMask => byteMask,
-        burst => burst,
-        faultData => faultData_write
+        fault => has_fault,
+        address => mst2slv.address(16 downto 0),
+        cs_request_in => cs_request,
+        cs_request_out => cs_request_writer,
+        request_length => request_length,
+        write_data => mst2slv.writeData,
+        burst => mst2slv.burst
+    );
+
+    parser : entity work.triple_23lc1024_bus_parser
+    port map (
+        clk => clk,
+        rst => rst,
+        mst2slv => mst2slv,
+        transaction_ready => valid_write = '1' or valid_read = '1',
+        any_active => read_active or write_active,
+        request_length => request_length,
+        cs_request => cs_request,
+        fault_data => slv2mst.faultData,
+        has_fault => has_fault,
+        read_request => read_request,
+        write_request => write_request
     );
 
     cs_control : entity work.triple_23lc1024_cs_control
