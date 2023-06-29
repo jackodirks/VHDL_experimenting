@@ -7,12 +7,12 @@ package bus_pkg is
     -- We follow AXI in the Ready/Valid handshake
     -- The master initiates all communication. When readReady or writeReady become high (they must never be high at the same time) address and possibly writeData must be valid.
     -- Transaction occurs if {read|write}Ready and either the related valid or fault are high at the same time during a rising_edge of the clock. This immidiately finishes the transaction.
-    -- A fault sets a faultcode on the readData.
+    -- A fault sets a faultcode on the faultData.
     -- It is allowed, but not required, to have fault and {read|write}Valid high at the same time. If multiple are high, fault takes precedence.
     -- It is allowed to have both readValid and writeValid high at the same time.
     -- A read transaction is defined as a moment where rising_edge(clk) AND readReady = '1' AND readValid = '1'
     -- A write transaction is defined as a moment where rising_edge(clk) AND writeReady = '1' AND writeValid = '1'
-    -- A fault transaction is defined as a moment where rising_edge(clk) AND (readReady = '1' OR writeReady = '1') AND fault = '1'
+    -- A fault transaction is defined as a moment where rising_edge(clk) AND fault = '1'
     --
     -- Note that this implies that a fast master/slave combo are allowed to, for example, keep writeReady and valid high all the time and transact data every rising edge of the clock.
     -- If this is what you want, you should probably still use the burst flag. This works as the INCR mode of AXI and has to be respected by all parties in between the master and slave.
@@ -22,6 +22,7 @@ package bus_pkg is
     -- When burst is active, multiple reads/writes can happen in quick succession.
     -- The address must be increased (not decreased!) with exactly bus_bytes_per_word between two bursts, the slave does not have to check this.
     -- The operation (read or write) must remain the same within a burst, the slave does not have to check this.
+    -- The byte mask must remain the same within a burst, the slave does not have to check this.
     -- The master must keep burst high until the last transaction. When the Ready of the last transaction rises, the burst has to fall.
     --
     -- The bus is byte-adressable. The data width of the bus is called a word and is always a multiple of the amount of bytes.
