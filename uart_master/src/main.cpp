@@ -22,6 +22,23 @@ static void dumpList(DeppUartMaster& master) {
     }
 }
 
+static void writeAndVerify(DeppUartMaster& master, const std::string& filePath, uint32_t startAddress) {
+    std::vector<uint32_t> data = readFromFile(filePath);
+    uint32_t currentAddress = startAddress;
+    for (uint32_t elem : data) {
+        master.writeWord(currentAddress, elem);
+        currentAddress += 4;
+    }
+    currentAddress = startAddress;
+    for (size_t i = 0; i < data.size(); ++i) {
+        uint32_t readData = master.readWord(currentAddress);
+        if (data[i] != readData) {
+            std::cout << std::hex << "Validation failed at address " << currentAddress << " expected data " << data[i] << " received data " << readData << std::dec << std::endl;
+        }
+        currentAddress += 4;
+    }
+}
+
 int main(int argc, char* argv[]) {
     DeppUartMaster master;
     master.selfTest();
@@ -30,12 +47,7 @@ int main(int argc, char* argv[]) {
         return EXIT_FAILURE;
     }
     std::string path(argv[1]);
-    std::vector<uint32_t> data = readFromFile(path);
-    uint32_t currentAddress = spiMemStartAddress;
-    for (uint32_t elem : data) {
-        master.writeWord(currentAddress, elem);
-        currentAddress += 4;
-    }
+    writeAndVerify(master, path, spiMemStartAddress);
     uint32_t cpuStatus = master.readWord(cpuBaseAddress);
     std::cout << std::hex << "cpuStatus, pre run: 0x" << cpuStatus << std::endl;
     dumpList(master);
