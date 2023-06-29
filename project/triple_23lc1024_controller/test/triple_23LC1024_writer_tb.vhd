@@ -72,6 +72,7 @@ begin
                 rst <= '0';
                 ready <= true;
                 burst <= '0';
+                request_length <= 4;
                 wait until rising_edge(clk) and valid = '1';
                 ready <= false;
                 address <= (others => 'X');
@@ -91,6 +92,7 @@ begin
                 rst <= '0';
                 ready <= true;
                 burst <= '0';
+                request_length <= 4;
                 wait until rising_edge(clk) and valid = '1';
                 ready <= false;
                 address <= (others => 'X');
@@ -108,6 +110,7 @@ begin
                 ready <= true;
                 burst <= '0';
                 check(not active);
+                request_length <= 4;
                 wait until rising_edge(clk) and valid = '1';
                 ready <= true;
                 address <= std_logic_vector(to_unsigned(4, address'length));
@@ -131,6 +134,7 @@ begin
                 ready <= true;
                 burst <= '1';
                 check(not active);
+                request_length <= 4;
                 wait until rising_edge(clk) and valid = '1';
                 burst <= '0';
                 ready <= true;
@@ -148,6 +152,7 @@ begin
             elsif run("Burst of size 50 works as intended") then
                 set_all_mode(SeqMode, SqiMode, actor, net);
                 rst <= '0';
+                request_length <= 4;
                 for i in 0 to 49 loop
                     write_bus_word(net, actor, std_logic_vector(to_unsigned(i*4, 17)), std_logic_vector(to_unsigned(0, bus_data_type'length)));
                 end loop;
@@ -184,6 +189,7 @@ begin
                 ready <= true;
                 burst <= '1';
                 check(not active);
+                request_length <= 4;
                 wait until rising_edge(clk) and valid = '1';
                 ready <= false;
                 address <= (others => 'X');
@@ -210,6 +216,7 @@ begin
                 write_bus_word(net, actor, std_logic_vector(to_unsigned(4, 17)), std_logic_vector(to_unsigned(0, bus_data_type'length)));
                 address <= std_logic_vector(to_unsigned(0, address'length));
                 write_data <= std_logic_vector(to_unsigned(255, write_data'length));
+                request_length <= 4;
                 rst <= '0';
                 ready <= true;
                 burst <= '1';
@@ -228,6 +235,7 @@ begin
                 set_all_mode(SeqMode, SqiMode, actor, net);
                 address <= std_logic_vector(to_unsigned(0, address'length));
                 write_data <= std_logic_vector(to_unsigned(255, write_data'length));
+                request_length <= 4;
                 rst <= '0';
                 ready <= true;
                 burst <= '1';
@@ -244,6 +252,7 @@ begin
                 set_all_mode(SeqMode, SqiMode, actor, net);
                 address <= std_logic_vector(to_unsigned(0, address'length));
                 write_data <= std_logic_vector(to_unsigned(255, write_data'length));
+                request_length <= 4;
                 rst <= '0';
                 ready <= true;
                 burst <= '0';
@@ -256,6 +265,36 @@ begin
                     check_equal(active, true);
                 end if;
                 wait until not active;
+            elsif run("Write of size 2 works") then
+                set_all_mode(SeqMode, SqiMode, actor, net);
+                write_bus_word(net, actor, std_logic_vector(to_unsigned(0, 17)), std_logic_vector(to_unsigned(0, bus_data_type'length)));
+                address <= std_logic_vector(to_unsigned(0, address'length));
+                write_data <= X"ffffffff";
+                request_length <= 2;
+                ready <= true;
+                burst <= '0';
+                rst <= '0';
+                wait until rising_edge(clk) and valid = '1';
+                ready <= false;
+                wait until not active;
+                read_bus_word(net, actor, std_logic_vector(to_unsigned(0, 17)), read_data);
+                exp_data := X"0000ffff";
+                check_equal(read_data, exp_data);
+            elsif run("Write of size 1 works") then
+                set_all_mode(SeqMode, SqiMode, actor, net);
+                write_bus_word(net, actor, std_logic_vector(to_unsigned(0, 17)), std_logic_vector(to_unsigned(0, bus_data_type'length)));
+                address <= std_logic_vector(to_unsigned(0, address'length));
+                write_data <= X"ffffffff";
+                request_length <= 1;
+                ready <= true;
+                burst <= '0';
+                rst <= '0';
+                wait until rising_edge(clk) and valid = '1';
+                ready <= false;
+                wait until not active;
+                read_bus_word(net, actor, std_logic_vector(to_unsigned(0, 17)), read_data);
+                exp_data := X"000000ff";
+                check_equal(read_data, exp_data);
             end if;
         end loop;
         wait for 2*clk_period;

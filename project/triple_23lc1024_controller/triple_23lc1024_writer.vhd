@@ -45,6 +45,7 @@ begin
     process(rst, clk)
         constant max_count : natural := 16 + 2**(bus_data_width_log2b - 2) * 2;
         variable count : natural range 0 to max_count := 0;
+        variable count_goal : natural range 16 to max_count := 16;
         variable valid_internal : std_logic := '0';
         variable cs_set_internal : std_logic := '1';
         variable transmitData : bus_data_type := (others => 'X');
@@ -91,6 +92,7 @@ begin
                         burst_internal := burst;
                         cs_set_internal := '0';
                         cs_request_out <= cs_request_in;
+                        count_goal := 16 + 4*request_length;
                     elsif cs_set_internal = '0' and cs_state = '0' then
                         spi_sio <= transmitCommandAndAddress(transmitCommandAndAddress'high downto transmitCommandAndAddress'high - 3);
                         half_period_timer_rst <= '0';
@@ -114,14 +116,14 @@ begin
                     spi_sio <= transmitData(3 downto 0);
                 end if;
 
-                if count > 16 and count < max_count - 1 then
+                if count > 16 and count < count_goal - 1 then
                     if count mod 2 = 0 and half_period_timer_done = '1' then
                         transmitData := std_logic_vector(shift_right(unsigned(transmitData), 4));
                     end if;
                     spi_sio <= transmitData(3 downto 0);
                 end if;
 
-                if count = max_count - 1 then
+                if count = count_goal - 1 then
                     if burst_internal = '1' and not fault_latched then
                         if ready then
                             transmitData := reorder_nibbles(write_data);
@@ -134,7 +136,7 @@ begin
                     end if;
                 end if;
 
-                if count = max_count then
+                if count = count_goal then
                     half_period_timer_rst <= '1';
                     cs_set_internal := '1';
                     active <= true;
