@@ -19,7 +19,7 @@ entity main_file_tb is
 end entity;
 
 architecture tb of main_file_tb is
-    constant clk_period : time := 10 ns;
+    constant clk_period : time := 8 ns;
     constant baud_rate : positive := 2000000;
     constant uart_slave_bfm : uart_slave_t := new_uart_slave(initial_baud_rate => baud_rate);
     constant uart_slave_stream : stream_slave_t := as_stream(uart_slave_bfm);
