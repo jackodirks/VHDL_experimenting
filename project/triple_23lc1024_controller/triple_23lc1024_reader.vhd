@@ -46,11 +46,13 @@ begin
     process(clk)
         constant max_count : natural := 20 + 2**(bus_data_width_log2b - 2) * 2;
         variable count : natural range 0 to max_count := 0;
+        variable count_goal : natural range 20 to max_count := 20;
         variable cs_set_internal : std_logic := '1';
         variable read_data_internal : bus_data_type := (others => '0');
         variable transmitCommandAndAddress : std_logic_vector(31 downto 0) := (others => '0');
         variable transaction_complete : boolean := false;
         variable fault_latch : boolean := false;
+        variable write_index : natural range 0 to bus_bytes_per_word * 2 := 0;
     begin
         if rising_edge(clk) then
             if rst = '1' then
@@ -80,14 +82,16 @@ begin
 
                 if count = 0 then
                     reading <= false;
-                    fault_latch := false;
                     transaction_complete := false;
                     half_period_timer_rst <= '1';
                     valid <= '0';
+                    fault_latch := false;
                     if cs_set_internal = '1' and ready then
                         transmitCommandAndAddress := instructionRead & "0000000" & address;
                         cs_set_internal := '0';
                         cs_request_out <= cs_request_in;
+                        count_goal := 20 + 4*request_length;
+                        write_index := 0;
                     elsif cs_set_internal = '0' and cs_state = '0' then
                         spi_sio_out <= transmitCommandAndAddress(transmitCommandAndAddress'high downto transmitCommandAndAddress'high - 3);
                         half_period_timer_rst <= '0';
@@ -122,18 +126,16 @@ begin
                 end if;
 
                 -- Now the incoming data, which we read on the rising edge (= when count is uneven)
-                if count > 20 and count < max_count - 1 then
+                if count > 20 and count < count_goal - 1 then
                     if count mod 2 = 1 and half_period_timer_done = '1' then
-                        read_data_internal(read_data_internal'high downto read_data_internal'high - 3) := spi_sio_in;
-                    end if;
-                    if count mod 2 = 0 and half_period_timer_done = '1' then
-                        read_data_internal := std_logic_vector(shift_right(unsigned(read_data_internal), 4));
+                        read_data_internal(3 + write_index*4 downto write_index*4) := spi_sio_in;
+                        write_index := write_index + 1;
                     end if;
                 end if;
 
-                if count = max_count - 1 then
+                if count = count_goal - 1 then
                     if half_period_timer_done = '1' then
-                        read_data_internal(read_data_internal'high downto read_data_internal'high - 3) := spi_sio_in;
+                        read_data_internal(3 + write_index*4 downto write_index*4) := spi_sio_in;
                     end if;
                     if not transaction_complete then
                         if fault_latch then
@@ -143,6 +145,7 @@ begin
                             valid <= '1';
                             transaction_complete := true;
                             if burst = '1' then
+                                write_index := 0;
                                 count := 19;
                             end if;
                         else
@@ -151,7 +154,7 @@ begin
                     end if;
                 end if;
 
-                if count = max_count then
+                if count = count_goal then
                     half_period_timer_rst <= '1';
                     cs_set_internal := '1';
                     transaction_complete := false;
