@@ -205,7 +205,15 @@ begin
                     expected_data := std_logic_vector(to_unsigned(i + burst_size + burst_size, bus_pkg.bus_data_type'length));
                     check_equal(slv2mst.readData, expected_data);
                 end loop;
-
+            elsif run ("Partial write then read works") then
+                rst <= '0';
+                triple_23lc1024_tb_pkg.write_bus_word(net, actor_mem0, std_logic_vector(to_unsigned(0, 17)), X"87654321");
+                mst2slv <= bus_pkg.bus_mst2slv_write(X"00000000", X"ffffffff", byte_mask => "0001");
+                wait until rising_edge(clk) and bus_pkg.write_transaction(mst2slv, slv2mst);
+                mst2slv <= bus_pkg.bus_mst2slv_read(X"00000000");
+                wait until rising_edge(clk) and bus_pkg.read_transaction(mst2slv, slv2mst);
+                expected_data := X"876543ff";
+                check_equal(slv2mst.readData, expected_data);
             end if;
         end loop;
         wait for 2*clk_period;
