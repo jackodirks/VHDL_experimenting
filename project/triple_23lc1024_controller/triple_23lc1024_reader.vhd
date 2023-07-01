@@ -91,7 +91,6 @@ begin
                         cs_set_internal := '0';
                         cs_request_out <= cs_request_in;
                         count_goal := 20 + 4*request_length;
-                        write_index := 0;
                     elsif cs_set_internal = '0' and cs_state = '0' then
                         spi_sio_out <= transmitCommandAndAddress(transmitCommandAndAddress'high downto transmitCommandAndAddress'high - 3);
                         half_period_timer_rst <= '0';
@@ -126,17 +125,14 @@ begin
                 end if;
 
                 -- Now the incoming data, which we read on the rising edge (= when count is uneven)
-                if count > 20 and count < count_goal - 1 then
+                if count > 20 and count <= count_goal - 1 then
                     if count mod 2 = 1 and half_period_timer_done = '1' then
+                        write_index := (count - 20)/2;
                         read_data_internal(3 + write_index*4 downto write_index*4) := spi_sio_in;
-                        write_index := write_index + 1;
                     end if;
                 end if;
 
                 if count = count_goal - 1 then
-                    if half_period_timer_done = '1' then
-                        read_data_internal(3 + write_index*4 downto write_index*4) := spi_sio_in;
-                    end if;
                     if not transaction_complete then
                         if fault_latch then
                             transaction_complete := true;
@@ -145,7 +141,6 @@ begin
                             valid <= '1';
                             transaction_complete := true;
                             if burst = '1' then
-                                write_index := 0;
                                 count := 19;
                             end if;
                         else
