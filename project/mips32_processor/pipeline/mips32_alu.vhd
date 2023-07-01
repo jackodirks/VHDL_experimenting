@@ -32,6 +32,8 @@ begin
         variable setLessThanUnsignedResult : std_logic;
         variable sllResult : mips32_data_type;
         variable srlResult : mips32_data_type;
+        variable sraResult : mips32_data_type;
+        variable luiResult : mips32_data_type;
     begin
         additionResult := std_logic_vector(signed(inputA) + signed(inputB));
         additionOverflow := inputA(inputA'high) = inputB(inputB'high) and inputA(inputA'high) /= additionResult(additionResult'high);
@@ -42,6 +44,8 @@ begin
         norResult := inputA nor inputB;
         sllResult := std_logic_vector(shift_left(unsigned(inputB), shamt));
         srlResult := std_logic_vector(shift_right(unsigned(inputB), shamt));
+        sraResult := std_logic_vector(shift_right(signed(inputB), shamt));
+        luiResult := std_logic_vector(shift_left(unsigned(inputB), 16));
         if signed(inputA) < signed(inputB) then
             setLessThanResult := '1';
         else
@@ -67,6 +71,8 @@ begin
                 output <= sllResult;
             when cmd_srl =>
                 output <= srlResult;
+            when cmd_sra =>
+                output <= sraResult;
             when cmd_add =>
                 output <= additionResult;
             when cmd_sub =>
@@ -83,6 +89,8 @@ begin
             when cmd_sltu =>
                 output(output'high downto 1) <= (others => '0');
                 output(0) <= setLessThanUnsignedResult;
+            when cmd_lui =>
+                output <= luiResult;
             when others =>
                 output <= inputA;
         end case;

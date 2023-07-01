@@ -47,7 +47,6 @@ end entity;
 architecture behaviourial of mips32_pipeline_execute is
     signal execResult_buf : mips32_data_type;
     signal aluResult : mips32_data_type;
-    signal luiResult : mips32_data_type;
     signal aluInputB : mips32_data_type;
     signal aluCmd : mips32_alu_cmd;
     signal overrideProgramCounter_buf : boolean;
@@ -74,6 +73,8 @@ architecture behaviourial of mips32_pipeline_execute is
                 ret := cmd_slt;
             when mips32_aluFunctionSetLessThanUnsigned =>
                 ret := cmd_sltu;
+            when mips32_aluFunctionSra =>
+                ret := cmd_sra;
             when others =>
                 ret := cmd_add;
         end case;
@@ -81,8 +82,8 @@ architecture behaviourial of mips32_pipeline_execute is
     end function;
 
 begin
-    luiResult <= std_logic_vector(shift_left(unsigned(immidiate), 16));
     overrideProgramCounter <= overrideProgramCounter_buf;
+    execResult_buf <= aluResult;
 
     exMemReg : process(clk)
         variable memoryControlWordToMem_buf : mips32_MemoryControlWord_type := mips32_memoryControlWordAllFalse;
@@ -147,18 +148,11 @@ begin
                 aluCmd <= cmd_add;
             when exec_sub =>
                 aluCmd <= cmd_sub;
+            when exec_lui =>
+                aluCmd <= cmd_lui;
             when others =>
                 aluCmd <= translateAluFunc(aluFunction);
         end case;
-    end process;
-
-    determineExecResult : process(aluResult, luiResult, executeControlWord)
-    begin
-        if executeControlWord.lui then
-            execResult_buf <= luiResult;
-        else
-            execResult_buf <= aluResult;
-        end if;
     end process;
 
     alu : entity work.mips32_alu

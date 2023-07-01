@@ -108,13 +108,6 @@ begin
                 wait until rising_edge(clk);
                 wait until falling_edge(clk);
                 check(memoryControlWordToMem.MemOp);
-            elsif run("Load upper immidiate works") then
-                executeControlWord.lui <= true;
-                immidiate <= X"0000ABCD";
-                expectedExecResult := X"ABCD0000";
-                wait until rising_edge(clk);
-                wait until falling_edge(clk);
-                check_equal(execResult, expectedExecResult);
             elsif run("branch on equal branches when equal") then
                 rsData <= std_logic_vector(to_signed(100, rsData'length));
                 rtData <= std_logic_vector(to_signed(100, rtData'length));

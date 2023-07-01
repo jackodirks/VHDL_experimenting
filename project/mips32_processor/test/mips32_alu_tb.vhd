@@ -114,6 +114,13 @@ begin
                 cmd <= cmd_srl;
                 wait for clk_period;
                 check_equal(output, expectedOutput);
+            elsif run("Sra works") then
+                inputB <= X"F0F0F0F0";
+                shamt <= 4;
+                expectedOutput := X"FF0F0F0F";
+                cmd <= cmd_sra;
+                wait for clk_period;
+                check_equal(output, expectedOutput);
             elsif run("set less than unsigned function works") then
                 inputA <= std_logic_vector(to_signed(2, inputA'length));
                 inputB <= std_logic_vector(to_signed(-1, inputA'length));
@@ -125,6 +132,12 @@ begin
                 inputA <= std_logic_vector(to_signed(-1, inputA'length));
                 inputB <= std_logic_vector(to_signed(1, inputA'length));
                 expectedOutput := (others => '0');
+                wait for clk_period;
+                check_equal(output, expectedOutput);
+            elsif run("Load upper immidiate works") then
+                inputB <= X"0000FFFF";
+                expectedOutput := X"FFFF0000";
+                cmd <= cmd_lui;
                 wait for clk_period;
                 check_equal(output, expectedOutput);
             end if;
