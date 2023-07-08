@@ -84,12 +84,12 @@ begin
             dataIn => dataFromBus
         );
 
-    controller : entity work.mips32_debug_controller
+    bus_slave : entity work.mips32_bus_slave
     port map (
         clk => clk,
         rst => rst,
-        mst2debug => mst2control,
-        debug2mst => control2mst,
+        mst2slv => mst2control,
+        slv2mst => control2mst,
         controllerReset => controllerReset,
         controllerStall => controllerStall
     );

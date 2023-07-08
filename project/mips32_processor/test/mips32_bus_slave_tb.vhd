@@ -10,12 +10,12 @@ library src;
 use src.bus_pkg.all;
 use src.mips32_pkg.all;
 
-entity mips32_debug_controller_tb is
+entity mips32_bus_slave_tb is
     generic (
         runner_cfg : string);
 end entity;
 
-architecture tb of mips32_debug_controller_tb is
+architecture tb of mips32_bus_slave_tb is
     constant clk_period : time := 20 ns;
 
     signal clk : std_logic := '0';
@@ -138,12 +138,12 @@ begin
 
     test_runner_watchdog(runner,  1 us);
 
-    debug_controller : entity src.mips32_debug_controller
+    bus_slave : entity src.mips32_bus_slave
     port map (
         clk => clk,
         rst => rst,
-        mst2debug => mst2slv,
-        debug2mst => slv2mst,
+        mst2slv => mst2slv,
+        slv2mst => slv2mst,
         controllerReset => controllerReset,
         controllerStall => controllerStall
     );
