@@ -24,8 +24,11 @@ architecture tb of mips32_bus_slave_tb is
     signal mst2slv : bus_mst2slv_type := BUS_MST2SLV_IDLE;
     signal slv2mst : bus_slv2mst_type := BUS_SLV2MST_IDLE;
 
-    signal controllerReset : boolean;
-    signal controllerStall : boolean;
+    signal address_to_cpz : natural range 0 to 31;
+    signal write_to_cpz : boolean;
+    signal data_to_cpz :  mips32_data_type;
+    signal data_from_cpz :  mips32_data_type := (others => '0');
+    signal valid_latch : boolean := false;
 
 begin
 
@@ -33,107 +36,72 @@ begin
 
     main : process
         variable actualAddress : std_logic_vector(bus_address_type'range);
-        variable expectedValue : bus_data_type;
+        variable writeValue : mips32_data_type;
     begin
         test_runner_setup(runner, runner_cfg);
         while test_suite loop
-            if run("Debug controller errors on unaligned address") then
+            if run("Bus slave errors on unaligned address") then
                 actualAddress := X"00000001";
                 mst2slv <= bus_mst2slv_read(address => actualAddress);
                 wait until rising_edge(clk) and any_transaction(mst2slv, slv2mst);
                 check(fault_transaction(mst2slv, slv2mst));
                 check_equal(slv2mst.faultData, bus_fault_unaligned_access);
-            elsif run("Debug controller errors on address out of range") then
-                actualAddress := X"00000004";
-                mst2slv <= bus_mst2slv_read(address => actualAddress);
+            elsif run("Errors on bytemask /= 1111") then
+                actualAddress := X"00000000";
+                mst2slv <= bus_mst2slv_read(address => actualAddress, byte_mask => "0101");
                 wait until rising_edge(clk) and any_transaction(mst2slv, slv2mst);
                 check(fault_transaction(mst2slv, slv2mst));
-                check_equal(slv2mst.faultData, bus_fault_address_out_of_range);
-            elsif run("Before first rising edge, controllerReset is true") then
-                wait until rising_edge(clk);
-                check(controllerReset);
-            elsif run("Writing 0 to address 0 clears controllerReset") then
-                mst2slv <= bus_mst2slv_write(address => (others => '0'),
-                                                     write_data => (others => '0'),
-                                                     byte_mask => (others => '1'));
-                wait until rising_edge(clk) and write_transaction(mst2slv, slv2mst);
-                check(not controllerReset);
-            elsif run("Writing 1 to address 0 sets controllerReset") then
-                mst2slv <= bus_mst2slv_write(address => (others => '0'),
-                                                     write_data => (others => '0'),
-                                                     byte_mask => (others => '1'));
-                wait until rising_edge(clk) and write_transaction(mst2slv, slv2mst);
-                mst2slv <= bus_mst2slv_write(address => (others => '0'),
-                                                     write_data => (others => '1'),
-                                                     byte_mask => (others => '1'));
-                wait until rising_edge(clk) and write_transaction(mst2slv, slv2mst);
-                check(controllerReset);
-            elsif run("Debug controller errors on invalid byteMask") then
-               mst2slv <= bus_mst2slv_write(address => (others => '0'),
-                                                    write_data => (others => '0'),
-                                                    byte_mask => (others => '0'));
-               wait until rising_edge(clk) and any_transaction(mst2slv, slv2mst);
-                check(fault_transaction(mst2slv, slv2mst));
                 check_equal(slv2mst.faultData, bus_fault_illegal_byte_mask);
-            elsif run("Reading back register works") then
-                mst2slv <= bus_mst2slv_read(address => (others => '0'));
+            elsif run("Finishes a transaction") then
+                actualAddress := X"00000000";
+                mst2slv <= bus_mst2slv_read(address => actualAddress, byte_mask => "0101");
+                wait until rising_edge(clk) and any_transaction(mst2slv, slv2mst);
+                mst2slv <= BUS_MST2SLV_IDLE;
+                wait until rising_edge(clk);
+                check(slv2mst.fault = '0');
+            elsif run("Read works") then
+                actualAddress := X"00000014";
+                mst2slv <= bus_mst2slv_read(address => actualAddress);
+                wait until address_to_cpz = 5;
+                check(not write_to_cpz);
+                data_from_cpz <= X"01234567";
                 wait until rising_edge(clk) and read_transaction(mst2slv, slv2mst);
-                expectedValue := (0 => '1', others => '0');
-                check_equal(slv2mst.readData, expectedValue);
-            elsif run("Before first rising edge, controllerStall is false") then
+                check_equal(data_from_cpz, slv2mst.readData);
+            elsif run("Write works") then
+                actualAddress := X"00000070";
+                writeValue := X"AABBCCDD";
+                mst2slv <= bus_mst2slv_write(address => actualAddress, write_data => writeValue);
+                wait until address_to_cpz = 28;
+                check(write_to_cpz);
+                check(data_to_cpz = writeValue);
+                wait until rising_edge(clk) and write_transaction(mst2slv, slv2mst);
+            elsif run("write_to_cpz is only active for 1 cycle") then
+                actualAddress := X"00000070";
+                writeValue := X"AABBCCDD";
+                mst2slv <= bus_mst2slv_write(address => actualAddress, write_data => writeValue);
+                wait until rising_edge(clk) and write_to_cpz;
                 wait until rising_edge(clk);
-                check(not controllerStall);
-            elsif run("Writing 0x2 to address 0 sets controllerStall") then
-                mst2slv <= bus_mst2slv_write(address => (others => '0'),
-                                                     write_data => X"00000002",
-                                                     byte_mask => (others => '1'));
-                wait until rising_edge(clk) and write_transaction(mst2slv, slv2mst);
-                check(controllerStall);
-            elsif run("Writing 0x0 to address 0 clears controllerStall") then
-                mst2slv <= bus_mst2slv_write(address => (others => '0'),
-                                                     write_data => X"00000002",
-                                                     byte_mask => (others => '1'));
-                wait until rising_edge(clk) and write_transaction(mst2slv, slv2mst);
-                mst2slv <= bus_mst2slv_write(address => (others => '0'),
-                                                     write_data => X"00000000",
-                                                     byte_mask => (others => '1'));
-                wait until rising_edge(clk) and write_transaction(mst2slv, slv2mst);
-                check(not controllerStall);
-            elsif run("rst clears controllerStall") then
-                mst2slv <= bus_mst2slv_write(address => (others => '0'),
-                                                     write_data => X"00000002",
-                                                     byte_mask => (others => '1'));
-                wait until rising_edge(clk) and write_transaction(mst2slv, slv2mst);
-                mst2slv <= BUS_MST2SLV_IDLE;
+                check(not write_to_cpz);
+            elsif run("rst works") then
+                actualAddress := X"00000014";
+                mst2slv <= bus_mst2slv_read(address => actualAddress);
+                wait until rising_edge(clk);
                 rst <= '1';
-                wait until rising_edge(clk);
-                wait until falling_edge(clk);
-                check(not controllerStall);
-            elsif run("rst sets controllerReset") then
-                mst2slv <= bus_mst2slv_write(address => (others => '0'),
-                                                     write_data => X"00000000",
-                                                     byte_mask => (others => '1'));
-                wait until rising_edge(clk) and write_transaction(mst2slv, slv2mst);
-                mst2slv <= BUS_MST2SLV_IDLE;
-                rst <= '1';
-                wait until rising_edge(clk);
-                wait until falling_edge(clk);
-                check(controllerReset);
-            elsif run("rst sets bus slave to idle") then
-                mst2slv <= bus_mst2slv_write(address => (others => '0'),
-                                                     write_data => X"00000000",
-                                                     byte_mask => (others => '1'));
-                wait until falling_edge(clk) and write_transaction(mst2slv, slv2mst);
-                rst <= '1';
-                wait until rising_edge(clk);
-                wait until rising_edge(clk);
-                check(not write_transaction(mst2slv, slv2mst));
+                wait for 25*clk_period;
+                check(not valid_latch);
             end if;
         end loop;
         wait until rising_edge(clk);
         wait until falling_edge(clk);
         test_runner_cleanup(runner);
         wait;
+    end process;
+
+    process(slv2mst)
+    begin
+        if slv2mst.readValid = '1' or slv2mst.writeValid = '1' then
+            valid_latch <= true;
+        end if;
     end process;
 
     test_runner_watchdog(runner,  1 us);
@@ -144,7 +112,9 @@ begin
         rst => rst,
         mst2slv => mst2slv,
         slv2mst => slv2mst,
-        controllerReset => controllerReset,
-        controllerStall => controllerStall
+        address_to_cpz => address_to_cpz,
+        write_to_cpz => write_to_cpz,
+        data_to_cpz => data_to_cpz,
+        data_from_cpz => data_from_cpz
     );
 end architecture;

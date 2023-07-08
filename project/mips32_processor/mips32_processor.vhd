@@ -51,6 +51,17 @@ architecture behaviourial of mips32_processor is
     signal memoryFaultData : bus_fault_type;
     signal memoryStall : boolean;
     signal forbidBusInteraction : boolean;
+
+    signal bus_slv_to_cpz_address : natural range 0 to 31;
+    signal bus_slv_to_cpz_doWrite : boolean;
+    signal bus_slv_to_cpz_data : mips32_data_type;
+    signal cpz_to_bus_slv_data : mips32_data_type;
+
+    signal pipeline_to_cpz_address : natural range 0 to 31 := 0;
+    signal pipeline_to_cpz_doWrite : boolean := false;
+    signal pipeline_to_cpz_data : mips32_data_type := (others => 'X');
+    signal cpz_to_pipeline_data : mips32_data_type;
+
 begin
     pipelineStall <= controllerStall or instructionStall or memoryStall;
     forbidBusInteraction <= controllerReset or controllerStall;
@@ -90,8 +101,10 @@ begin
         rst => rst,
         mst2slv => mst2control,
         slv2mst => control2mst,
-        controllerReset => controllerReset,
-        controllerStall => controllerStall
+        address_to_cpz => bus_slv_to_cpz_address,
+        write_to_cpz => bus_slv_to_cpz_doWrite,
+        data_to_cpz => bus_slv_to_cpz_data,
+        data_from_cpz => cpz_to_bus_slv_data
     );
 
     if2bus : entity work.mips32_if2bus
@@ -125,5 +138,21 @@ begin
         doWrite => dataWrite,
         doRead => dataRead,
         stall => memoryStall
+    );
+
+    coprocessor_zero : entity work.mips32_coprocessor_zero
+    port map (
+        clk => clk,
+        rst => rst,
+        address_from_controller => bus_slv_to_cpz_address,
+        address_from_pipeline => pipeline_to_cpz_address,
+        write_from_controller => bus_slv_to_cpz_doWrite,
+        write_from_pipeline => pipeline_to_cpz_doWrite,
+        data_from_controller => bus_slv_to_cpz_data,
+        data_from_pipeline => pipeline_to_cpz_data,
+        data_to_controller => cpz_to_bus_slv_data,
+        data_to_pipeline => cpz_to_pipeline_data,
+        cpu_reset => controllerReset,
+        cpu_stall => controllerStall
     );
 end architecture;
