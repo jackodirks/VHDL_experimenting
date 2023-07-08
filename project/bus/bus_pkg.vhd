@@ -7,7 +7,7 @@ package bus_pkg is
     -- We follow AXI in the Ready/Valid handshake
     -- The master initiates all communication. When readReady or writeReady become high (they must never be high at the same time) address and possibly writeData must be valid.
     -- Transaction occurs if {read|write}Ready and either the related valid or fault are high at the same time during a rising_edge of the clock. This immidiately finishes the transaction.
-    -- A fault sets a faultcode on the faultData.
+    -- A fault sets a faultcode on the faultData. readValid and writeValid are allowed to be high at the same time.
     -- It is allowed, but not required, to have fault and {read|write}Valid high at the same time. If multiple are high, fault takes precedence.
     -- It is allowed to have both readValid and writeValid high at the same time.
     -- A read transaction is defined as a moment where rising_edge(clk) AND readReady = '1' AND readValid = '1'
