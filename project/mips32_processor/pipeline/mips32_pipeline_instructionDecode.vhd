@@ -74,6 +74,10 @@ architecture behaviourial of mips32_pipeline_instructionDecode is
 
     signal loadHazardDetected : boolean := false;
     signal overrideProgramCounter_buf : boolean := false;
+
+    signal rsAddress_buf : mips32_registerFileAddress_type;
+    signal rtAddress_buf : mips32_registerFileAddress_type;
+    signal rdAddress_buf : mips32_registerFileAddress_type;
 begin
     opcode <= to_integer(unsigned(instructionFromInstructionFetch(31 downto 26)));
     readPortTwoAddress <= to_integer(unsigned(instructionFromInstructionFetch(20 downto 16)));
@@ -83,14 +87,20 @@ begin
     overrideProgramCounter <= decodedInstructionDecodeControlWord.jump and not ignoreCurrentInstruction;
     newProgramCounter <= jumpTarget;
 
-    determineDestinationReg : process(instructionFromInstructionFetch, decodedInstructionDecodeControlWord)
+    rsAddress_buf <= to_integer(unsigned(instructionFromInstructionFetch(25 downto 21)));
+    rtAddress_buf <= to_integer(unsigned(instructionFromInstructionFetch(20 downto 16)));
+    rdAddress_buf <= to_integer(unsigned(instructionFromInstructionFetch(15 downto 11)));
+
+    readPortTwoAddress <= rtAddress_buf;
+
+    determineDestinationReg : process(rtAddress_buf, rdAddress_buf, decodedInstructionDecodeControlWord)
     begin
         if decodedInstructionDecodeControlWord.jump then
             destinationReg_buf <= 31;
-        elsif decodedInstructionDecodeControlWord.regDst then
-            destinationReg_buf <= to_integer(unsigned(instructionFromInstructionFetch(15 downto 11)));
+        elsif decodedInstructionDecodeControlWord.regDstIsRd then
+            destinationReg_buf <= rdAddress_buf;
         else
-            destinationReg_buf <= to_integer(unsigned(instructionFromInstructionFetch(20 downto 16)));
+            destinationReg_buf <= rtAddress_buf;
         end if;
     end process;
 
@@ -103,12 +113,12 @@ begin
         end if;
     end process;
 
-    determineReadPortOne : process(instructionFromInstructionFetch, decodedInstructionDecodeControlWord)
+    determineReadPortOne : process(rsAddress_buf, decodedInstructionDecodeControlWord)
     begin
         if decodedInstructionDecodeControlWord.jump then
             readPortOneAddress <= 0;
         else
-            readPortOneAddress <= to_integer(unsigned(instructionFromInstructionFetch(25 downto 21)));
+            readPortOneAddress <= rsAddress_buf;
         end if;
     end process;
 

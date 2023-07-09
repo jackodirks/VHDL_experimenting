@@ -27,7 +27,7 @@ package mips32_pkg is
     type mips32_InstructionDecodeControlWord_type is record
         jump : boolean;
         PCSrc : boolean;
-        regDst : boolean;
+        regDstIsRd : boolean;
     end record;
 
     type mips32_ExecuteControlWord_type is record
@@ -50,7 +50,7 @@ package mips32_pkg is
     constant mips32_instructionDecodeControlWordAllFalse : mips32_InstructionDecodeControlWord_type := (
         jump => false,
         PCSrc => false,
-        regDst => false
+        regDstIsRd => false
     );
 
     constant mips32_executeControlWordAllFalse : mips32_ExecuteControlWord_type := (
