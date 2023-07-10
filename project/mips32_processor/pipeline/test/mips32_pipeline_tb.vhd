@@ -38,6 +38,12 @@ architecture tb of mips32_pipeline_tb is
     signal dataWrite : boolean;
     signal dataOut : mips32_data_type;
     signal dataIn : mips32_data_type;
+
+    signal address_to_cpz : natural range 0 to 31;
+    signal write_to_cpz : boolean;
+    signal data_to_cpz : mips32_data_type;
+    signal data_from_cpz : mips32_data_type := (others => '0');
+
 begin
     clk <= not clk after (clk_period/2);
     main : process
@@ -103,7 +109,11 @@ begin
         dataRead => dataRead,
         dataWrite => dataWrite,
         dataOut => dataOut,
-        dataIn => dataIn
+        dataIn => dataIn,
+        address_to_cpz => address_to_cpz,
+        write_to_cpz => write_to_cpz,
+        data_to_cpz => data_to_cpz,
+        data_from_cpz => data_from_cpz
     );
 
    simulated_memory : entity tb.mips32_pipeline_simulated_memory

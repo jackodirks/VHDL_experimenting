@@ -33,7 +33,13 @@ entity mips32_pipeline_memory is
         doMemWrite : out boolean;
         memAddress : out mips32_address_type;
         dataToMem : out mips32_data_type;
-        dataFromMem : in mips32_data_type
+        dataFromMem : in mips32_data_type;
+
+        -- To coprocessor 0
+        address_to_cpz : out natural range 0 to 31;
+        write_to_cpz : out boolean;
+        data_to_cpz : out mips32_data_type;
+        data_from_cpz : in mips32_data_type
     );
 end entity;
 
@@ -52,6 +58,13 @@ begin
                 doMemRead <= true;
             end if;
         end if;
+    end process;
+
+    cpzOut : process(memoryControlWord, execResult, destinationReg, stall)
+    begin
+        address_to_cpz <= destinationReg;
+        write_to_cpz <= memoryControlWord.cop0Write and not stall;
+        data_to_cpz <= execResult;
     end process;
 
     MemWBRegs : process(clk)

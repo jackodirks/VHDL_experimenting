@@ -55,6 +55,7 @@ end entity;
 architecture behaviourial of mips32_pipeline_instructionDecode is
     -- Control interaction
     signal opcode : mips32_opcode_type;
+    signal mf : mips32_mf_type;
     signal decodedInstructionDecodeControlWord : mips32_InstructionDecodeControlWord_type;
     signal decodedExecuteControlWord : mips32_ExecuteControlWord_type;
     signal decodedMemoryControlWord : mips32_MemoryControlWord_type;
@@ -80,7 +81,7 @@ architecture behaviourial of mips32_pipeline_instructionDecode is
     signal rdAddress_buf : mips32_registerFileAddress_type;
 begin
     opcode <= to_integer(unsigned(instructionFromInstructionFetch(31 downto 26)));
-    readPortTwoAddress <= to_integer(unsigned(instructionFromInstructionFetch(20 downto 16)));
+    mf <= to_integer(unsigned(instructionFromInstructionFetch(25 downto 21)));
     shamt_buf <= to_integer(unsigned(instructionFromInstructionFetch(10 downto 6)));
     aluFunction_buf <= to_integer(unsigned(instructionFromInstructionFetch(5 downto 0)));
     repeatInstruction <= loadHazardDetected and not ignoreCurrentInstruction;
@@ -176,6 +177,7 @@ begin
     controlDecode : entity work.mips32_control
     port map (
         opcode => opcode,
+        mf => mf,
         instructionDecodeControlWord => decodedInstructionDecodeControlWord,
         executeControlWord => decodedExecuteControlWord,
         memoryControlWord => decodedMemoryControlWord,

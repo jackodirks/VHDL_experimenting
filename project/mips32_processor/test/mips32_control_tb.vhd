@@ -23,6 +23,7 @@ architecture tb of mips32_control_tb is
     signal clk : std_logic := '0';
 
     signal opcode : mips32_opcode_type := illegalOpcode;
+    signal mf : mips32_mf_type := 0;
 
     signal instructionDecodeControlWord : mips32_InstructionDecodeControlWord_type;
     signal executeControlWord : mips32_ExecuteControlWord_type;
@@ -54,6 +55,7 @@ begin
     control : entity src.mips32_control
     port map (
         opcode => opcode,
+        mf => mf,
         instructionDecodeControlWord => instructionDecodeControlWord,
         executeControlWord => executeControlWord,
         memoryControlWord => memoryControlWord,

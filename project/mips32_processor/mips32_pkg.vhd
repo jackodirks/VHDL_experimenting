@@ -18,6 +18,7 @@ package mips32_pkg is
     subtype mips32_registerFileAddress_type is natural range 0 to 31;
     subtype mips32_aluFunction_type is natural range 0 to 63;
     subtype mips32_shamt_type is natural range 0 to 31;
+    subtype mips32_mf_type is natural range 0 to 31;
 
     type mips32_data_array is array (natural range <>) of mips32_data_type;
     type mips32_byte_array is array (natural range <>) of mips32_byte_type;
@@ -40,11 +41,13 @@ package mips32_pkg is
     type mips32_MemoryControlWord_type is record
         MemOp : boolean;
         MemOpIsWrite : boolean;
+        cop0Write : boolean;
     end record;
 
     type mips32_WriteBackControlWord_type is record
         regWrite : boolean;
         MemtoReg : boolean;
+        cop0ToReg : boolean;
     end record;
 
     constant mips32_instructionDecodeControlWordAllFalse : mips32_InstructionDecodeControlWord_type := (
@@ -62,12 +65,14 @@ package mips32_pkg is
 
     constant mips32_memoryControlWordAllFalse : mips32_MemoryControlWord_type := (
         MemOp => false,
-        MemOpIsWrite => false
+        MemOpIsWrite => false,
+        cop0Write => false
     );
 
     constant mips32_writeBackControlWordAllFalse : mips32_WriteBackControlWord_type := (
         regWrite => false,
-        MemtoReg => false
+        MemtoReg => false,
+        cop0ToReg => false
     );
 
     -- To begin, this processor will support the following instructions:
@@ -84,6 +89,7 @@ package mips32_pkg is
     constant mips32_opcodeJ : mips32_opcode_type := 16#2#;
     constant mips32_opcodeJal : mips32_opcode_type := 16#3#;
     constant mips32_opcodeLui : mips32_opcode_type := 16#f#;
+    constant mips32_opcodeCOP0 : mips32_opcode_type := 16#10#;
 
     constant mips32_aluFunctionSll : mips32_aluFunction_type := 16#00#;
     constant mips32_aluFunctionSrl : mips32_aluFunction_type := 16#02#;

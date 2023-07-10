@@ -9,6 +9,7 @@ use work.mips32_pkg.all;
 entity mips32_control is
     port (
         opcode : in mips32_opcode_type;
+        mf : in mips32_mf_type;
 
         instructionDecodeControlWord : out mips32_InstructionDecodeControlWord_type;
         executeControlWord : out mips32_ExecuteControlWord_type;
@@ -21,7 +22,7 @@ end entity;
 architecture behaviourial of mips32_control is
 begin
 
-    decodeOpcode : process(opcode)
+    decodeOpcode : process(opcode, mf)
         variable instructionDecodeControlWord_buf : mips32_InstructionDecodeControlWord_type;
         variable executeControlWord_buf : mips32_ExecuteControlWord_type;
         variable memoryControlWord_buf : mips32_MemoryControlWord_type;
@@ -34,7 +35,7 @@ begin
         invalidOpcode <= false;
         case opcode is
             when mips32_opcodeRType =>
-                instructionDecodeControlWord_buf.regDst := true;
+                instructionDecodeControlWord_buf.regDstIsRd := true;
                 writeBackControlWord_buf.regWrite := true;
             when mips32_opcodeAddiu =>
                 executeControlWord_buf.ALUOpDirective := exec_add;
@@ -66,6 +67,19 @@ begin
                 executeControlWord_buf.ALUOpDirective := exec_lui;
                 executeControlWord_buf.ALUSrc := true;
                 writeBackControlWord_buf.regWrite := true;
+            when mips32_opcodeCOP0 =>
+                if mf = 0 then
+                    -- mfc0, move from system control processor
+                    writeBackControlWord_buf.regWrite := true;
+                    writeBackControlWord_buf.cop0ToReg := true;
+                    instructionDecodeControlWord_buf.regDstIsRd := false;
+                elsif mf = 4 then
+                    -- mtc0, move to system control processor
+                    memoryControlWord_buf.cop0Write := true;
+                    instructionDecodeControlWord_buf.regDstIsRd := true;
+                else
+                    invalidOpcode <= true;
+                end if;
             when others =>
                 invalidOpcode <= true;
         end case;

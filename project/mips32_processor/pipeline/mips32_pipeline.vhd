@@ -21,7 +21,13 @@ entity mips32_pipeline is
         dataRead : out boolean;
         dataWrite : out boolean;
         dataOut : out mips32_data_type;
-        dataIn : in mips32_data_type
+        dataIn : in mips32_data_type;
+
+        -- To coprocessor 0
+        address_to_cpz : out natural range 0 to 31;
+        write_to_cpz : out boolean;
+        data_to_cpz : out mips32_data_type;
+        data_from_cpz : in mips32_data_type
     );
 end entity;
 
@@ -184,7 +190,12 @@ begin
         doMemWrite => dataWrite,
         memAddress => dataAddress,
         dataToMem => dataOut,
-        dataFromMem => dataIn
+        dataFromMem => dataIn,
+
+        address_to_cpz => address_to_cpz,
+        write_to_cpz => write_to_cpz,
+        data_to_cpz => data_to_cpz,
+        data_from_cpz => data_from_cpz
     );
 
     writeBack : entity work.mips32_pipeline_writeBack

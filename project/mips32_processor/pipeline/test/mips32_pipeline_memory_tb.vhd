@@ -39,6 +39,15 @@ architecture tb of mips32_pipeline_memory_tb is
     signal memAddress : mips32_address_type;
     signal dataToMem : mips32_data_type;
     signal dataFromMem : mips32_data_type;
+
+    signal address_to_cpz : natural range 0 to 31;
+    signal write_to_cpz : boolean;
+    signal data_to_cpz : mips32_data_type;
+    signal data_from_cpz : mips32_data_type := (others => '0');
+
+    signal decodedMemoryControlWord : mips32_MemoryControlWord_type := mips32_memoryControlWordAllFalse;
+    signal opcode : mips32_opcode_type;
+    signal mf : mips32_mf_type;
 begin
     clk <= not clk after (clk_period/2);
 
@@ -120,6 +129,32 @@ begin
                 wait until falling_edge(clk);
                 check(not writeBackControlWordToWriteBack.regWrite);
                 check(not writeBackControlWordToWriteBack.MemtoReg);
+            elsif run("mtc0 causes write to coprocessor 0") then
+                opcode <= mips32_opcodeCOP0;
+                mf <= 4;
+                destinationReg <= 5;
+                execResult <= X"FAFBFCFD";
+                wait for 1 fs;
+                memoryControlWord <= decodedMemoryControlWord;
+                wait for 1 fs;
+                check(write_to_cpz);
+                check(address_to_cpz = destinationReg);
+                check(data_to_cpz = execResult);
+            elsif run("Rtype does not cause write to coprocessor 0") then
+                opcode <= mips32_opcodeRType;
+                mf <= 0;
+                wait for 1 fs;
+                memoryControlWord <= decodedMemoryControlWord;
+                wait for 1 fs;
+                check(not write_to_cpz);
+            elsif run("mtc0 does not write during a stall") then
+                opcode <= mips32_opcodeCOP0;
+                mf <= 4;
+                wait for 1 fs;
+                memoryControlWord <= decodedMemoryControlWord;
+                stall <= true;
+                wait for 1 fs;
+                check(not write_to_cpz);
             end if;
         end loop;
         wait until rising_edge(clk);
@@ -148,7 +183,18 @@ begin
         doMemWrite => doMemWrite,
         memAddress => memAddress,
         dataToMem => dataToMem,
-        dataFromMem => dataFromMem
+        dataFromMem => dataFromMem,
+        address_to_cpz => address_to_cpz,
+        write_to_cpz => write_to_cpz,
+        data_to_cpz => data_to_cpz,
+        data_from_cpz => data_from_cpz
+    );
+
+    controlDecode : entity src.mips32_control
+    port map (
+        opcode => opcode,
+        mf => mf,
+        memoryControlWord => decodedMemoryControlWord
     );
 
 end architecture;

@@ -92,7 +92,11 @@ begin
             dataRead => dataRead,
             dataWrite => dataWrite,
             dataOut => dataToBus,
-            dataIn => dataFromBus
+            dataIn => dataFromBus,
+            address_to_cpz => pipeline_to_cpz_address,
+            write_to_cpz => pipeline_to_cpz_doWrite,
+            data_to_cpz => pipeline_to_cpz_data,
+            data_from_cpz => cpz_to_pipeline_data
         );
 
     bus_slave : entity work.mips32_bus_slave
