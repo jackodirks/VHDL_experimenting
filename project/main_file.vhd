@@ -88,7 +88,8 @@ begin
 
     processor : entity work.mips32_processor
     generic map (
-        startAddress => procStartAddress
+        startAddress => procStartAddress,
+        clk_period => clk_period
     ) port map (
         clk => clk,
         rst => rst,

@@ -16,6 +16,7 @@ end entity;
 
 architecture tb of mips32_coprocessor_zero_tb is
     constant clk_period : time := 20 ns;
+    constant clk_frequency : natural := (1 sec)/clk_period;
 
     signal clk : std_logic := '0';
     signal rst : std_logic := '0';
@@ -138,6 +139,16 @@ begin
                 wait until falling_edge(clk);
                 check(cpu_reset);
                 check(not cpu_stall);
+            elsif run("Address 1 from controller reads clock frequency") then
+                wait until falling_edge(clk);
+                address_from_controller <= 1;
+                wait until falling_edge(clk);
+                check_equal(to_integer(unsigned(data_to_controller)), clk_frequency);
+            elsif run("Address 1 from pipeline reads clock frequency") then
+                wait until falling_edge(clk);
+                address_from_pipeline <= 1;
+                wait until falling_edge(clk);
+                check_equal(to_integer(unsigned(data_to_pipeline)), clk_frequency);
             end if;
         end loop;
         wait until rising_edge(clk);
@@ -149,7 +160,9 @@ begin
     test_runner_watchdog(runner,  1 us);
 
     coprocessor_zero : entity src.mips32_coprocessor_zero
-    port map (
+    generic map (
+        clk_period => clk_period
+    ) port map (
         clk,
         rst,
         address_from_controller,

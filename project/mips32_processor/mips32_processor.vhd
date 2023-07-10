@@ -8,7 +8,8 @@ use work.mips32_pkg.all;
 
 entity mips32_processor is
     generic (
-        startAddress : bus_address_type
+        startAddress : bus_address_type;
+        clk_period : time
     );
     port (
         clk : in std_logic;
@@ -145,7 +146,9 @@ begin
     );
 
     coprocessor_zero : entity work.mips32_coprocessor_zero
-    port map (
+    generic map (
+        clk_period => clk_period
+    ) port map (
         clk => clk,
         rst => rst,
         address_from_controller => bus_slv_to_cpz_address,

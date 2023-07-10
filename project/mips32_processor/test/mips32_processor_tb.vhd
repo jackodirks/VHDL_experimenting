@@ -222,7 +222,8 @@ begin
 
     processor : entity src.mips32_processor
     generic map (
-        startAddress => resetAddress
+        startAddress => resetAddress,
+        clk_period => clk_period
     ) port map (
         clk => clk,
         rst => rst,

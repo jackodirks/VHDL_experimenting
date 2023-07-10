@@ -39,6 +39,11 @@ static void writeAndVerify(DeppUartMaster& master, const std::string& filePath, 
     }
 }
 
+static void printClockSpeed(DeppUartMaster& master) {
+    uint32_t clkSpeed = master.readWord(cpuBaseAddress + 4);
+    std::cout << "Clock speed is " << clkSpeed << " Hz." << std::endl;
+}
+
 int main(int argc, char* argv[]) {
     DeppUartMaster master;
     master.selfTest();
@@ -47,6 +52,7 @@ int main(int argc, char* argv[]) {
         return EXIT_FAILURE;
     }
     std::string path(argv[1]);
+    printClockSpeed(master);
     writeAndVerify(master, path, spiMemStartAddress);
     uint32_t cpuStatus = master.readWord(cpuBaseAddress);
     std::cout << std::hex << "cpuStatus, pre run: 0x" << cpuStatus << std::endl;
