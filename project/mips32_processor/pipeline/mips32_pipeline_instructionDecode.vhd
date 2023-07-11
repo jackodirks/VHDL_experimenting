@@ -39,9 +39,13 @@ entity mips32_pipeline_instructionDecode is
         shamt : out mips32_shamt_type;
         programCounterPlusFourToEx : out mips32_address_type;
 
-        -- From execute stage: Hazard detection data
-        exInstructionIsMemLoad : in boolean;
-        exInstructionTargetReg : in mips32_registerFileAddress_type;
+        -- From load hazard detected
+        loadHazardDetected : in boolean;
+
+        -- To load hazard detected
+        readPortOneAddressToHazardDetection : out mips32_registerFileAddress_type;
+        readPortTwoAddressToHazardDetection : out mips32_registerFileAddress_type;
+        executeControlWordToHazardDetection : out mips32_ExecuteControlWord_type;
 
         -- From writeBack stage: data
         regWrite : in boolean;
@@ -73,7 +77,6 @@ architecture behaviourial of mips32_pipeline_instructionDecode is
     signal aluFunction_buf : mips32_aluFunction_type;
     signal shamt_buf : mips32_shamt_type;
 
-    signal loadHazardDetected : boolean := false;
     signal overrideProgramCounter_buf : boolean := false;
 
     signal rsAddress_buf : mips32_registerFileAddress_type;
@@ -93,6 +96,10 @@ begin
     rdAddress_buf <= to_integer(unsigned(instructionFromInstructionFetch(15 downto 11)));
 
     readPortTwoAddress <= rtAddress_buf;
+
+    readPortOneAddressToHazardDetection <= readPortOneAddress;
+    readPortTwoAddressToHazardDetection <= readPortTwoAddress;
+    executeControlWordToHazardDetection <= decodedExecuteControlWord;
 
     determineDestinationReg : process(rtAddress_buf, rdAddress_buf, decodedInstructionDecodeControlWord)
     begin
@@ -130,12 +137,6 @@ begin
         outputAddress(27 downto 2) := instructionFromInstructionFetch(25 downto 0);
         outputAddress(31 downto 28) := programCounterPlusFour(31 downto 28);
         jumpTarget <= outputAddress;
-    end process;
-
-    detectLoadHazard : process(exInstructionIsMemLoad, exInstructionTargetReg, readPortOneAddress, readPortTwoAddress)
-    begin
-        loadHazardDetected <= exInstructionIsMemLoad and
-                              (exInstructionTargetReg = readPortOneAddress or exInstructionTargetReg = readPortTwoAddress);
     end process;
 
     handleIDEXReg : process(clk)

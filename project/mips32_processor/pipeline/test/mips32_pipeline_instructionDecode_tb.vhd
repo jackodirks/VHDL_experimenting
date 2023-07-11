@@ -41,8 +41,7 @@ architecture tb of mips32_pipeline_instructionDecode_tb is
     signal aluFunction : mips32_aluFunction_type;
     signal shamt : mips32_shamt_type;
 
-    signal exInstructionIsMemLoad : boolean;
-    signal exInstructionTargetReg : mips32_registerFileAddress_type;
+    signal loadHazardDetected : boolean;
 
     signal regWrite : boolean := false;
     signal regWriteAddress : mips32_registerFileAddress_type := 16#0#;
@@ -196,7 +195,7 @@ begin
                 wait until falling_edge(clk);
                 check_equal(rsAddress, expectedRsAddress);
                 check_equal(rtAddress, expectedRtAddress);
-            elsif run("Dependend R-type after load word causes repeat") then
+            elsif run("Load hazard detected causes repeat") then
                 instructionIn(31 downto 26) := std_logic_vector(to_unsigned(mips32_opcodeRType, 6));
                 instructionIn(25 downto 21) := std_logic_vector(to_unsigned(2, 5));
                 instructionIn(20 downto 16) := std_logic_vector(to_unsigned(1, 5));
@@ -204,45 +203,13 @@ begin
                 instructionIn(10 downto 6) := std_logic_vector(to_unsigned(10, 5));
                 instructionIn(5 downto 0) := std_logic_vector(to_unsigned(4, 6));
                 instructionFromInstructionFetch <= instructionIn;
-                exInstructionIsMemLoad <= true;
-                exInstructionTargetReg <= 2;
+                loadHazardDetected <= true;
                 wait until rising_edge(clk);
                 wait until falling_edge(clk);
                 check(repeatInstruction);
                 check(executeControlWord = mips32_executeControlWordAllFalse);
                 check(memoryControlWord = mips32_memoryControlWordAllFalse);
                 check(writeBackControlWord = mips32_writeBackControlWordAllFalse);
-            elsif run("Dependend R-type after load word during stall does not reset controlwords") then
-                instructionIn(31 downto 26) := std_logic_vector(to_unsigned(mips32_opcodeRType, 6));
-                instructionIn(25 downto 21) := std_logic_vector(to_unsigned(2, 5));
-                instructionIn(20 downto 16) := std_logic_vector(to_unsigned(1, 5));
-                instructionIn(15 downto 11) := std_logic_vector(to_unsigned(3, 5));
-                instructionIn(10 downto 6) := std_logic_vector(to_unsigned(10, 5));
-                instructionIn(5 downto 0) := std_logic_vector(to_unsigned(4, 6));
-                instructionFromInstructionFetch <= instructionIn;
-                exInstructionIsMemLoad <= false;
-                exInstructionTargetReg <= 2;
-                wait until rising_edge(clk);
-                wait until falling_edge(clk);
-                check(writeBackControlWord.regWrite);
-                stall <= true;
-                exInstructionIsMemLoad <= true;
-                wait until rising_edge(clk);
-                wait until falling_edge(clk);
-                check(writeBackControlWord.regWrite);
-            elsif run("Inependend R-type after load word does not cause repeat") then
-                instructionIn(31 downto 26) := std_logic_vector(to_unsigned(mips32_opcodeRType, 6));
-                instructionIn(25 downto 21) := std_logic_vector(to_unsigned(2, 5));
-                instructionIn(20 downto 16) := std_logic_vector(to_unsigned(1, 5));
-                instructionIn(15 downto 11) := std_logic_vector(to_unsigned(3, 5));
-                instructionIn(10 downto 6) := std_logic_vector(to_unsigned(10, 5));
-                instructionIn(5 downto 0) := std_logic_vector(to_unsigned(4, 6));
-                instructionFromInstructionFetch <= instructionIn;
-                exInstructionIsMemLoad <= true;
-                exInstructionTargetReg <= 6;
-                wait until rising_edge(clk);
-                wait until falling_edge(clk);
-                check(not repeatInstruction);
             elsif run("ignoreCurrentInstruction NOPs current instruction") then
                 instructionIn(31 downto 26) := std_logic_vector(to_unsigned(mips32_opcodeRType, 6));
                 instructionIn(25 downto 21) := std_logic_vector(to_unsigned(2, 5));
@@ -273,7 +240,7 @@ begin
                 wait until falling_edge(clk);
                 check(executeControlWord.ALUOpDirective = exec_add);
                 check(immidiate =  X"00100024");
-            elsif run("Dependend R-type after load word during ignoreCurrentInstruction does not repeat") then
+            elsif run("Load hazard detected during ignoreCurrentInstruction does not repeat") then
                 instructionIn(31 downto 26) := std_logic_vector(to_unsigned(mips32_opcodeRType, 6));
                 instructionIn(25 downto 21) := std_logic_vector(to_unsigned(2, 5));
                 instructionIn(20 downto 16) := std_logic_vector(to_unsigned(1, 5));
@@ -281,8 +248,7 @@ begin
                 instructionIn(10 downto 6) := std_logic_vector(to_unsigned(10, 5));
                 instructionIn(5 downto 0) := std_logic_vector(to_unsigned(4, 6));
                 instructionFromInstructionFetch <= instructionIn;
-                exInstructionIsMemLoad <= true;
-                exInstructionTargetReg <= 2;
+                loadHazardDetected <= true;
                 ignoreCurrentInstruction <= true;
                 wait until rising_edge(clk);
                 wait until falling_edge(clk);
@@ -318,8 +284,7 @@ begin
         destinationReg => destinationReg,
         aluFunction => aluFunction,
         shamt => shamt,
-        exInstructionIsMemLoad => exInstructionIsMemLoad,
-        exInstructionTargetReg => exInstructionTargetReg,
+        loadHazardDetected => loadHazardDetected,
         regWrite => regWrite,
         regWriteAddress => regWriteAddress,
         regWriteData => regWriteData,

@@ -53,6 +53,12 @@ architecture behaviourial of mips32_pipeline is
     signal rsAddressToFwU : mips32_registerFileAddress_type;
     signal rtDataToFwU : mips32_data_type;
     signal rtAddressToFwU : mips32_registerFileAddress_type;
+    -- Instruction decode to loadHazardDetector
+    signal portOneAddrToLHD : mips32_registerFileAddress_type;
+    signal portTwoAddrToLHD : mips32_registerFileAddress_type;
+    signal execControlToLHD : mips32_ExecuteControlWord_type;
+    -- loadHazardDetector to ID
+    signal loadHazardDetected : boolean;
     -- Forwarding unit to execute
     signal rsDataToEx : mips32_data_type;
     signal rtDataToEx : mips32_data_type;
@@ -78,11 +84,9 @@ architecture behaviourial of mips32_pipeline is
     signal destRegToWb : mips32_registerFileAddress_type;
 
     signal instructionFetchStall : boolean;
-    signal instructionDecode_exInstructionIsMemLoad : boolean;
 
 begin
     instructionFetchStall <= stall or repeatInstruction;
-    instructionDecode_exInstructionIsMemLoad <= memControlWordToEx.MemOp and not memControlWordToEx.MemOpIsWrite;
 
     instructionFetch : entity work.mips32_pipeline_instructionFetch
     generic map (
@@ -131,8 +135,10 @@ begin
         shamt => shamtToEx,
         programCounterPlusFourToEx => pcPlusFourToEx,
 
-        exInstructionIsMemLoad => instructionDecode_exInstructionIsMemLoad,
-        exInstructionTargetReg => destRegToEx,
+        loadHazardDetected => loadHazardDetected,
+        readPortOneAddressToHazardDetection => portOneAddrToLHD,
+        readPortTwoAddressToHazardDetection => portTwoAddrToLHD,
+        executeControlWordToHazardDetection => execControlToLHD,
 
         regWrite => regWriteToID,
         regWriteAddress => regWriteAddrToID,
@@ -226,5 +232,15 @@ begin
 
         rsData => rsDataToEx,
         rtData => rtDataToEx
+    );
+
+    loadHazardDetector : entity work.mips32_pipeline_loadHazardDetector
+    port map (
+        executeControlWordFromID => execControlToLHD,
+        writeBackControlWordFromEx => wbControlWordToEx,
+        targetRegFromEx => destRegToEx,
+        readPortOneAddressFromID => portOneAddrToLHD,
+        readPortTwoAddressFromID => portTwoAddrToLHD,
+        loadHazardDetected => loadHazardDetected
     );
 end architecture;
