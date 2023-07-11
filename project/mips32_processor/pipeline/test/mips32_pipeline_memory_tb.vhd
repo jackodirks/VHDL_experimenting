@@ -34,6 +34,7 @@ architecture tb of mips32_pipeline_memory_tb is
     signal execResultToWriteback : mips32_data_type;
     signal memDataReadToWriteback : mips32_data_type;
     signal destinationRegToWriteback : mips32_registerFileAddress_type;
+    signal cpzReadToWriteback : mips32_data_type;
 
     signal doMemRead : boolean;
     signal doMemWrite : boolean;
@@ -134,13 +135,13 @@ begin
                 opcode <= mips32_opcodeCOP0;
                 mf <= 4;
                 rdAddress <= 5;
-                execResult <= X"FAFBFCFD";
+                regDataRead <= X"FAFBFCFD";
                 wait for 1 fs;
                 memoryControlWord <= decodedMemoryControlWord;
                 wait for 1 fs;
                 check(write_to_cpz);
                 check(address_to_cpz = rdAddress);
-                check(data_to_cpz = execResult);
+                check(data_to_cpz = regDataRead);
             elsif run("Rtype does not cause write to coprocessor 0") then
                 opcode <= mips32_opcodeRType;
                 mf <= 0;
@@ -156,6 +157,11 @@ begin
                 stall <= true;
                 wait for 1 fs;
                 check(not write_to_cpz);
+            elsif run("Mem stage forwards cpz data") then
+                wait until falling_edge(clk);
+                data_from_cpz <= X"F1F2F3F4";
+                wait until falling_edge(clk);
+                check(cpzReadToWriteback = data_from_cpz);
             end if;
         end loop;
         wait until rising_edge(clk);
@@ -181,6 +187,7 @@ begin
         execResultToWriteback => execResultToWriteback,
         memDataReadToWriteback => memDataReadToWriteback,
         destinationRegToWriteback => destinationRegToWriteback,
+        cpzReadToWriteback => cpzReadToWriteback,
         doMemRead => doMemRead,
         doMemWrite => doMemWrite,
         memAddress => memAddress,

@@ -11,10 +11,11 @@ entity mips32_pipeline_writeBack is
         -- From mem stage: control signals
         writeBackControlWord : in mips32_WriteBackControlWord_type;
 
-        -- From mem stage: control signals
+        -- From mem stage: data
         execResult : in mips32_data_type;
         memDataRead : in mips32_data_type;
         destinationReg : in mips32_registerFileAddress_type;
+        cpzRead : in mips32_data_type;
 
         -- To instruction decode: regWrite
         regWrite : out boolean;
@@ -31,6 +32,8 @@ begin
         regWriteAddress <= destinationReg;
         if writeBackControlWord.MemtoReg then
             regWriteData <= memDataRead;
+        elsif writeBackControlWord.cop0ToReg then
+            regWriteData <= cpzRead;
         else
             regWriteData <= execResult;
         end if;

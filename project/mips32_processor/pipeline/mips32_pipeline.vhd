@@ -84,6 +84,7 @@ architecture behaviourial of mips32_pipeline is
     signal execResToWb : mips32_data_type;
     signal memReadToWb : mips32_data_type;
     signal destRegToWb : mips32_registerFileAddress_type;
+    signal cpzReadToWb : mips32_data_type;
 
     signal instructionFetchStall : boolean;
 
@@ -196,6 +197,7 @@ begin
         writeBackControlWordToWriteBack => wbControlWordToWb,
         execResultToWriteback => execResToWb,
         memDataReadToWriteback => memReadToWb,
+        cpzReadToWriteback => cpzReadToWb,
         destinationRegToWriteback => destRegToWb,
 
         doMemRead => dataRead,
@@ -215,6 +217,7 @@ begin
         writeBackControlWord => wbControlWordToWb,
         execResult => execResToWb,
         memDataRead => memReadToWb,
+        cpzRead => cpzReadToWb,
         destinationReg => destRegToWb,
 
         regWrite => regWriteToID,

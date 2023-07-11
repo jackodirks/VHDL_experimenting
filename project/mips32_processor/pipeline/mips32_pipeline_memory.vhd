@@ -27,6 +27,7 @@ entity mips32_pipeline_memory is
         -- To writeback stage: data
         execResultToWriteback : out mips32_data_type;
         memDataReadToWriteback : out mips32_data_type;
+        cpzReadToWriteback : out mips32_data_type;
         destinationRegToWriteback : out mips32_registerFileAddress_type;
 
         -- To mem2bus unit
@@ -65,7 +66,7 @@ begin
     begin
         address_to_cpz <= rdAddress;
         write_to_cpz <= memoryControlWord.cop0Write and not stall;
-        data_to_cpz <= execResult;
+        data_to_cpz <= regDataRead;
     end process;
 
     MemWBRegs : process(clk)
@@ -79,6 +80,7 @@ begin
                 execResultToWriteback <= execResult;
                 destinationRegToWriteback <= destinationReg;
                 memDataReadToWriteback <= dataFromMem;
+                cpzReadToWriteback <= data_from_cpz;
             end if;
         end if;
         writeBackControlWordToWriteBack <= writeBackControlWordToWriteBack_buf;
