@@ -178,6 +178,7 @@ begin
         aluFunction => aluFunction,
         shamt => shamt,
         programCounterPlusFour => programCounterPlusFour,
+        rdAddress => 0,
         memoryControlWordToMem => memoryControlWordToMem,
         writeBackControlWordToMem => writeBackControlWordToMem,
         execResult => execResult,

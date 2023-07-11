@@ -28,6 +28,7 @@ architecture tb of mips32_pipeline_memory_tb is
     signal execResult : mips32_data_type;
     signal regDataRead : mips32_data_type;
     signal destinationReg : mips32_registerFileAddress_type;
+    signal rdAddress : mips32_registerFileAddress_type;
 
     signal writeBackControlWordToWriteBack : mips32_WriteBackControlWord_type;
     signal execResultToWriteback : mips32_data_type;
@@ -132,13 +133,13 @@ begin
             elsif run("mtc0 causes write to coprocessor 0") then
                 opcode <= mips32_opcodeCOP0;
                 mf <= 4;
-                destinationReg <= 5;
+                rdAddress <= 5;
                 execResult <= X"FAFBFCFD";
                 wait for 1 fs;
                 memoryControlWord <= decodedMemoryControlWord;
                 wait for 1 fs;
                 check(write_to_cpz);
-                check(address_to_cpz = destinationReg);
+                check(address_to_cpz = rdAddress);
                 check(data_to_cpz = execResult);
             elsif run("Rtype does not cause write to coprocessor 0") then
                 opcode <= mips32_opcodeRType;
@@ -175,6 +176,7 @@ begin
         execResult => execResult,
         regDataRead => regDataRead,
         destinationReg => destinationReg,
+        rdAddress => rdAddress,
         writeBackControlWordToWriteBack => writeBackControlWordToWriteBack,
         execResultToWriteback => execResultToWriteback,
         memDataReadToWriteback => memDataReadToWriteback,

@@ -19,6 +19,7 @@ entity mips32_pipeline_memory is
         execResult : in mips32_data_type;
         regDataRead : in mips32_data_type;
         destinationReg : in mips32_registerFileAddress_type;
+        rdAddress : in mips32_registerFileAddress_type;
 
         -- To writeback stage: control signals
         writeBackControlWordToWriteBack : out mips32_WriteBackControlWord_type;
@@ -62,7 +63,7 @@ begin
 
     cpzOut : process(memoryControlWord, execResult, destinationReg, stall)
     begin
-        address_to_cpz <= destinationReg;
+        address_to_cpz <= rdAddress;
         write_to_cpz <= memoryControlWord.cop0Write and not stall;
         data_to_cpz <= execResult;
     end process;

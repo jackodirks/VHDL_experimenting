@@ -48,6 +48,7 @@ architecture behaviourial of mips32_pipeline is
     signal aluFuncToEx : mips32_aluFunction_type;
     signal shamtToEx : mips32_shamt_type;
     signal pcPlusFourToEx : mips32_address_type;
+    signal rdAddrToEx : mips32_registerFileAddress_type;
     -- Instruction decode to forwarding
     signal rsDataToFwU : mips32_data_type;
     signal rsAddressToFwU : mips32_registerFileAddress_type;
@@ -72,6 +73,7 @@ architecture behaviourial of mips32_pipeline is
     signal execResToMem : mips32_data_type;
     signal regDataReadToMem : mips32_data_type;
     signal destRegToMem : mips32_registerFileAddress_type;
+    signal rdAddrToMem : mips32_registerFileAddress_type;
     -- Execute to instruction fetch
     signal overrideProgramCounterFromEx : boolean;
     signal newProgramCounterFromEx : mips32_address_type;
@@ -134,6 +136,7 @@ begin
         aluFunction => aluFuncToEx,
         shamt => shamtToEx,
         programCounterPlusFourToEx => pcPlusFourToEx,
+        rdAddress => rdAddrToEx,
 
         loadHazardDetected => loadHazardDetected,
         readPortOneAddressToHazardDetection => portOneAddrToLHD,
@@ -162,12 +165,14 @@ begin
         aluFunction => aluFuncToEx,
         shamt => shamtToEx,
         programCounterPlusFour => pcPlusFourToEx,
+        rdAddress => rdAddrToEx,
 
         memoryControlWordToMem => memControlWordToMem,
         writeBackControlWordToMem => wbControlWordToMem,
         execResult => execResToMem,
         regDataRead => regDataReadToMem,
         destinationRegToMem => destRegToMem,
+        rdAddressToMem => rdAddrToMem,
 
         overrideProgramCounter => overrideProgramCounterFromEx,
         newProgramCounter => newProgramCounterFromEx,
@@ -186,6 +191,7 @@ begin
         execResult => execResToMem,
         regDataRead => regDataReadToMem,
         destinationReg => destRegToMem,
+        rdAddress => rdAddrToMem,
 
         writeBackControlWordToWriteBack => wbControlWordToWb,
         execResultToWriteback => execResToWb,

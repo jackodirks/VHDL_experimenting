@@ -25,6 +25,7 @@ entity mips32_pipeline_execute is
         aluFunction : in mips32_aluFunction_type;
         shamt : in mips32_shamt_type;
         programCounterPlusFour : in mips32_address_type;
+        rdAddress : in mips32_registerFileAddress_type;
 
         -- To Memory stage: control signals
         memoryControlWordToMem : out mips32_MemoryControlWord_type;
@@ -34,6 +35,7 @@ entity mips32_pipeline_execute is
         execResult : out mips32_data_type;
         regDataRead : out mips32_data_type;
         destinationRegToMem : out mips32_registerFileAddress_type;
+        rdAddressToMem : out mips32_registerFileAddress_type;
 
         -- To instruction fetch: branch
         overrideProgramCounter : out boolean;
@@ -100,6 +102,7 @@ begin
                 execResult <= execResult_buf;
                 regDataRead <= rtData;
                 destinationRegToMem <= destinationReg;
+                rdAddressToMem <= rdAddress;
                 justBranched <= overrideProgramCounter_buf;
             end if;
         end if;

@@ -38,6 +38,7 @@ entity mips32_pipeline_instructionDecode is
         aluFunction : out mips32_aluFunction_type;
         shamt : out mips32_shamt_type;
         programCounterPlusFourToEx : out mips32_address_type;
+        rdAddress : out mips32_registerFileAddress_type;
 
         -- From load hazard detected
         loadHazardDetected : in boolean;
@@ -164,6 +165,7 @@ begin
                     rtAddress <= readPortTwoAddress;
                     immidiate <= immidiate_buf;
                     destinationReg <= destinationReg_buf;
+                    rdAddress <= rdAddress_buf;
                     aluFunction <= aluFunction_buf;
                     shamt <= shamt_buf;
                     programCounterPlusFourToEx <= programCounterPlusFour;
