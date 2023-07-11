@@ -94,6 +94,7 @@ begin
         variable wait_out_active : boolean := false;
     begin
         if rising_edge(clk) then
+            has_fault <= false;
             if rst = '1' then
                 read_request <= false;
                 write_request <= false;
@@ -101,7 +102,9 @@ begin
             elsif wait_out_active then
                 wait_out_active := any_active;
             elsif has_fault_buf then
+                has_fault <= true;
                 has_fault_buf := false;
+                fault_data <= fault_data_buf;
                 wait_out_active := any_active;
             elsif bus_pkg.bus_requesting(mst2slv) then
                 detect_fault(mst2slv, has_fault_buf, fault_data_buf);
@@ -116,8 +119,6 @@ begin
                 request_length_buf := determine_request_length(mst2slv.byteMask);
             end if;
         end if;
-        has_fault <= has_fault_buf;
-        fault_data <= fault_data_buf;
         if request_length_buf = 0 then
             request_length <= 1;
         else

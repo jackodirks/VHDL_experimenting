@@ -79,13 +79,11 @@ begin
                 check(not write_request);
             elsif run("Faults on address out of range") then
                 mst2slv <= bus_pkg.bus_mst2slv_read(X"fffffff0");
-                wait for clk_period;
-                check(has_fault);
+                wait until rising_edge(clk) and has_fault;
                 check(fault_data = bus_pkg.bus_fault_address_out_of_range);
             elsif run("Does not fault on address in range") then
                 mst2slv <= bus_pkg.bus_mst2slv_read(X"00021100");
-                wait for clk_period;
-                check(not has_fault);
+                wait until rising_edge(clk) and read_request;
             elsif run("On fault, read_request is false") then
                 mst2slv <= bus_pkg.bus_mst2slv_read(X"ffffffff");
                 wait for clk_period;
@@ -96,19 +94,16 @@ begin
                 check(not write_request);
             elsif run("Fault transaction can finish") then
                 mst2slv <= bus_pkg.bus_mst2slv_read(X"ffffffff");
-                wait for clk_period;
-                check(has_fault);
+                wait until rising_edge(clk) and has_fault;
                 wait for clk_period;
                 check(not has_fault);
             elsif run("0000 is an illegal byte mask") then
                 mst2slv <= bus_pkg.bus_mst2slv_read(X"00021100", byte_mask => "0000");
-                wait for clk_period;
-                check(has_fault);
+                wait until rising_edge(clk) and has_fault;
                 check(fault_data = bus_pkg.bus_fault_illegal_byte_mask);
             elsif run("byte mask 1111 requires a 4 byte alignment") then
                 mst2slv <= bus_pkg.bus_mst2slv_read(X"00021102", byte_mask => "1111");
-                wait for clk_period;
-                check(has_fault);
+                wait until rising_edge(clk) and has_fault;
                 check(fault_data = bus_pkg.bus_fault_unaligned_access);
             elsif run("byte mask 0011 requires a 2 byte alignment") then
                 mst2slv <= bus_pkg.bus_mst2slv_read(X"00021102", byte_mask => "0011");
@@ -116,8 +111,7 @@ begin
                 check(not has_fault);
             elsif run("byte mask 0100 is illegal") then
                 mst2slv <= bus_pkg.bus_mst2slv_read(X"0002110f", byte_mask => "0100");
-                wait for clk_period;
-                check(has_fault);
+                wait until rising_edge(clk) and has_fault;
                 check(fault_data = bus_pkg.bus_fault_illegal_byte_mask);
             elsif run("Byte mask 0001 allows any alignment") then
                 mst2slv <= bus_pkg.bus_mst2slv_read(X"0002110f", byte_mask => "0001");
@@ -145,8 +139,7 @@ begin
             elsif run("After a fault, the parser has to wait for all units to finish") then
                 mst2slv <= bus_pkg.bus_mst2slv_read(X"0002110f", byte_mask => "0100");
                 any_active <= true;
-                wait for clk_period;
-                check(has_fault);
+                wait until rising_edge(clk) and has_fault;
                 wait until rising_edge(clk);
                 wait for clk_period/2;
                 mst2slv <= bus_pkg.bus_mst2slv_read(X"00021100", byte_mask => "1111");
@@ -158,8 +151,7 @@ begin
                 check(read_request);
             elsif run("A burst operation where the next operation would cross a segment line is illegal") then
                 mst2slv <= bus_pkg.bus_mst2slv_read(X"0001fffc", burst => '1');
-                wait for clk_period;
-                check(has_fault);
+                wait until rising_edge(clk) and has_fault;
                 check(fault_data = bus_pkg.bus_fault_illegal_address_for_burst);
             end if;
         end loop;
