@@ -57,7 +57,6 @@ architecture behaviourial of mips32_pipeline is
     -- Instruction decode to loadHazardDetector
     signal portOneAddrToLHD : mips32_registerFileAddress_type;
     signal portTwoAddrToLHD : mips32_registerFileAddress_type;
-    signal execControlToLHD : mips32_ExecuteControlWord_type;
     -- loadHazardDetector to ID
     signal loadHazardDetected : boolean;
     -- Forwarding unit to execute
@@ -142,7 +141,6 @@ begin
         loadHazardDetected => loadHazardDetected,
         readPortOneAddressToHazardDetection => portOneAddrToLHD,
         readPortTwoAddressToHazardDetection => portTwoAddrToLHD,
-        executeControlWordToHazardDetection => execControlToLHD,
 
         regWrite => regWriteToID,
         regWriteAddress => regWriteAddrToID,
@@ -245,7 +243,6 @@ begin
 
     loadHazardDetector : entity work.mips32_pipeline_loadHazardDetector
     port map (
-        executeControlWordFromID => execControlToLHD,
         writeBackControlWordFromEx => wbControlWordToEx,
         targetRegFromEx => destRegToEx,
         readPortOneAddressFromID => portOneAddrToLHD,

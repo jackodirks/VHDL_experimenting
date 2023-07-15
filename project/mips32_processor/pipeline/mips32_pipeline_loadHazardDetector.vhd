@@ -7,7 +7,6 @@ use work.mips32_pkg.all;
 
 entity mips32_pipeline_loadHazardDetector is
     port (
-        executeControlWordFromID : in mips32_ExecuteControlWord_type;
         writeBackControlWordFromEx : in mips32_WriteBackControlWord_type;
         targetRegFromEx : in mips32_registerFileAddress_type;
         readPortOneAddressFromID : in mips32_registerFileAddress_type;
@@ -22,7 +21,7 @@ architecture behaviourial of mips32_pipeline_loadHazardDetector is
     signal loadHazardPortTwo : boolean;
 begin
     loadHazardPortOne <= targetRegFromEx = readPortOneAddressFromID;
-    loadHazardPortTwo <= targetRegFromEx = readPortTwoAddressFromID and not executeControlWordFromID.ALUSrc;
+    loadHazardPortTwo <= targetRegFromEx = readPortTwoAddressFromID;
 
-    loadHazardDetected <= (loadHazardPortOne or loadHazardPortTwo) and writeBackControlWordFromEx.memToReg and targetRegFromEx /= 0;
+    loadHazardDetected <= (loadHazardPortOne or loadHazardPortTwo) and (writeBackControlWordFromEx.memToReg or writeBackControlWordFromEx.cop0ToReg) and targetRegFromEx /= 0;
 end architecture;

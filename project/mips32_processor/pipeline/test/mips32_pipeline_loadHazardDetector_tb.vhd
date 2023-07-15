@@ -17,7 +17,6 @@ end entity;
 architecture tb of mips32_pipeline_loadHazardDetector_tb is
     constant clk_period : time := 20 ns;
 
-    signal executeControlWordFromID : mips32_ExecuteControlWord_type;
     signal writeBackControlWordFromEx : mips32_WriteBackControlWord_type;
     signal targetRegFromEx : mips32_registerFileAddress_type;
     signal readPortOneAddressFromID : mips32_registerFileAddress_type;
@@ -30,11 +29,19 @@ begin
     begin
         test_runner_setup(runner, runner_cfg);
         while test_suite loop
-            if run("Regaddress 5 load hazard on port 1") then
+            if run("Regaddress 5 MemToReg load hazard on port 1") then
                 targetRegFromEx <= 5;
                 readPortOneAddressFromID <= 5;
                 readPortTwoAddressFromID <= 31;
                 writeBackControlWordFromEx.MemToReg <= true;
+                writeBackControlWordFromEx.regWrite <= true;
+                wait for clk_period/2;
+                check(loadHazardDetected);
+            elsif run("Regaddress 5 cop0ToReg load hazard on port 1") then
+                targetRegFromEx <= 5;
+                readPortOneAddressFromID <= 5;
+                readPortTwoAddressFromID <= 31;
+                writeBackControlWordFromEx.cop0ToReg <= true;
                 writeBackControlWordFromEx.regWrite <= true;
                 wait for clk_period/2;
                 check(loadHazardDetected);
@@ -86,15 +93,6 @@ begin
                 writeBackControlWordFromEx.regWrite <= true;
                 wait for clk_period/2;
                 check(not loadHazardDetected);
-            elsif run("No load hazard because Immidiate will be used instead of port 2") then
-                targetRegFromEx <= 5;
-                readPortOneAddressFromID <= 31;
-                readPortTwoAddressFromID <= 5;
-                writeBackControlWordFromEx.MemToReg <= true;
-                writeBackControlWordFromEx.regWrite <= true;
-                executeControlWordFromID.ALUSrc <= true;
-                wait for clk_period/2;
-                check(not loadHazardDetected);
             end if;
         end loop;
         wait for 2*clk_period;
@@ -106,7 +104,6 @@ begin
 
     loadHazardDetector : entity src.mips32_pipeline_loadHazardDetector
     port map (
-        executeControlWordFromID => executeControlWordFromID,
         writeBackControlWordFromEx => writeBackControlWordFromEx,
         targetRegFromEx => targetRegFromEx,
         readPortOneAddressFromID => readPortOneAddressFromID,

@@ -46,7 +46,6 @@ entity mips32_pipeline_instructionDecode is
         -- To load hazard detected
         readPortOneAddressToHazardDetection : out mips32_registerFileAddress_type;
         readPortTwoAddressToHazardDetection : out mips32_registerFileAddress_type;
-        executeControlWordToHazardDetection : out mips32_ExecuteControlWord_type;
 
         -- From writeBack stage: data
         regWrite : in boolean;
@@ -100,7 +99,6 @@ begin
 
     readPortOneAddressToHazardDetection <= readPortOneAddress;
     readPortTwoAddressToHazardDetection <= readPortTwoAddress;
-    executeControlWordToHazardDetection <= decodedExecuteControlWord;
 
     determineDestinationReg : process(rtAddress_buf, rdAddress_buf, decodedInstructionDecodeControlWord)
     begin
