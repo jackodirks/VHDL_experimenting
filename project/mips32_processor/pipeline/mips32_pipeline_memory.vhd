@@ -62,7 +62,7 @@ begin
         end if;
     end process;
 
-    cpzOut : process(memoryControlWord, execResult, destinationReg, stall)
+    cpzOut : process(memoryControlWord, execResult, destinationReg, stall, rdAddress, regDataRead)
     begin
         address_to_cpz <= rdAddress;
         write_to_cpz <= memoryControlWord.cop0Write and not stall;

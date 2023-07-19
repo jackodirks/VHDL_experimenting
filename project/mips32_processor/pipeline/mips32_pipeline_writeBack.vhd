@@ -26,7 +26,7 @@ end entity;
 
 architecture behaviourial of mips32_pipeline_writeBack is
 begin
-    process(writeBackControlWord, execResult, destinationReg, memDataRead)
+    process(writeBackControlWord, execResult, destinationReg, memDataRead, cpzRead)
     begin
         regWrite <= writeBackControlWord.regWrite;
         regWriteAddress <= destinationReg;
