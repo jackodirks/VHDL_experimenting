@@ -20,28 +20,30 @@ architecture tb of mips32_pipeline_instructionDecode_tb is
 
     signal clk : std_logic := '0';
     signal rst : std_logic := '0';
-    signal stall : boolean := false;
+
+    signal overrideProgramCounter : boolean;
+    signal repeatInstruction : boolean;
 
     signal instructionFromInstructionFetch : mips32_instruction_type := (others => '1');
     signal programCounterPlusFour : mips32_address_type := (others => '1');
-    signal overrideProgramCounter : boolean;
     signal newProgramCounter : mips32_address_type;
-    signal repeatInstruction : boolean;
+
+    signal nopOutput : boolean;
 
     signal writeBackControlWord : mips32_WriteBackControlWord_type;
     signal memoryControlWord : mips32_MemoryControlWord_type;
     signal executeControlWord : mips32_ExecuteControlWord_type;
-
     signal rsData : mips32_data_type;
     signal rsAddress : mips32_registerFileAddress_type;
     signal rtData : mips32_data_type;
     signal rtAddress : mips32_registerFileAddress_type;
     signal immidiate : mips32_data_type;
     signal destinationReg : mips32_registerFileAddress_type;
+    signal rdAddress : mips32_registerFileAddress_type;
     signal aluFunction : mips32_aluFunction_type;
     signal shamt : mips32_shamt_type;
 
-    signal loadHazardDetected : boolean;
+    signal loadHazardDetected : boolean := false;
 
     signal regWrite : boolean := false;
     signal regWriteAddress : mips32_registerFileAddress_type := 16#0#;
@@ -97,9 +99,6 @@ begin
                 regWriteAddress <= 1;
                 regWriteData <= expectedRtData;
                 wait until rising_edge(clk);
-                instructionFromInstructionFetch <= (others => '1');
-                regWrite <= false;
-                wait until falling_edge(clk);
                 check_equal(rsData, expectedRsData);
                 check_equal(rtData, expectedRtData);
                 check_equal(destinationReg, expectedDestinationReg);
@@ -113,39 +112,6 @@ begin
                 check(executeControlWord = mips32_executeControlWordAllFalse);
                 check(memoryControlWord = mips32_memoryControlWordAllFalse);
                 check(writeBackControlWord = mips32_writeBackControlWordAllFalse);
-            elsif run("On reset, all control logic should be reset to false") then
-                instructionIn(31 downto 26) := std_logic_vector(to_unsigned(mips32_opcodeRType, 6));
-                instructionIn(25 downto 21) := std_logic_vector(to_unsigned(2, 5));
-                instructionIn(20 downto 16) := std_logic_vector(to_unsigned(1, 5));
-                instructionIn(15 downto 11) := std_logic_vector(to_unsigned(3, 5));
-                instructionIn(10 downto 6) := std_logic_vector(to_unsigned(10, 5));
-                instructionIn(5 downto 0) := std_logic_vector(to_unsigned(4, 6));
-                instructionFromInstructionFetch <= instructionIn;
-                rst <= '0';
-                wait until rising_edge(clk);
-                rst <= '1';
-                wait until rising_edge(clk);
-                wait until falling_edge(clk);
-                check(executeControlWord = mips32_executeControlWordAllFalse);
-                check(memoryControlWord = mips32_memoryControlWordAllFalse);
-                check(writeBackControlWord = mips32_writeBackControlWordAllFalse);
-            elsif run("On stall, the incoming instruction should be ignored") then
-                instructionIn(31 downto 26) := std_logic_vector(to_unsigned(mips32_opcodeRType, 6));
-                instructionIn(25 downto 21) := std_logic_vector(to_unsigned(2, 5));
-                instructionIn(20 downto 16) := std_logic_vector(to_unsigned(1, 5));
-                instructionIn(15 downto 11) := std_logic_vector(to_unsigned(3, 5));
-                instructionIn(10 downto 6) := std_logic_vector(to_unsigned(10, 5));
-                instructionIn(5 downto 0) := std_logic_vector(to_unsigned(4, 6));
-                expectedAluFunction := 4;
-                instructionFromInstructionFetch <= instructionIn;
-                stall <= false;
-                wait until rising_edge(clk);
-                instructionIn(5 downto 0) := std_logic_vector(to_unsigned(5, 6));
-                instructionFromInstructionFetch <= instructionIn;
-                stall <= true;
-                wait until rising_edge(clk);
-                wait until falling_edge(clk);
-                check_equal(aluFunction, expectedAluFunction);
             elsif run("Load word behaves as expected") then
                 instructionIn(31 downto 26) := std_logic_vector(to_unsigned(mips32_opcodeLw, 6));
                 instructionIn(25 downto 21) := (others => '0');
@@ -196,34 +162,13 @@ begin
                 check_equal(rsAddress, expectedRsAddress);
                 check_equal(rtAddress, expectedRtAddress);
             elsif run("Load hazard detected causes repeat") then
-                instructionIn(31 downto 26) := std_logic_vector(to_unsigned(mips32_opcodeRType, 6));
-                instructionIn(25 downto 21) := std_logic_vector(to_unsigned(2, 5));
-                instructionIn(20 downto 16) := std_logic_vector(to_unsigned(1, 5));
-                instructionIn(15 downto 11) := std_logic_vector(to_unsigned(3, 5));
-                instructionIn(10 downto 6) := std_logic_vector(to_unsigned(10, 5));
-                instructionIn(5 downto 0) := std_logic_vector(to_unsigned(4, 6));
-                instructionFromInstructionFetch <= instructionIn;
                 loadHazardDetected <= true;
-                wait until rising_edge(clk);
-                wait until falling_edge(clk);
+                wait for 1 ns;
                 check(repeatInstruction);
-                check(executeControlWord = mips32_executeControlWordAllFalse);
-                check(memoryControlWord = mips32_memoryControlWordAllFalse);
-                check(writeBackControlWord = mips32_writeBackControlWordAllFalse);
             elsif run("ignoreCurrentInstruction NOPs current instruction") then
-                instructionIn(31 downto 26) := std_logic_vector(to_unsigned(mips32_opcodeRType, 6));
-                instructionIn(25 downto 21) := std_logic_vector(to_unsigned(2, 5));
-                instructionIn(20 downto 16) := std_logic_vector(to_unsigned(1, 5));
-                instructionIn(15 downto 11) := std_logic_vector(to_unsigned(3, 5));
-                instructionIn(10 downto 6) := std_logic_vector(to_unsigned(10, 5));
-                instructionIn(5 downto 0) := std_logic_vector(to_unsigned(4, 6));
-                instructionFromInstructionFetch <= instructionIn;
                 ignoreCurrentInstruction <= true;
-                wait until rising_edge(clk);
-                wait until falling_edge(clk);
-                check(executeControlWord = mips32_executeControlWordAllFalse);
-                check(memoryControlWord = mips32_memoryControlWordAllFalse);
-                check(writeBackControlWord = mips32_writeBackControlWordAllFalse);
+                wait for 1 ns;
+                check(nopOutput);
             elsif run("Jump instruction is ignored during ignoreCurrentInstruction") then
                 instructionIn(31 downto 26) := std_logic_vector(to_unsigned(mips32_opcodeJ, 6));
                 instructionIn(25 downto 1) := (others => '0');
@@ -267,12 +212,12 @@ begin
     port map (
         clk => clk,
         rst => rst,
-        stall => stall,
-        instructionFromInstructionFetch => instructionFromInstructionFetch,
-        programCounterPlusFour => programCounterPlusFour,
         overrideProgramCounter => overrideProgramCounter,
         repeatInstruction => repeatInstruction,
+        instructionFromInstructionFetch => instructionFromInstructionFetch,
+        programCounterPlusFour => programCounterPlusFour,
         newProgramCounter => newProgramCounter,
+        nopOutput => nopOutput,
         writeBackControlWord => writeBackControlWord,
         memoryControlWord => memoryControlWord,
         executeControlWord => executeControlWord,
@@ -282,6 +227,7 @@ begin
         rtAddress => rtAddress,
         immidiate => immidiate,
         destinationReg => destinationReg,
+        rdAddress => rdAddress,
         aluFunction => aluFunction,
         shamt => shamt,
         loadHazardDetected => loadHazardDetected,
