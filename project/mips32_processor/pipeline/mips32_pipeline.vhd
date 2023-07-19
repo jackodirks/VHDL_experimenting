@@ -44,15 +44,16 @@ architecture behaviourial of mips32_pipeline is
     signal exControlWordFromId : mips32_ExecuteControlWord_type;
     signal memControlWordFromId : mips32_MemoryControlWord_type;
     signal wbControlWordFromId : mips32_WriteBackControlWord_type;
-    signal rsDataFromId : mips32_data_type;
     signal rsAddressFromId : mips32_registerFileAddress_type;
-    signal rtDataFromId : mips32_data_type;
     signal rtAddressFromId : mips32_registerFileAddress_type;
     signal immidiateFromId : mips32_data_type;
     signal destRegFromId : mips32_registerFileAddress_type;
     signal rdAddressFromId : mips32_registerFileAddress_type;
     signal aluFuncFromId : mips32_aluFunction_type;
     signal shamtFromId : mips32_shamt_type;
+    -- Registerfile to id/ex
+    signal rsDataFromRegFile : mips32_data_type;
+    signal rtDataFromRegFile : mips32_data_type;
     -- id/ex to execute
     signal exControlWordFromIdEx : mips32_ExecuteControlWord_type;
     signal memControlWordFromIdEx : mips32_MemoryControlWord_type;
@@ -81,9 +82,9 @@ architecture behaviourial of mips32_pipeline is
     signal rsDataFromFwu : mips32_data_type;
     signal rtDataFromFwu : mips32_data_type;
     -- Write back to instruction decode
-    signal regWriteToID : boolean;
-    signal regWriteAddrToID : mips32_registerFileAddress_type;
-    signal regWriteDataToID : mips32_data_type;
+    signal regWriteFromWb : boolean;
+    signal regWriteAddrFromWb : mips32_registerFileAddress_type;
+    signal regWriteDataFromWb : mips32_data_type;
     -- Execute to memory
     signal memControlWordToMem : mips32_MemoryControlWord_type;
     signal wbControlWordToMem : mips32_WriteBackControlWord_type;
@@ -130,9 +131,6 @@ begin
 
     instructionDecode : entity work.mips32_pipeline_instructionDecode
     port map (
-        clk => clk,
-        rst => rst,
-
         overrideProgramCounter => overrideProgramCounterFromID,
         repeatInstruction => repeatInstruction,
 
@@ -146,9 +144,7 @@ begin
         executeControlWord => exControlWordFromId,
         memoryControlWord => memControlWordFromId,
         writeBackControlWord => wbControlWordFromId,
-        rsData => rsDataFromId,
         rsAddress => rsAddressFromId,
-        rtData => rtDataFromId,
         rtAddress => rtAddressFromId,
         immidiate => immidiateFromId,
         destinationReg => destRegFromId,
@@ -157,10 +153,6 @@ begin
         shamt => shamtFromId,
 
         loadHazardDetected => loadHazardDetected,
-
-        regWrite => regWriteToID,
-        regWriteAddress => regWriteAddrToID,
-        regWriteData => regWriteDataToID,
         ignoreCurrentInstruction => ignoreCurrentInstruction
     );
 
@@ -176,9 +168,9 @@ begin
         writeBackControlWordIn => wbControlWordFromId,
         -- Pipeline data in
         programCounterPlusFourIn => pcPlusFourFromIf,
-        rsDataIn => rsDataFromId,
+        rsDataIn => rsDataFromRegFile,
         rsAddressIn => rsAddressFromId,
-        rtDataIn => rtDataFromId,
+        rtDataIn => rtDataFromRegFile,
         rtAddressIn => rtAddressFromId,
         immidiateIn => immidiateFromId,
         destinationRegIn => destRegFromId,
@@ -272,11 +264,12 @@ begin
         cpzRead => cpzReadToWb,
         destinationReg => destRegToWb,
 
-        regWrite => regWriteToID,
-        regWriteAddress => regWriteAddrToID,
-        regWriteData => regWriteDataToID
+        regWrite => regWriteFromWb,
+        regWriteAddress => regWriteAddrFromWb,
+        regWriteData => regWriteDataFromWb
     );
 
+    -- Lives in EX stage
     forwarding_unit : entity work.mips32_pipeline_forwarding_unit
     port map (
         rsDataFromID => rsDataFromIdEx,
@@ -287,14 +280,15 @@ begin
         regDataFromEx => execResToMem,
         regAddressFromEx => destRegToMem,
         regWriteFromEx => wbControlWordToMem.regWrite,
-        regDataFromMem => regWriteDataToID,
-        regAddressFromMem => regWriteAddrToID,
-        regWriteFromMem => regWriteToID,
+        regDataFromMem => regWriteDataFromWb,
+        regAddressFromMem => regWriteAddrFromWb,
+        regWriteFromMem => regWriteFromWb,
 
         rsData => rsDataFromFwu,
         rtData => rtDataFromFwu
     );
 
+    -- Lives in ID stage
     loadHazardDetector : entity work.mips32_pipeline_loadHazardDetector
     port map (
         writeBackControlWordFromEx => wbControlWordFromIdEx,
@@ -303,4 +297,18 @@ begin
         readPortTwoAddressFromID => rsAddressFromId,
         loadHazardDetected => loadHazardDetected
     );
+
+    -- Lives in ID stage
+    registerFile : entity work.mips32_registerFile
+    port map (
+        clk => clk,
+        readPortOneAddress => rsAddressFromId,
+        readPortOneData => rsDataFromRegFile,
+        readPortTwoAddress => rtAddressFromId,
+        readPortTwoData => rtDataFromRegFile,
+        writePortDoWrite => regWriteFromWb,
+        writePortAddress => regWriteAddrFromWb,
+        writePortData => regWriteDataFromWb
+    );
+
 end architecture;

@@ -42,7 +42,7 @@ begin
         programCounterPlusFour_buf <= std_logic_vector(unsigned(programCounter) + 4);
     end process;
 
-    determineNextProgramCounter : process(overrideProgramCounterFromID, newProgramCounterFromID, overrideProgramCounterFromEx, 
+    determineNextProgramCounter : process(overrideProgramCounterFromID, newProgramCounterFromID, overrideProgramCounterFromEx,
                                           newProgramCounterFromEx, programCounterPlusFour_buf)
     begin
         if overrideProgramCounterFromEx then

@@ -19,7 +19,6 @@ architecture tb of mips32_pipeline_instructionDecode_tb is
     constant clk_period : time := 20 ns;
 
     signal clk : std_logic := '0';
-    signal rst : std_logic := '0';
 
     signal overrideProgramCounter : boolean;
     signal repeatInstruction : boolean;
@@ -33,9 +32,7 @@ architecture tb of mips32_pipeline_instructionDecode_tb is
     signal writeBackControlWord : mips32_WriteBackControlWord_type;
     signal memoryControlWord : mips32_MemoryControlWord_type;
     signal executeControlWord : mips32_ExecuteControlWord_type;
-    signal rsData : mips32_data_type;
     signal rsAddress : mips32_registerFileAddress_type;
-    signal rtData : mips32_data_type;
     signal rtAddress : mips32_registerFileAddress_type;
     signal immidiate : mips32_data_type;
     signal destinationReg : mips32_registerFileAddress_type;
@@ -44,10 +41,6 @@ architecture tb of mips32_pipeline_instructionDecode_tb is
     signal shamt : mips32_shamt_type;
 
     signal loadHazardDetected : boolean := false;
-
-    signal regWrite : boolean := false;
-    signal regWriteAddress : mips32_registerFileAddress_type := 16#0#;
-    signal regWriteData : mips32_data_type := (others => '0');
 
     signal ignoreCurrentInstruction : boolean := false;
 begin
@@ -91,16 +84,9 @@ begin
                 expectedDestinationReg := 3;
                 expectedAluFunction := 4;
                 expectedShamt := 10;
-                regWrite <= true;
-                regWriteAddress <= 2;
-                regWriteData <= expectedRsData;
                 wait until rising_edge(clk);
                 instructionFromInstructionFetch <= instructionIn;
-                regWriteAddress <= 1;
-                regWriteData <= expectedRtData;
                 wait until rising_edge(clk);
-                check_equal(rsData, expectedRsData);
-                check_equal(rtData, expectedRtData);
                 check_equal(destinationReg, expectedDestinationReg);
                 check_equal(aluFunction, expectedAluFunction);
                 check_equal(shamt, expectedShamt);
@@ -210,8 +196,6 @@ begin
 
     instructionDecode : entity src.mips32_pipeline_instructionDecode
     port map (
-        clk => clk,
-        rst => rst,
         overrideProgramCounter => overrideProgramCounter,
         repeatInstruction => repeatInstruction,
         instructionFromInstructionFetch => instructionFromInstructionFetch,
@@ -221,9 +205,7 @@ begin
         writeBackControlWord => writeBackControlWord,
         memoryControlWord => memoryControlWord,
         executeControlWord => executeControlWord,
-        rsData => rsData,
         rsAddress => rsAddress,
-        rtData => rtData,
         rtAddress => rtAddress,
         immidiate => immidiate,
         destinationReg => destinationReg,
@@ -231,9 +213,6 @@ begin
         aluFunction => aluFunction,
         shamt => shamt,
         loadHazardDetected => loadHazardDetected,
-        regWrite => regWrite,
-        regWriteAddress => regWriteAddress,
-        regWriteData => regWriteData,
         ignoreCurrentInstruction => ignoreCurrentInstruction
     );
 end architecture;
