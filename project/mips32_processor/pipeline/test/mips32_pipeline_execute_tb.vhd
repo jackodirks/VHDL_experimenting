@@ -41,8 +41,6 @@ architecture tb of mips32_pipeline_execute_tb is
 
     signal overrideProgramCounter : boolean;
     signal newProgramCounter : mips32_address_type;
-
-    signal justBranched : boolean;
 begin
     clk <= not clk after (clk_period/2);
 
@@ -59,7 +57,6 @@ begin
                 check(not memoryControlWordToMem.MemOpIsWrite);
                 check(not writeBackControlWordToMem.regWrite);
                 check(not writeBackControlWordToMem.MemtoReg);
-                check(not justBranched);
             elsif run("Input memory, writeback control is forwarded") then
                 memoryControlWord.MemOpIsWrite <= true;
                 wait until rising_edge(clk);
@@ -119,9 +116,6 @@ begin
                 wait until rising_edge(clk);
                 check(overrideProgramCounter);
                 check_equal(newProgramCounter, expectedBranchTarget);
-                check(not justBranched);
-                wait until falling_edge(clk);
-                check(justBranched);
             elsif run("branch on equal does not branch when not equal") then
                 rsData <= std_logic_vector(to_signed(20, rsData'length));
                 rtData <= std_logic_vector(to_signed(100, rtData'length));
@@ -185,8 +179,7 @@ begin
         regDataRead => regDataRead,
         destinationRegToMem => destinationRegToMem,
         overrideProgramCounter => overrideProgramCounter,
-        newProgramCounter => newProgramCounter,
-        justBranched => justBranched
+        newProgramCounter => newProgramCounter
     );
 
 end architecture;

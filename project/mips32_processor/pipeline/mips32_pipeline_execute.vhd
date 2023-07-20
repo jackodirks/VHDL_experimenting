@@ -39,10 +39,7 @@ entity mips32_pipeline_execute is
 
         -- To instruction fetch: branch
         overrideProgramCounter : out boolean;
-        newProgramCounter : out mips32_address_type;
-
-        -- To instrucion decode
-        justBranched : out boolean
+        newProgramCounter : out mips32_address_type
     );
 end entity;
 
@@ -95,7 +92,6 @@ begin
             if rst = '1' then
                 memoryControlWordToMem_buf := mips32_memoryControlWordAllFalse;
                 writeBackControlWordToMem_buf := mips32_writeBackControlWordAllFalse;
-                justBranched <= false;
             elsif not stall then
                 memoryControlWordToMem_buf := memoryControlWord;
                 writeBackControlWordToMem_buf := writeBackControlWord;
@@ -103,7 +99,6 @@ begin
                 regDataRead <= rtData;
                 destinationRegToMem <= destinationReg;
                 rdAddressToMem <= rdAddress;
-                justBranched <= overrideProgramCounter_buf;
             end if;
         end if;
         memoryControlWordToMem <= memoryControlWordToMem_buf;

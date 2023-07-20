@@ -35,6 +35,7 @@ architecture behaviourial of mips32_pipeline is
     -- Instruction fetch to instruction decode
     signal instructionToID : mips32_instruction_type;
     signal pcPlusFourFromIf : mips32_address_type;
+    signal ignoreCurrentInstructionFromIf : boolean;
     -- Instruction decode to instruction fetch
     signal overrideProgramCounterFromID : boolean;
     signal newProgramCounterFromID : mips32_address_type;
@@ -95,8 +96,6 @@ architecture behaviourial of mips32_pipeline is
     -- Execute to instruction fetch
     signal overrideProgramCounterFromEx : boolean;
     signal newProgramCounterFromEx : mips32_address_type;
-    -- Execute to instruction decode
-    signal ignoreCurrentInstruction : boolean;
     -- Memory to write back
     signal wbControlWordToWb : mips32_WriteBackControlWord_type;
     signal execResToWb : mips32_data_type;
@@ -122,6 +121,7 @@ begin
 
         instructionToInstructionDecode => instructionToID,
         programCounterPlusFour => pcPlusFourFromIf,
+        ignoreCurrentInstruction => ignoreCurrentInstructionFromIf,
 
         overrideProgramCounterFromID => overrideProgramCounterFromID,
         newProgramCounterFromID => newProgramCounterFromID,
@@ -153,7 +153,7 @@ begin
         shamt => shamtFromId,
 
         loadHazardDetected => loadHazardDetected,
-        ignoreCurrentInstruction => ignoreCurrentInstruction
+        ignoreCurrentInstruction => ignoreCurrentInstructionFromIf
     );
 
     idexReg : entity work.mips32_pipeline_idexRegister
@@ -220,9 +220,7 @@ begin
         rdAddressToMem => rdAddrToMem,
 
         overrideProgramCounter => overrideProgramCounterFromEx,
-        newProgramCounter => newProgramCounterFromEx,
-
-       justBranched => ignoreCurrentInstruction
+        newProgramCounter => newProgramCounterFromEx
     );
 
     memory : entity work.mips32_pipeline_memory

@@ -24,6 +24,7 @@ architecture tb of mips32_pipeline_instructionFetch_tb is
     constant startAddress : mips32_address_type := X"00000014";
     signal requestFromBusAddress : mips32_address_type;
     signal instructionToInstructionDecode : mips32_instruction_type;
+    signal ignoreCurrentInstruction : boolean;
     signal programCounterPlusFour : mips32_address_type;
     signal instructionFromBus : mips32_instruction_type := (others => '1');
     signal overrideProgramCounterFromID : boolean := false;
@@ -76,6 +77,11 @@ begin
                 wait until rising_edge(clk);
                 wait until rising_edge(clk);
                 check_equal(expectedAddress, requestFromBusAddress);
+            elsif run("Branch from Ex means ignore current instruction") then
+                wait until falling_edge(clk);
+                overrideProgramCounterFromEx <= true;
+                wait until falling_edge(clk);
+                check(ignoreCurrentInstruction);
             elsif run("On the first rising edge, a nop should be send to ID") then
                 wait until rising_edge(clk);
                 check_equal(instructionToInstructionDecode, mips32_instructionNop);
@@ -88,7 +94,6 @@ begin
                 wait until rising_edge(clk);
                 check_equal(expectedInstruction, instructionToInstructionDecode);
                 check_equal(expectedAddress, requestFromBusAddress);
-
             end if;
         end loop;
         wait until rising_edge(clk);
@@ -107,6 +112,7 @@ begin
         rst => rst,
         requestFromBusAddress => requestFromBusAddress,
         instructionToInstructionDecode => instructionToInstructionDecode,
+        ignoreCurrentInstruction => ignoreCurrentInstruction,
         programCounterPlusFour => programCounterPlusFour,
         instructionFromBus => instructionFromBus,
         overrideProgramCounterFromID => overrideProgramCounterFromID,

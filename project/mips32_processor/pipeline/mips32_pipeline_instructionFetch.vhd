@@ -16,6 +16,7 @@ entity mips32_pipeline_instructionFetch is
 
         requestFromBusAddress : out mips32_address_type;
         instructionToInstructionDecode : out mips32_instruction_type;
+        ignoreCurrentInstruction : out boolean;
         programCounterPlusFour : out mips32_address_type;
         instructionFromBus : in mips32_instruction_type;
 
@@ -76,6 +77,7 @@ begin
             elsif not stall then
                 programCounterPlusFour <= programCounterPlusFour_buf;
                 instructionBuf := instructionFromBus;
+                ignoreCurrentInstruction <= overrideProgramCounterFromEx;
             end if;
         end if;
         instructionToInstructionDecode <= instructionBuf;
