@@ -35,10 +35,7 @@ entity mips32_pipeline_instructionDecode is
         shamt : out mips32_shamt_type;
 
         -- From load hazard detected
-        loadHazardDetected : in boolean;
-
-        -- From execute: control
-        ignoreCurrentInstruction : in boolean
+        loadHazardDetected : in boolean
     );
 end entity;
 
@@ -58,14 +55,14 @@ architecture behaviourial of mips32_pipeline_instructionDecode is
     signal rtAddress_buf : mips32_registerFileAddress_type;
     signal rdAddress_buf : mips32_registerFileAddress_type;
 begin
-    repeatInstruction <= loadHazardDetected and not ignoreCurrentInstruction;
-    overrideProgramCounter <= decodedInstructionDecodeControlWord.jump and not ignoreCurrentInstruction;
+    repeatInstruction <= loadHazardDetected;
+    overrideProgramCounter <= decodedInstructionDecodeControlWord.jump;
     newProgramCounter <= jumpTarget;
 
     rtAddress_buf <= to_integer(unsigned(instructionFromInstructionFetch(20 downto 16)));
     rdAddress_buf <= to_integer(unsigned(instructionFromInstructionFetch(15 downto 11)));
 
-    nopOutput <= loadHazardDetected or ignoreCurrentInstruction;
+    nopOutput <= loadHazardDetected;
     writeBackControlWord <= decodedWriteBackControlWord;
     memoryControlWord <= decodedMemoryControlWord;
     executeControlWord <= decodedExecuteControlWord;

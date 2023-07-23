@@ -24,7 +24,6 @@ architecture tb of mips32_pipeline_instructionFetch_tb is
     constant startAddress : mips32_address_type := X"00000014";
     signal requestFromBusAddress : mips32_address_type;
     signal instructionToInstructionDecode : mips32_instruction_type;
-    signal ignoreCurrentInstruction : boolean;
     signal programCounterPlusFour : mips32_address_type;
     signal instructionFromBus : mips32_instruction_type := (others => '1');
     signal overrideProgramCounterFromID : boolean := false;
@@ -32,6 +31,7 @@ architecture tb of mips32_pipeline_instructionFetch_tb is
     signal overrideProgramCounterFromEx : boolean := false;
     signal newProgramCounterFromEx : mips32_instruction_type := (others => '1');
     signal stall : boolean := false;
+    signal injectBubble : boolean := false;
 begin
     clk <= not clk after (clk_period/2);
 
@@ -77,11 +77,6 @@ begin
                 wait until rising_edge(clk);
                 wait until rising_edge(clk);
                 check_equal(expectedAddress, requestFromBusAddress);
-            elsif run("Branch from Ex means ignore current instruction") then
-                wait until falling_edge(clk);
-                overrideProgramCounterFromEx <= true;
-                wait until falling_edge(clk);
-                check(ignoreCurrentInstruction);
             elsif run("On the first rising edge, a nop should be send to ID") then
                 wait until rising_edge(clk);
                 check_equal(instructionToInstructionDecode, mips32_instructionNop);
@@ -94,6 +89,30 @@ begin
                 wait until rising_edge(clk);
                 check_equal(expectedInstruction, instructionToInstructionDecode);
                 check_equal(expectedAddress, requestFromBusAddress);
+            elsif run("InjectBubble freezes the pc") then
+                expectedAddress := std_logic_vector(unsigned(startAddress) + 4);
+                wait until falling_edge(clk);
+                injectBubble <= true;
+                wait until falling_edge(clk);
+                check_equal(requestFromBusAddress, expectedAddress);
+            elsif run("InjectBubble creates a NOP") then
+                instructionFromBus <= X"FF00FF00";
+                expectedInstruction := mips32_instructionNop;
+                wait until falling_edge(clk);
+                injectBubble <= true;
+                wait until falling_edge(clk);
+                injectBubble <= false;
+                wait until falling_edge(clk);
+                check_equal(instructionToInstructionDecode, expectedInstruction);
+            elsif run("During stall, injectBubble does nothing") then
+                instructionFromBus <= X"FF00FF00";
+                wait until falling_edge(clk);
+                injectBubble <= true;
+                stall <= true;
+                wait until falling_edge(clk);
+                stall <= false;
+                wait until falling_edge(clk);
+                check_equal(instructionToInstructionDecode, instructionFromBus);
             end if;
         end loop;
         wait until rising_edge(clk);
@@ -112,13 +131,13 @@ begin
         rst => rst,
         requestFromBusAddress => requestFromBusAddress,
         instructionToInstructionDecode => instructionToInstructionDecode,
-        ignoreCurrentInstruction => ignoreCurrentInstruction,
         programCounterPlusFour => programCounterPlusFour,
         instructionFromBus => instructionFromBus,
         overrideProgramCounterFromID => overrideProgramCounterFromID,
         newProgramCounterFromID => newProgramCounterFromID,
         overrideProgramCounterFromEx => overrideProgramCounterFromEx,
         newProgramCounterFromEx => newProgramCounterFromEx,
+        injectBubble => injectBubble,
         stall => stall
     );
 

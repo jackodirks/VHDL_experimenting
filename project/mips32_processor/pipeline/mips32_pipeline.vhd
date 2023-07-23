@@ -35,11 +35,12 @@ architecture behaviourial of mips32_pipeline is
     -- Instruction fetch to instruction decode
     signal instructionToID : mips32_instruction_type;
     signal pcPlusFourFromIf : mips32_address_type;
-    signal ignoreCurrentInstructionFromIf : boolean;
     -- Instruction decode to instruction fetch
     signal overrideProgramCounterFromID : boolean;
     signal newProgramCounterFromID : mips32_address_type;
     signal repeatInstruction : boolean;
+    -- Branchhelper to IF
+    signal injectBubbleFromBranchHelper : boolean;
     -- Instruction decode to id/ex
     signal nopOutputFromId : boolean;
     signal exControlWordFromId : mips32_ExecuteControlWord_type;
@@ -115,13 +116,13 @@ begin
         clk => clk,
         rst => rst,
         stall => instructionFetchStall,
+        injectBubble => injectBubbleFromBranchHelper,
 
         requestFromBusAddress => instructionAddress,
         instructionFromBus => instruction,
 
         instructionToInstructionDecode => instructionToID,
         programCounterPlusFour => pcPlusFourFromIf,
-        ignoreCurrentInstruction => ignoreCurrentInstructionFromIf,
 
         overrideProgramCounterFromID => overrideProgramCounterFromID,
         newProgramCounterFromID => newProgramCounterFromID,
@@ -152,8 +153,7 @@ begin
         aluFunction => aluFuncFromId,
         shamt => shamtFromId,
 
-        loadHazardDetected => loadHazardDetected,
-        ignoreCurrentInstruction => ignoreCurrentInstructionFromIf
+        loadHazardDetected => loadHazardDetected
     );
 
     idexReg : entity work.mips32_pipeline_idexRegister
@@ -307,6 +307,13 @@ begin
         writePortDoWrite => regWriteFromWb,
         writePortAddress => regWriteAddrFromWb,
         writePortData => regWriteDataFromWb
+    );
+
+    branchHelper : entity work.mips32_pipeline_branchHelper
+    port map (
+        executeControlWord => exControlWordFromId,
+        aluFunction => aluFuncFromId,
+        injectBubble => injectBubbleFromBranchHelper
     );
 
 end architecture;

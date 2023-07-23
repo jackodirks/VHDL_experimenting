@@ -16,7 +16,6 @@ entity mips32_pipeline_instructionFetch is
 
         requestFromBusAddress : out mips32_address_type;
         instructionToInstructionDecode : out mips32_instruction_type;
-        ignoreCurrentInstruction : out boolean;
         programCounterPlusFour : out mips32_address_type;
         instructionFromBus : in mips32_instruction_type;
 
@@ -26,6 +25,7 @@ entity mips32_pipeline_instructionFetch is
         overrideProgramCounterFromEx : in boolean;
         newProgramCounterFromEx : in mips32_address_type;
 
+        injectBubble : in boolean;
         stall : in boolean
     );
 end entity;
@@ -34,6 +34,8 @@ architecture behaviourial of mips32_pipeline_instructionFetch is
     signal programCounter : mips32_address_type := startAddress;
     signal programCounterPlusFour_buf : mips32_address_type;
     signal nextProgramCounter : mips32_address_type;
+    signal outputNop : boolean := false;
+    signal instructionToInstructionDecode_buf : mips32_instruction_type;
 begin
 
     requestFromBusAddress <= programCounter;
@@ -58,13 +60,25 @@ begin
     programCounterControl : process(clk)
     begin
         if rising_edge(clk) then
+            outputNop <= false;
             if rst = '1' then
                 programCounter <= startAddress;
             elsif stall then
                 -- pass
+            elsif injectBubble then
+                outputNop <= true;
             else
                 programCounter <= nextProgramCounter;
             end if;
+        end if;
+    end process;
+
+    determineOutputInstruction : process(outputNop, instructionFromBus)
+    begin
+        if outputNop then
+            instructionToInstructionDecode_buf <= mips32_instructionNop;
+        else
+            instructionToInstructionDecode_buf <= instructionFromBus;
         end if;
     end process;
 
@@ -76,8 +90,7 @@ begin
                 instructionBuf := mips32_instructionNop;
             elsif not stall then
                 programCounterPlusFour <= programCounterPlusFour_buf;
-                instructionBuf := instructionFromBus;
-                ignoreCurrentInstruction <= overrideProgramCounterFromEx;
+                instructionBuf := instructionToInstructionDecode_buf;
             end if;
         end if;
         instructionToInstructionDecode <= instructionBuf;

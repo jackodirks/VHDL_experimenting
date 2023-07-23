@@ -41,8 +41,6 @@ architecture tb of mips32_pipeline_instructionDecode_tb is
     signal shamt : mips32_shamt_type;
 
     signal loadHazardDetected : boolean := false;
-
-    signal ignoreCurrentInstruction : boolean := false;
 begin
     clk <= not clk after (clk_period/2);
 
@@ -151,18 +149,6 @@ begin
                 loadHazardDetected <= true;
                 wait for 1 ns;
                 check(repeatInstruction);
-            elsif run("ignoreCurrentInstruction NOPs current instruction") then
-                ignoreCurrentInstruction <= true;
-                wait for 1 ns;
-                check(nopOutput);
-            elsif run("Jump instruction is ignored during ignoreCurrentInstruction") then
-                instructionIn(31 downto 26) := std_logic_vector(to_unsigned(mips32_opcodeJ, 6));
-                instructionIn(25 downto 1) := (others => '0');
-                instructionIn(0) := '1';
-                instructionFromInstructionFetch <= instructionIn;
-                ignoreCurrentInstruction <= true;
-                wait until rising_edge(clk);
-                check(not overrideProgramCounter);
             elsif run("Test jal") then
                 instructionIn := X"0c04000b";
                 programCounterPlusFour <= X"00100020";
@@ -171,19 +157,6 @@ begin
                 wait until falling_edge(clk);
                 check(executeControlWord.ALUOpDirective = exec_add);
                 check(immidiate =  X"00100024");
-            elsif run("Load hazard detected during ignoreCurrentInstruction does not repeat") then
-                instructionIn(31 downto 26) := std_logic_vector(to_unsigned(mips32_opcodeRType, 6));
-                instructionIn(25 downto 21) := std_logic_vector(to_unsigned(2, 5));
-                instructionIn(20 downto 16) := std_logic_vector(to_unsigned(1, 5));
-                instructionIn(15 downto 11) := std_logic_vector(to_unsigned(3, 5));
-                instructionIn(10 downto 6) := std_logic_vector(to_unsigned(10, 5));
-                instructionIn(5 downto 0) := std_logic_vector(to_unsigned(4, 6));
-                instructionFromInstructionFetch <= instructionIn;
-                loadHazardDetected <= true;
-                ignoreCurrentInstruction <= true;
-                wait until rising_edge(clk);
-                wait until falling_edge(clk);
-                check(not repeatInstruction);
             end if;
         end loop;
         wait until rising_edge(clk);
@@ -212,7 +185,6 @@ begin
         rdAddress => rdAddress,
         aluFunction => aluFunction,
         shamt => shamt,
-        loadHazardDetected => loadHazardDetected,
-        ignoreCurrentInstruction => ignoreCurrentInstruction
+        loadHazardDetected => loadHazardDetected
     );
 end architecture;

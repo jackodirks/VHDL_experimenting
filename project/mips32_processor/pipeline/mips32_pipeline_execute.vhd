@@ -122,7 +122,7 @@ begin
         writeBackControlWordToMem <= writeBackControlWordToMem_buf;
     end process;
 
-    determineBranchTarget : process(programCounterPlusFour, immidiate, rsData, aluFunction)
+    determineBranchTarget : process(programCounterPlusFour, immidiate, rsData, aluFunction, executeControlWord)
     begin
         if executeControlWord.isRtype and aluFunction = mips32_aluFunctionJumpReg then
             newProgramCounter <= rsData;
