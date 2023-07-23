@@ -22,8 +22,8 @@ package mips32_pkg is
 
     type mips32_data_array is array (natural range <>) of mips32_data_type;
     type mips32_byte_array is array (natural range <>) of mips32_byte_type;
-    type mips32_exec_directive is (exec_rtype, exec_add, exec_sub, exec_lui);
-    type mips32_alu_cmd is (cmd_add, cmd_sub, cmd_and, cmd_or, cmd_nor, cmd_sltu, cmd_slt, cmd_sll, cmd_srl, cmd_sra, cmd_lui);
+    type mips32_exec_directive is (exec_rtype, exec_add, exec_sub);
+    type mips32_alu_cmd is (cmd_add, cmd_sub, cmd_and, cmd_or, cmd_nor, cmd_sltu, cmd_slt, cmd_sll, cmd_srl, cmd_sra);
 
     type mips32_InstructionDecodeControlWord_type is record
         jump : boolean;
@@ -36,6 +36,7 @@ package mips32_pkg is
         ALUOpDirective : mips32_exec_directive;
         branchEq : boolean;
         branchNe : boolean;
+        isLui : boolean;
     end record;
 
     type mips32_MemoryControlWord_type is record
@@ -60,7 +61,8 @@ package mips32_pkg is
         ALUSrc => false,
         ALUOpDirective => exec_rtype,
         branchEq => false,
-        branchNe => false
+        branchNe => false,
+        isLui => false
     );
 
     constant mips32_memoryControlWordAllFalse : mips32_MemoryControlWord_type := (

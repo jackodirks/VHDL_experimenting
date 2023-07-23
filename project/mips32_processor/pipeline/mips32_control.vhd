@@ -64,8 +64,7 @@ begin
                 executeControlWord_buf.ALUOpDirective := exec_add;
                 executeControlWord_buf.ALUSrc := true;
             when mips32_opcodeLui =>
-                executeControlWord_buf.ALUOpDirective := exec_lui;
-                executeControlWord_buf.ALUSrc := true;
+                executeControlWord_buf.isLui := true;
                 writeBackControlWord_buf.regWrite := true;
             when mips32_opcodeCOP0 =>
                 if mf = 0 then

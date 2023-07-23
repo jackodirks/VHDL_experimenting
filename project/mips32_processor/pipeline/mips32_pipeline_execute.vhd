@@ -45,8 +45,11 @@ end entity;
 
 architecture behaviourial of mips32_pipeline_execute is
     signal execResult_buf : mips32_data_type;
-    signal aluResult : mips32_data_type;
-    signal aluInputB : mips32_data_type;
+    signal aluResultImmidiate : mips32_data_type;
+    signal aluResultRtype : mips32_data_type;
+    signal luiResult : mips32_data_type;
+    signal shifterResult : mips32_data_type;
+    signal shifterActive : boolean;
     signal aluCmd : mips32_alu_cmd;
     signal overrideProgramCounter_buf : boolean;
 
@@ -82,7 +85,21 @@ architecture behaviourial of mips32_pipeline_execute is
 
 begin
     overrideProgramCounter <= overrideProgramCounter_buf;
-    execResult_buf <= aluResult;
+    luiResult <= std_logic_vector(shift_left(unsigned(immidiate), 16));
+
+    determineExecResult : process(luiResult, aluResultRtype, aluResultImmidiate, shifterResult, executeControlWord, shifterActive)
+    begin
+        if executeControlWord.isLui then
+            execResult_buf <= luiResult;
+        elsif shifterActive and executeControlWord.ALUOpDirective = exec_rtype then
+            execResult_buf <= shifterResult;
+        elsif executeControlWord.ALUOpDirective = exec_rtype then
+            execResult_buf <= aluResultRtype;
+        else
+            execResult_buf <= aluResultImmidiate;
+        end if;
+    end process;
+
 
     exMemReg : process(clk)
         variable memoryControlWordToMem_buf : mips32_MemoryControlWord_type := mips32_memoryControlWordAllFalse;
@@ -119,23 +136,10 @@ begin
         overrideProgramCounter_buf <= false;
         if executeControlWord.branchEq and rsData = rtData then
             overrideProgramCounter_buf <= true;
-        end if;
-
-        if executeControlWord.branchNe and rsData /= rtData then
+        elsif executeControlWord.branchNe and rsData /= rtData then
             overrideProgramCounter_buf <= true;
-        end if;
-
-        if aluFunction = mips32_aluFunctionJumpReg then
+        elsif aluFunction = mips32_aluFunctionJumpReg then
             overrideProgramCounter_buf <= true;
-        end if;
-    end process;
-
-    determineAluInputB : process(executeControlWord, immidiate, rtData)
-    begin
-        if executeControlWord.ALUSrc then
-            aluInputB <= immidiate;
-        else
-            aluInputB <= rtData;
         end if;
     end process;
 
@@ -144,21 +148,33 @@ begin
         case executeControlWord.ALUOpDirective is
             when exec_add =>
                 aluCmd <= cmd_add;
-            when exec_sub =>
-                aluCmd <= cmd_sub;
-            when exec_lui =>
-                aluCmd <= cmd_lui;
             when others =>
-                aluCmd <= translateAluFunc(aluFunction);
+                aluCmd <= cmd_sub;
         end case;
     end process;
 
-    alu : entity work.mips32_alu
+    alu_immidiate : entity work.mips32_alu
     port map (
         inputA => rsData,
-        inputB => aluInputB,
+        inputB => immidiate,
         cmd => aluCmd,
+        output => aluResultImmidiate
+    );
+
+    alu_rtype : entity work.mips32_alu
+    port map (
+        inputA => rsData,
+        inputB => rtData,
+        cmd => translateAluFunc(aluFunction),
+        output => aluResultRtype
+    );
+
+    shifter : entity work.mips32_shifter
+    port map (
+        input => rtData,
+        cmd => translateAluFunc(aluFunction),
         shamt => shamt,
-        output => aluResult
+        output => shifterResult,
+        active => shifterActive
     );
 end architecture;

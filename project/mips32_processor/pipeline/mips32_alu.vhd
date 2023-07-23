@@ -3,7 +3,6 @@ use IEEE.std_logic_1164.all;
 use IEEE.numeric_std.all;
 
 library work;
-use work.bus_pkg.all;
 use work.mips32_pkg.all;
 
 entity mips32_alu is
@@ -11,7 +10,6 @@ entity mips32_alu is
         inputA : in mips32_data_type;
         inputB : in mips32_data_type;
         cmd : in mips32_alu_cmd;
-        shamt : in mips32_shamt_type;
 
         output : out mips32_data_type;
         overflow : out boolean
@@ -20,7 +18,7 @@ end entity;
 
 architecture behaviourial of mips32_alu is
 begin
-    process(inputA, inputB, cmd, shamt)
+    process(inputA, inputB, cmd)
         variable additionResult : mips32_data_type;
         variable additionOverflow : boolean;
         variable subtractionResult : mips32_data_type;
@@ -30,10 +28,6 @@ begin
         variable norResult : mips32_data_type;
         variable setLessThanResult : std_logic;
         variable setLessThanUnsignedResult : std_logic;
-        variable sllResult : mips32_data_type;
-        variable srlResult : mips32_data_type;
-        variable sraResult : mips32_data_type;
-        variable luiResult : mips32_data_type;
     begin
         additionResult := std_logic_vector(signed(inputA) + signed(inputB));
         additionOverflow := inputA(inputA'high) = inputB(inputB'high) and inputA(inputA'high) /= additionResult(additionResult'high);
@@ -42,10 +36,6 @@ begin
         andResult := inputA and inputB;
         orResult := inputA or inputB;
         norResult := inputA nor inputB;
-        sllResult := std_logic_vector(shift_left(unsigned(inputB), shamt));
-        srlResult := std_logic_vector(shift_right(unsigned(inputB), shamt));
-        sraResult := std_logic_vector(shift_right(signed(inputB), shamt));
-        luiResult := std_logic_vector(shift_left(unsigned(inputB), 16));
         if signed(inputA) < signed(inputB) then
             setLessThanResult := '1';
         else
@@ -67,12 +57,6 @@ begin
         end if;
 
         case cmd is
-            when cmd_sll =>
-                output <= sllResult;
-            when cmd_srl =>
-                output <= srlResult;
-            when cmd_sra =>
-                output <= sraResult;
             when cmd_add =>
                 output <= additionResult;
             when cmd_sub =>
@@ -89,10 +73,8 @@ begin
             when cmd_sltu =>
                 output(output'high downto 1) <= (others => '0');
                 output(0) <= setLessThanUnsignedResult;
-            when cmd_lui =>
-                output <= luiResult;
             when others =>
-                output <= inputA;
+                output <= (others => 'X');
         end case;
     end process;
 

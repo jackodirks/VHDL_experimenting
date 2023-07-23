@@ -23,7 +23,6 @@ architecture tb of mips32_alu_tb is
     signal inputA : mips32_data_type;
     signal inputB : mips32_data_type;
     signal cmd : mips32_alu_cmd;
-    signal shamt : mips32_shamt_type;
     signal output : mips32_data_type;
     signal overflow : boolean;
 
@@ -100,27 +99,6 @@ begin
                 expectedOutput(0) := '1';
                 wait for clk_period;
                 check_equal(output, expectedOutput);
-            elsif run("Sll works") then
-                inputB <= X"F0F0F0F0";
-                shamt <= 4;
-                expectedOutput := X"0F0F0F00";
-                cmd <= cmd_sll;
-                wait for clk_period;
-                check_equal(output, expectedOutput);
-            elsif run("Srl works") then
-                inputB <= X"F0F0F0F0";
-                shamt <= 4;
-                expectedOutput := X"0F0F0F0F";
-                cmd <= cmd_srl;
-                wait for clk_period;
-                check_equal(output, expectedOutput);
-            elsif run("Sra works") then
-                inputB <= X"F0F0F0F0";
-                shamt <= 4;
-                expectedOutput := X"FF0F0F0F";
-                cmd <= cmd_sra;
-                wait for clk_period;
-                check_equal(output, expectedOutput);
             elsif run("set less than unsigned function works") then
                 inputA <= std_logic_vector(to_signed(2, inputA'length));
                 inputB <= std_logic_vector(to_signed(-1, inputA'length));
@@ -132,12 +110,6 @@ begin
                 inputA <= std_logic_vector(to_signed(-1, inputA'length));
                 inputB <= std_logic_vector(to_signed(1, inputA'length));
                 expectedOutput := (others => '0');
-                wait for clk_period;
-                check_equal(output, expectedOutput);
-            elsif run("Load upper immidiate works") then
-                inputB <= X"0000FFFF";
-                expectedOutput := X"FFFF0000";
-                cmd <= cmd_lui;
                 wait for clk_period;
                 check_equal(output, expectedOutput);
             end if;
@@ -155,7 +127,6 @@ begin
         inputA,
         inputB,
         cmd,
-        shamt,
         output,
         overflow
     );
