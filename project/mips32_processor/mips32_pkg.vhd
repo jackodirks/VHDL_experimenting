@@ -81,8 +81,8 @@ package mips32_pkg is
 
     -- To begin, this processor will support the following instructions:
     -- lw, sw, beq, add, sub, and, or, slt, j
-    -- The nop, for now, will be and $0 $0 $0
-    constant mips32_instructionNop : mips32_instruction_type := X"00000024";
+    -- The nop is sll $0,$0,$0
+    constant mips32_instructionNop : mips32_instruction_type := X"00000000";
 
     constant mips32_opcodeRType : mips32_opcode_type := 16#0#;
     constant mips32_opcodeAddiu : mips32_opcode_type := 16#9#;
