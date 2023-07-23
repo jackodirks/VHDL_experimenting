@@ -297,7 +297,7 @@ begin
     );
 
     -- Lives in ID stage
-    registerFile : entity work.mips32_registerFile
+    registerFile : entity work.mips32_pipeline_registerFile
     port map (
         clk => clk,
         readPortOneAddress => rsAddressFromId,

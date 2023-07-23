@@ -10,12 +10,12 @@ library src;
 use src.bus_pkg.all;
 use src.mips32_pkg.all;
 
-entity mips32_registerFile_tb is
+entity mips32_pipeline_registerFile_tb is
     generic (
         runner_cfg : string);
 end entity;
 
-architecture tb of mips32_registerFile_tb is
+architecture tb of mips32_pipeline_registerFile_tb is
     constant clk_period : time := 20 ns;
 
     signal clk : std_logic := '0';
@@ -104,7 +104,7 @@ begin
 
     test_runner_watchdog(runner,  1 us);
 
-    registerFile : entity src.mips32_registerFile
+    registerFile : entity src.mips32_pipeline_registerFile
     port map (
         clk => clk,
         readPortOneAddress => readPortOneAddress,

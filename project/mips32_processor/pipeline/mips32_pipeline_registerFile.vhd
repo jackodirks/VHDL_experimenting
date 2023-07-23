@@ -6,7 +6,7 @@ library work;
 use work.bus_pkg.all;
 use work.mips32_pkg.all;
 
-entity mips32_registerFile is
+entity mips32_pipeline_registerFile is
     port (
         clk : in std_logic;
 
@@ -22,7 +22,7 @@ entity mips32_registerFile is
     );
 end entity;
 
-architecture behaviourial of mips32_registerFile is
+architecture behaviourial of mips32_pipeline_registerFile is
     signal registerFile : mips32_data_array(1 to 31);
 begin
 
