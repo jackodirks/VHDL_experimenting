@@ -90,7 +90,7 @@ begin
                 check_equal(destinationReg, expectedDestinationReg);
                 check_equal(aluFunction, expectedAluFunction);
                 check_equal(shamt, expectedShamt);
-                check(executeControlWord = mips32_executeControlWordAllFalse);
+                check(executeControlWord.isRtype);
                 check(memoryControlWord = mips32_memoryControlWordAllFalse);
                 check(writeBackControlWord.regWrite);
                 check(not writeBackControlWord.MemtoReg);

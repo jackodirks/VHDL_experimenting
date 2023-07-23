@@ -37,6 +37,7 @@ begin
             when mips32_opcodeRType =>
                 instructionDecodeControlWord_buf.regDstIsRd := true;
                 writeBackControlWord_buf.regWrite := true;
+                executeControlWord_buf.isRtype := true;
             when mips32_opcodeAddiu =>
                 executeControlWord_buf.ALUOpDirective := exec_add;
                 executeControlWord_buf.ALUSrc := true;

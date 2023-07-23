@@ -91,9 +91,9 @@ begin
     begin
         if executeControlWord.isLui then
             execResult_buf <= luiResult;
-        elsif shifterActive and executeControlWord.ALUOpDirective = exec_rtype then
+        elsif shifterActive and executeControlWord.isRtype then
             execResult_buf <= shifterResult;
-        elsif executeControlWord.ALUOpDirective = exec_rtype then
+        elsif executeControlWord.isRtype then
             execResult_buf <= aluResultRtype;
         else
             execResult_buf <= aluResultImmidiate;
@@ -124,7 +124,7 @@ begin
 
     determineBranchTarget : process(programCounterPlusFour, immidiate, rsData, aluFunction)
     begin
-        if aluFunction = mips32_aluFunctionJumpReg then
+        if executeControlWord.isRtype and aluFunction = mips32_aluFunctionJumpReg then
             newProgramCounter <= rsData;
         else
             newProgramCounter <= std_logic_vector(signed(programCounterPlusFour) + shift_left(signed(immidiate), 2));
@@ -138,7 +138,7 @@ begin
             overrideProgramCounter_buf <= true;
         elsif executeControlWord.branchNe and rsData /= rtData then
             overrideProgramCounter_buf <= true;
-        elsif aluFunction = mips32_aluFunctionJumpReg then
+        elsif executeControlWord.isRtype and aluFunction = mips32_aluFunctionJumpReg then
             overrideProgramCounter_buf <= true;
         end if;
     end process;

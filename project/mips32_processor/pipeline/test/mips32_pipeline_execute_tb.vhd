@@ -73,6 +73,7 @@ begin
             elsif run("R-type subtract function works") then
                 rsData <= std_logic_vector(to_signed(100, rsData'length));
                 rtData <= std_logic_vector(to_signed(10, rtData'length));
+                executeControlWord.isRtype <= true;
                 aluFunction <= mips32_aluFunctionSubtract;
                 destinationReg <= 13;
                 expectedExecResult := std_logic_vector(to_signed(90, expectedExecResult'length));
@@ -147,6 +148,29 @@ begin
                 expectedBranchTarget := std_logic_vector(to_unsigned(12, expectedBranchTarget'length));
                 wait until rising_edge(clk);
                 check(not overrideProgramCounter);
+            elsif run("Jump on jr") then
+                rsData <= std_logic_vector(to_signed(20, rsData'length));
+                aluFunction <= mips32_aluFunctionJumpReg;
+                executeControlWord.isRtype <= true;
+                wait for 10 ns;
+                check(overrideProgramCounter);
+                check_equal(rsData, newProgramCounter);
+            elsif run("No jump if not rtype") then
+                aluFunction <= mips32_aluFunctionJumpReg;
+                executeControlWord.isRtype <= false;
+                wait for 10 ns;
+                check(not overrideProgramCounter);
+            elsif run("branch target is correct when alufunc is jumpReg") then
+                rsData <= std_logic_vector(to_signed(100, rsData'length));
+                rtData <= std_logic_vector(to_signed(100, rtData'length));
+                immidiate <= std_logic_vector(to_signed(-1, immidiate'length));
+                programCounterPlusFour <= std_logic_vector(to_unsigned(16, programCounterPlusFour'length));
+                executeControlWord.ALUOpDirective <= exec_sub;
+                executeControlWord.branchEq <= true;
+                aluFunction <= mips32_aluFunctionJumpReg;
+                expectedBranchTarget := std_logic_vector(to_unsigned(12, expectedBranchTarget'length));
+                wait until rising_edge(clk);
+                check_equal(newProgramCounter, expectedBranchTarget);
             end if;
         end loop;
         wait until rising_edge(clk);
