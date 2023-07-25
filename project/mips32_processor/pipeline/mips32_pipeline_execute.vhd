@@ -8,34 +8,19 @@ use work.mips32_pkg.all;
 
 entity mips32_pipeline_execute is
     port (
-        clk : in std_logic;
-        rst : in std_logic;
-        stall : in boolean;
-
         -- From decode stage: control signals
-        writeBackControlWord : in mips32_WriteBackControlWord_type;
-        memoryControlWord : in mips32_MemoryControlWord_type;
         executeControlWord : in mips32_ExecuteControlWord_type;
 
         -- From decode stage: data
         rsData : in mips32_data_type;
         rtData : in mips32_data_type;
         immidiate : in mips32_data_type;
-        destinationReg : in mips32_registerFileAddress_type;
         aluFunction : in mips32_aluFunction_type;
         shamt : in mips32_shamt_type;
         programCounterPlusFour : in mips32_address_type;
-        rdAddress : in mips32_registerFileAddress_type;
-
-        -- To Memory stage: control signals
-        memoryControlWordToMem : out mips32_MemoryControlWord_type;
-        writeBackControlWordToMem : out mips32_WriteBackControlWord_type;
 
         -- To Memory stage: data
         execResult : out mips32_data_type;
-        regDataRead : out mips32_data_type;
-        destinationRegToMem : out mips32_registerFileAddress_type;
-        rdAddressToMem : out mips32_registerFileAddress_type;
 
         -- To instruction fetch: branch
         overrideProgramCounter : out boolean;
@@ -44,7 +29,6 @@ entity mips32_pipeline_execute is
 end entity;
 
 architecture behaviourial of mips32_pipeline_execute is
-    signal execResult_buf : mips32_data_type;
     signal aluResultImmidiate : mips32_data_type;
     signal aluResultRtype : mips32_data_type;
     signal luiResult : mips32_data_type;
@@ -90,36 +74,14 @@ begin
     determineExecResult : process(luiResult, aluResultRtype, aluResultImmidiate, shifterResult, executeControlWord, shifterActive)
     begin
         if executeControlWord.isLui then
-            execResult_buf <= luiResult;
+            execResult <= luiResult;
         elsif shifterActive and executeControlWord.isRtype then
-            execResult_buf <= shifterResult;
+            execResult <= shifterResult;
         elsif executeControlWord.isRtype then
-            execResult_buf <= aluResultRtype;
+            execResult <= aluResultRtype;
         else
-            execResult_buf <= aluResultImmidiate;
+            execResult <= aluResultImmidiate;
         end if;
-    end process;
-
-
-    exMemReg : process(clk)
-        variable memoryControlWordToMem_buf : mips32_MemoryControlWord_type := mips32_memoryControlWordAllFalse;
-        variable writeBackControlWordToMem_buf : mips32_WriteBackControlWord_type := mips32_writeBackControlWordAllFalse;
-    begin
-        if rising_edge(clk) then
-            if rst = '1' then
-                memoryControlWordToMem_buf := mips32_memoryControlWordAllFalse;
-                writeBackControlWordToMem_buf := mips32_writeBackControlWordAllFalse;
-            elsif not stall then
-                memoryControlWordToMem_buf := memoryControlWord;
-                writeBackControlWordToMem_buf := writeBackControlWord;
-                execResult <= execResult_buf;
-                regDataRead <= rtData;
-                destinationRegToMem <= destinationReg;
-                rdAddressToMem <= rdAddress;
-            end if;
-        end if;
-        memoryControlWordToMem <= memoryControlWordToMem_buf;
-        writeBackControlWordToMem <= writeBackControlWordToMem_buf;
     end process;
 
     determineBranchTarget : process(programCounterPlusFour, immidiate, rsData, aluFunction, executeControlWord)

@@ -56,7 +56,7 @@ architecture behaviourial of mips32_pipeline is
     -- Registerfile to id/ex
     signal rsDataFromRegFile : mips32_data_type;
     signal rtDataFromRegFile : mips32_data_type;
-    -- id/ex to execute
+    -- From id/ex
     signal exControlWordFromIdEx : mips32_ExecuteControlWord_type;
     signal memControlWordFromIdEx : mips32_MemoryControlWord_type;
     signal wbControlWordFromIdEx : mips32_WriteBackControlWord_type;
@@ -88,12 +88,14 @@ architecture behaviourial of mips32_pipeline is
     signal regWriteAddrFromWb : mips32_registerFileAddress_type;
     signal regWriteDataFromWb : mips32_data_type;
     -- Execute to memory
-    signal memControlWordToMem : mips32_MemoryControlWord_type;
-    signal wbControlWordToMem : mips32_WriteBackControlWord_type;
-    signal execResToMem : mips32_data_type;
-    signal regDataReadToMem : mips32_data_type;
-    signal destRegToMem : mips32_registerFileAddress_type;
-    signal rdAddrToMem : mips32_registerFileAddress_type;
+    signal execResFromExec : mips32_data_type;
+    -- From ex/mem
+    signal memControlWordFromExMem : mips32_MemoryControlWord_type;
+    signal wbControlWordFromExMem : mips32_WriteBackControlWord_type;
+    signal execResFromExMem : mips32_data_type;
+    signal regDataReadFromExMem : mips32_data_type;
+    signal destRegFromExMem : mips32_registerFileAddress_type;
+    signal rdAddrFromExMem : mips32_registerFileAddress_type;
     -- Execute to instruction fetch
     signal overrideProgramCounterFromEx : boolean;
     signal newProgramCounterFromEx : mips32_address_type;
@@ -196,32 +198,38 @@ begin
 
     execute : entity work.mips32_pipeline_execute
     port map (
-        clk => clk,
-        rst => rst,
-        stall => stall,
-
         executeControlWord => exControlWordFromIdEx,
-        memoryControlWord => memControlWordFromIdEx,
-        writeBackControlWord => wbControlWordFromIdEx,
         rsData => rsDataFromFwu,
         rtData => rtDataFromFwu,
         immidiate => immidiateFromIdEx,
-        destinationReg => destRegFromIdEx,
         aluFunction => aluFuncFromIdEx,
         shamt => shamtFromIdEx,
         programCounterPlusFour => pcPlusFourFromIdEx,
-        rdAddress => rdAddrFromIdEx,
 
-        memoryControlWordToMem => memControlWordToMem,
-        writeBackControlWordToMem => wbControlWordToMem,
-        execResult => execResToMem,
-        regDataRead => regDataReadToMem,
-        destinationRegToMem => destRegToMem,
-        rdAddressToMem => rdAddrToMem,
+        execResult => execResFromExec,
 
         overrideProgramCounter => overrideProgramCounterFromEx,
         newProgramCounter => newProgramCounterFromEx
     );
+
+    exMemReg : entity work.mips32_pipeline_exmemRegister
+    port map (
+       clk => clk,
+       stall => stall,
+       nop => rst = '1',
+       memoryControlWordIn => memControlWordFromIdEx,
+       writeBackControlWordIn => wbControlWordFromIdEx,
+       execResultIn => execResFromExec,
+       regDataReadIn => rtDataFromFwu,
+       destinationRegIn => destRegFromIdEx,
+       rdAddressIn => rdAddrFromIdEx,
+       memoryControlWordOut => memControlWordFromExMem,
+       writeBackControlWordOut => wbControlWordFromExMem,
+       execResultOut => execResFromExMem,
+       regDataReadOut => regDataReadFromExMem,
+       destinationRegOut => destRegFromExMem,
+       rdAddressOut => rdAddrFromExMem
+   );
 
     memory : entity work.mips32_pipeline_memory
     port map (
@@ -229,12 +237,12 @@ begin
         rst => rst,
         stall => stall,
 
-        memoryControlWord => memControlWordToMem,
-        writeBackControlWord => wbControlWordToMem,
-        execResult => execResToMem,
-        regDataRead => regDataReadToMem,
-        destinationReg => destRegToMem,
-        rdAddress => rdAddrToMem,
+        memoryControlWord => memControlWordFromExMem,
+        writeBackControlWord => wbControlWordFromExMem,
+        execResult => execResFromExMem,
+        regDataRead => regDataReadFromExMem,
+        destinationReg => destRegFromExMem,
+        rdAddress => rdAddrFromExMem,
 
         writeBackControlWordToWriteBack => wbControlWordToWb,
         execResultToWriteback => execResToWb,
@@ -275,9 +283,10 @@ begin
         rtDataFromID => rtDataFromIdEx,
         rtAddressFromID => rtAddressFromIdEx,
 
-        regDataFromEx => execResToMem,
-        regAddressFromEx => destRegToMem,
-        regWriteFromEx => wbControlWordToMem.regWrite,
+        regDataFromEx => execResFromExMem,
+        regAddressFromEx => destRegFromExMem,
+        regWriteFromEx => wbControlWordFromExMem.regWrite,
+
         regDataFromMem => regWriteDataFromWb,
         regAddressFromMem => regWriteAddrFromWb,
         regWriteFromMem => regWriteFromWb,
