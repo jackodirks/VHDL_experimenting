@@ -83,10 +83,6 @@ architecture behaviourial of mips32_pipeline is
     -- Forwarding unit to execute
     signal rsDataFromFwu : mips32_data_type;
     signal rtDataFromFwu : mips32_data_type;
-    -- Write back to instruction decode
-    signal regWriteFromWb : boolean;
-    signal regWriteAddrFromWb : mips32_registerFileAddress_type;
-    signal regWriteDataFromWb : mips32_data_type;
     -- Execute to memory
     signal execResFromExec : mips32_data_type;
     -- From ex/mem
@@ -99,12 +95,19 @@ architecture behaviourial of mips32_pipeline is
     -- Execute to instruction fetch
     signal overrideProgramCounterFromEx : boolean;
     signal newProgramCounterFromEx : mips32_address_type;
-    -- Memory to write back
-    signal wbControlWordToWb : mips32_WriteBackControlWord_type;
-    signal execResToWb : mips32_data_type;
-    signal memReadToWb : mips32_data_type;
-    signal destRegToWb : mips32_registerFileAddress_type;
-    signal cpzReadToWb : mips32_data_type;
+    -- From memory
+    signal memDataFromMem : mips32_data_type;
+    signal cpzDataFromMem : mips32_data_type;
+    -- From mem/wb
+    signal wbControlWordFromMemWb : mips32_WriteBackControlWord_type;
+    signal execResFromMemWb : mips32_data_type;
+    signal memDataFromMemWb : mips32_data_type;
+    signal cpzDataFromMemWb : mips32_data_type;
+    signal destRegFromMemWb : mips32_registerFileAddress_type;
+    -- From writeback
+    signal regWriteFromWb : boolean;
+    signal regWriteAddrFromWb : mips32_registerFileAddress_type;
+    signal regWriteDataFromWb : mips32_data_type;
 
     signal instructionFetchStall : boolean;
 
@@ -233,22 +236,16 @@ begin
 
     memory : entity work.mips32_pipeline_memory
     port map (
-        clk => clk,
-        rst => rst,
         stall => stall,
 
         memoryControlWord => memControlWordFromExMem,
-        writeBackControlWord => wbControlWordFromExMem,
         execResult => execResFromExMem,
         regDataRead => regDataReadFromExMem,
         destinationReg => destRegFromExMem,
         rdAddress => rdAddrFromExMem,
 
-        writeBackControlWordToWriteBack => wbControlWordToWb,
-        execResultToWriteback => execResToWb,
-        memDataReadToWriteback => memReadToWb,
-        cpzReadToWriteback => cpzReadToWb,
-        destinationRegToWriteback => destRegToWb,
+        memDataRead => memDataFromMem,
+        cpzRead => cpzDataFromMem,
 
         doMemRead => dataRead,
         doMemWrite => dataWrite,
@@ -262,13 +259,30 @@ begin
         data_from_cpz => data_from_cpz
     );
 
+    memWbReg : entity work.mips32_pipeline_memwbRegister
+    port map (
+       clk => clk,
+       stall => stall,
+       nop => rst = '1',
+       writeBackControlWordIn => wbControlWordFromExMem,
+       execResultIn => execResFromExMem,
+       memDataReadIn => memDataFromMem,
+       cpzDataReadIn => cpzDataFromMem,
+       destinationRegIn => destRegFromExMem,
+       writeBackControlWordOut => wbControlWordFromMemWb,
+       execResultOut => execResFromMemWb,
+       memDataReadOut => memDataFromMemWb,
+       cpzDataReadOut => cpzDataFromMemWb,
+       destinationRegOut => destRegFromMemWb
+   );
+
     writeBack : entity work.mips32_pipeline_writeBack
     port map (
-        writeBackControlWord => wbControlWordToWb,
-        execResult => execResToWb,
-        memDataRead => memReadToWb,
-        cpzRead => cpzReadToWb,
-        destinationReg => destRegToWb,
+        writeBackControlWord => wbControlWordFromMemWb,
+        execResult => execResFromMemWb,
+        memDataRead => memDataFromMemWb,
+        cpzRead => cpzDataFromMemWb,
+        destinationReg => destRegFromMemWb,
 
         regWrite => regWriteFromWb,
         regWriteAddress => regWriteAddrFromWb,

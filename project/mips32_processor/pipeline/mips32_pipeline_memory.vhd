@@ -7,12 +7,9 @@ use work.mips32_pkg.all;
 
 entity mips32_pipeline_memory is
     port (
-        clk : in std_logic;
-        rst : in std_logic;
+        -- Control in
         stall : in boolean;
-
         -- From execute stage: control signals
-        writeBackControlWord : in mips32_WriteBackControlWord_type;
         memoryControlWord : in mips32_MemoryControlWord_type;
 
         -- From execute stage: data
@@ -21,14 +18,9 @@ entity mips32_pipeline_memory is
         destinationReg : in mips32_registerFileAddress_type;
         rdAddress : in mips32_registerFileAddress_type;
 
-        -- To writeback stage: control signals
-        writeBackControlWordToWriteBack : out mips32_WriteBackControlWord_type;
-
         -- To writeback stage: data
-        execResultToWriteback : out mips32_data_type;
-        memDataReadToWriteback : out mips32_data_type;
-        cpzReadToWriteback : out mips32_data_type;
-        destinationRegToWriteback : out mips32_registerFileAddress_type;
+        memDataRead: out mips32_data_type;
+        cpzRead: out mips32_data_type;
 
         -- To mem2bus unit
         doMemRead : out boolean;
@@ -47,6 +39,9 @@ end entity;
 
 architecture behaviourial of mips32_pipeline_memory is
 begin
+    memDataRead <= dataFromMem;
+    cpzRead <= data_from_cpz;
+
     mem2busOut : process(memoryControlWord, execResult, regDataRead)
     begin
         doMemRead <= false;
@@ -62,27 +57,10 @@ begin
         end if;
     end process;
 
-    cpzOut : process(memoryControlWord, execResult, destinationReg, stall, rdAddress, regDataRead)
+    cpzOut : process(memoryControlWord, execResult, stall, rdAddress, regDataRead)
     begin
         address_to_cpz <= rdAddress;
         write_to_cpz <= memoryControlWord.cop0Write and not stall;
         data_to_cpz <= regDataRead;
-    end process;
-
-    MemWBRegs : process(clk)
-        variable writeBackControlWordToWriteBack_buf : mips32_WriteBackControlWord_type := mips32_writeBackControlWordAllFalse;
-    begin
-        if rising_edge(clk) then
-            if rst = '1' then
-                writeBackControlWordToWriteBack_buf := mips32_writeBackControlWordAllFalse;
-            elsif not stall then
-                writeBackControlWordToWriteBack_buf := writeBackControlWord;
-                execResultToWriteback <= execResult;
-                destinationRegToWriteback <= destinationReg;
-                memDataReadToWriteback <= dataFromMem;
-                cpzReadToWriteback <= data_from_cpz;
-            end if;
-        end if;
-        writeBackControlWordToWriteBack <= writeBackControlWordToWriteBack_buf;
     end process;
 end architecture;
