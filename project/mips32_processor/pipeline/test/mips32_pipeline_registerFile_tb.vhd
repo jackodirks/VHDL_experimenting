@@ -29,6 +29,10 @@ architecture tb of mips32_pipeline_registerFile_tb is
     signal writePortAddress : mips32_registerFileAddress_type := 31;
     signal writePortData : mips32_data_type;
 
+    signal extPortAddress : mips32_registerFileAddress_type := 31;
+    signal readPortExtData : mips32_data_type;
+    signal writePortExtDoWrite : boolean := false;
+    signal writePortExtData : mips32_data_type;
 begin
 
     clk <= not clk after (clk_period/2);
@@ -94,6 +98,13 @@ begin
                 readPortOneAddress <= 2;
                 wait until rising_edge(clk);
                 check_equal(readPortOneData, expectedData);
+            elsif run("ExtPort: Write-then-read works") then
+                wait until falling_edge(clk);
+                extPortAddress <= 2;
+                writePortExtDoWrite <= true;
+                writePortExtData <= X"01020304";
+                wait until falling_edge(clk);
+                check_equal(readPortExtData, writePortExtData);
             end if;
         end loop;
         wait until rising_edge(clk);
@@ -113,6 +124,10 @@ begin
         readPortTwoData => readPortTwoData,
         writePortDoWrite => writePortDoWrite,
         writePortAddress => writePortAddress,
-        writePortData => writePortData
+        writePortData => writePortData,
+        extPortAddress => extPortAddress,
+        readPortExtData => readPortExtData,
+        writePortExtDoWrite => writePortExtDoWrite,
+        writePortExtData => writePortExtData
     );
 end architecture;

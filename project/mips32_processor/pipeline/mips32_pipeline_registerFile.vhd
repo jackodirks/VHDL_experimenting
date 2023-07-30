@@ -18,7 +18,12 @@ entity mips32_pipeline_registerFile is
 
         writePortDoWrite : in boolean;
         writePortAddress : in mips32_registerFileAddress_type;
-        writePortData : in mips32_data_type
+        writePortData : in mips32_data_type;
+
+        extPortAddress : in mips32_registerFileAddress_type;
+        readPortExtData : out mips32_data_type;
+        writePortExtDoWrite : in boolean;
+        writePortExtData : in mips32_data_type
     );
 end entity;
 
@@ -48,10 +53,24 @@ begin
         end if;
     end process;
 
+    readPortExt : process(extPortAddress, registerFile)
+    begin
+        if extPortAddress = 0 then
+            readPortExtData <= (others => '0');
+        else
+            readPortExtData <= registerFile(extPortAddress);
+        end if;
+    end process;
+
     writePort : process(clk)
     begin
         if rising_edge(clk) then
-            if writePortAddress /= 0 and writePortDoWrite then
+
+            if writePortExtDoWrite then
+                if extPortAddress /= 0 then
+                    registerFile(extPortAddress) <= writePortExtData;
+                end if;
+            elsif writePortAddress /= 0 and writePortDoWrite then
                 registerFile(writePortAddress) <= writePortData;
             end if;
         end if;

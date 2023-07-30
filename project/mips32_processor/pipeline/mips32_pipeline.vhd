@@ -329,7 +329,10 @@ begin
         readPortTwoData => rtDataFromRegFile,
         writePortDoWrite => regWriteFromWb,
         writePortAddress => regWriteAddrFromWb,
-        writePortData => regWriteDataFromWb
+        writePortData => regWriteDataFromWb,
+        extPortAddress => 0,
+        writePortExtDoWrite => false,
+        writePortExtData => (others => '0')
     );
 
     branchHelper : entity work.mips32_pipeline_branchHelper
