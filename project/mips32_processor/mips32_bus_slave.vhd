@@ -17,12 +17,43 @@ entity mips32_bus_slave is
         address_to_cpz : out natural range 0 to 31;
         write_to_cpz : out boolean;
         data_to_cpz : out mips32_data_type;
-        data_from_cpz : in mips32_data_type
+        data_from_cpz : in mips32_data_type;
+
+        address_to_regFile : out natural range 0 to 31;
+        write_to_regFile : out boolean;
+        data_to_regFile : out mips32_data_type;
+        data_from_regFile : in mips32_data_type
     );
 end entity;
 
 architecture behaviourial of mips32_bus_slave is
+    signal address_internal : mips32_address_type := (others => '0');
+    signal data_in_internal : mips32_data_type;
+    signal data_out_internal : mips32_data_type;
+    signal recalculated_address : unsigned(address_internal'high - 2 downto 0);
+    signal do_write_internal : boolean;
 begin
+    recalculated_address <= unsigned(address_internal(address_internal'high downto 2));
+    data_to_cpz <= data_out_internal;
+    data_to_regFile <= data_out_internal;
+
+    demuxer: process(recalculated_address, data_from_cpz, data_from_regFile, do_write_internal)
+        variable temp_address : unsigned(recalculated_address'range);
+    begin
+        address_to_cpz <= to_integer(recalculated_address(4 downto 0));
+        if recalculated_address >= 32 then
+            temp_address := recalculated_address - 32;
+            address_to_regFile <= to_integer(temp_address(4 downto 0));
+            data_in_internal <= data_from_regFile;
+            write_to_regFile <= do_write_internal;
+            write_to_cpz <= false;
+        else
+            address_to_regFile <= 0;
+            data_in_internal <= data_from_cpz;
+            write_to_cpz <= do_write_internal;
+            write_to_regFile <= false;
+        end if;
+    end process;
 
     process(clk)
         variable slv2mst_buf : bus_slv2mst_type := BUS_SLV2MST_IDLE;
@@ -31,12 +62,12 @@ begin
         variable fault_data : bus_fault_type;
     begin
         if rising_edge(clk) then
-            write_to_cpz <= false;
+            do_write_internal <= false;
             if rst = '1' then
                 slv2mst_buf := BUS_SLV2MST_IDLE;
                 has_fault := false;
                 internal_transaction := false;
-                write_to_cpz <= false;
+                do_write_internal <= false;
             elsif any_transaction(mst2slv, slv2mst_buf) then
                 slv2mst_buf := BUS_SLV2MST_IDLE;
             elsif has_fault then
@@ -47,7 +78,7 @@ begin
                 internal_transaction := false;
                 slv2mst_buf.readValid := '1';
                 slv2mst_buf.writeValid := '1';
-                slv2mst_buf.readData := data_from_cpz;
+                slv2mst_buf.readData := data_in_internal;
             elsif bus_requesting(mst2slv) then
                 if mst2slv.address(1 downto 0) /= "00" then
                     has_fault := true;
@@ -56,9 +87,9 @@ begin
                     has_fault := true;
                     fault_data := bus_fault_illegal_byte_mask;
                 else
-                    address_to_cpz <= to_integer(unsigned(mst2slv.address(7 downto 2)));
-                    data_to_cpz <= mst2slv.writeData;
-                    write_to_cpz <= mst2slv.writeReady = '1';
+                    address_internal <= mst2slv.address;
+                    data_out_internal <= mst2slv.writeData;
+                    do_write_internal <= mst2slv.writeReady = '1';
                     internal_transaction := true;
                 end if;
             end if;

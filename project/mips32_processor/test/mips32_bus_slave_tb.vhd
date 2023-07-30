@@ -28,6 +28,12 @@ architecture tb of mips32_bus_slave_tb is
     signal write_to_cpz : boolean;
     signal data_to_cpz :  mips32_data_type;
     signal data_from_cpz :  mips32_data_type := (others => '0');
+
+    signal address_to_regFile : natural range 0 to 31;
+    signal write_to_regFile : boolean;
+    signal data_to_regFile :  mips32_data_type;
+    signal data_from_regFile :  mips32_data_type := (others => '0');
+
     signal valid_latch : boolean := false;
 
 begin
@@ -64,6 +70,7 @@ begin
                 mst2slv <= bus_mst2slv_read(address => actualAddress);
                 wait until address_to_cpz = 5;
                 check(not write_to_cpz);
+                check(not write_to_regFile);
                 data_from_cpz <= X"01234567";
                 wait until rising_edge(clk) and read_transaction(mst2slv, slv2mst);
                 check_equal(data_from_cpz, slv2mst.readData);
@@ -73,6 +80,7 @@ begin
                 mst2slv <= bus_mst2slv_write(address => actualAddress, write_data => writeValue);
                 wait until address_to_cpz = 28;
                 check(write_to_cpz);
+                check(not write_to_regFile);
                 check(data_to_cpz = writeValue);
                 wait until rising_edge(clk) and write_transaction(mst2slv, slv2mst);
             elsif run("write_to_cpz is only active for 1 cycle") then
@@ -89,6 +97,24 @@ begin
                 rst <= '1';
                 wait for 25*clk_period;
                 check(not valid_latch);
+            elsif run("Read from address 0x84 reads from regFile address 1") then
+                actualAddress := X"00000084";
+                mst2slv <= bus_mst2slv_read(address => actualAddress);
+                wait until address_to_regFile = 1;
+                check(not write_to_cpz);
+                check(not write_to_regFile);
+                data_from_regFile <= X"01234567";
+                wait until rising_edge(clk) and read_transaction(mst2slv, slv2mst);
+                check_equal(data_from_regFile, slv2mst.readData);
+            elsif run("Write to address 0x84 writes to regFile address 1") then
+                actualAddress := X"00000084";
+                writeValue := X"AABBCCDD";
+                mst2slv <= bus_mst2slv_write(address => actualAddress, write_data => writeValue);
+                wait until address_to_regFile = 1;
+                check(not write_to_cpz);
+                check(write_to_regFile);
+                check(data_to_regFile = writeValue);
+                wait until rising_edge(clk) and write_transaction(mst2slv, slv2mst);
             end if;
         end loop;
         wait until rising_edge(clk);
@@ -115,6 +141,10 @@ begin
         address_to_cpz => address_to_cpz,
         write_to_cpz => write_to_cpz,
         data_to_cpz => data_to_cpz,
-        data_from_cpz => data_from_cpz
+        data_from_cpz => data_from_cpz,
+        address_to_regFile => address_to_regFile,
+        write_to_regFile => write_to_regFile,
+        data_to_regFile => data_to_regFile,
+        data_from_regFile => data_from_regFile
     );
 end architecture;

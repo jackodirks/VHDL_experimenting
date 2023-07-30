@@ -109,7 +109,8 @@ begin
         address_to_cpz => bus_slv_to_cpz_address,
         write_to_cpz => bus_slv_to_cpz_doWrite,
         data_to_cpz => bus_slv_to_cpz_data,
-        data_from_cpz => cpz_to_bus_slv_data
+        data_from_cpz => cpz_to_bus_slv_data,
+        data_from_regFile => (others => '0')
     );
 
     if2bus : entity work.mips32_if2bus
