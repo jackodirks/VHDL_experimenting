@@ -44,6 +44,15 @@ static void printClockSpeed(DeppUartMaster& master) {
     std::cout << "Clock speed is " << clkSpeed << " Hz." << std::endl;
 }
 
+static void dumpRegFile(DeppUartMaster& master) {
+    uint32_t currentAddress = cpuBaseAddress + (32*4);
+    for (size_t i = 0; i < 32; ++i) {
+        uint32_t readData = master.readWord(currentAddress);
+        std::cout << std::dec << "$" << i << std::hex << ": " << readData << std::dec << std::endl; 
+        currentAddress += 4;
+    }
+}
+
 int main(int argc, char* argv[]) {
     DeppUartMaster master;
     master.selfTest();
@@ -55,6 +64,7 @@ int main(int argc, char* argv[]) {
     printClockSpeed(master);
     writeAndVerify(master, path, spiMemStartAddress);
     uint32_t cpuStatus = master.readWord(cpuBaseAddress);
+    dumpRegFile(master);
     std::cout << std::hex << "cpuStatus, pre run: 0x" << cpuStatus << std::endl;
     dumpList(master);
     master.writeWord(cpuBaseAddress, 0x0);
@@ -62,6 +72,7 @@ int main(int argc, char* argv[]) {
     master.writeWord(cpuBaseAddress, 0x1);
     cpuStatus = master.readWord(cpuBaseAddress);
     std::cout << std::hex << "cpuStatus, post run: 0x" << cpuStatus << std::endl;
+    dumpRegFile(master);
     dumpList(master);
     return 0;
 }
