@@ -29,8 +29,8 @@ architecture Behavioral of main_file is
     constant address_map : addr_range_and_mapping_array := (
         address_range_and_map(
             low => std_logic_vector(to_unsigned(16#2000#, bus_address_type'length)),
-            high => std_logic_vector(to_unsigned(16#2040# - 1, bus_address_type'length)),
-            mapping => bus_map_constant(bus_address_type'high - 6, '0') & bus_map_range(6, 0)
+            high => std_logic_vector(to_unsigned(16#2100# - 1, bus_address_type'length)),
+            mapping => bus_map_constant(bus_address_type'high - 8, '0') & bus_map_range(8, 0)
         ),
         address_range_and_map(
             low => std_logic_vector(to_unsigned(spiMemStartAddress, bus_address_type'length)),

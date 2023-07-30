@@ -49,8 +49,8 @@ architecture tb of mips32_processor_tb is
     constant address_map : addr_range_and_mapping_array := (
         address_range_and_map(
             low => std_logic_vector(to_unsigned(controllerAddress, bus_address_type'length)),
-            high => std_logic_vector(to_unsigned(16#2040# - 1, bus_address_type'length)),
-            mapping => bus_map_constant(bus_address_type'high - 6, '0') & bus_map_range(6, 0)
+            high => std_logic_vector(to_unsigned(16#2100# - 1, bus_address_type'length)),
+            mapping => bus_map_constant(bus_address_type'high - 8, '0') & bus_map_range(8, 0)
         ),
         address_range_and_map(
             low => std_logic_vector(to_unsigned(memoryAddress, bus_address_type'length)),
@@ -245,6 +245,30 @@ begin
                 readAddr := std_logic_vector(to_unsigned(16#1C#, bus_address_type'length));
                 simulated_bus_memory_pkg.read_from_address(net, memActor, readAddr, readData);
                 check_equal(readData, expectedReadData);
+            elsif run("Read from regFile test") then
+                simulated_bus_memory_pkg.write_file_to_address(net, memActor, 0, "./mips32_processor/test/programs/readFromRegFileTest.txt");
+                test2slv <= bus_mst2slv_write(std_logic_vector(to_unsigned(controllerAddress, bus_address_type'length)), (others => '0'));
+                wait until rising_edge(clk) and any_transaction(test2slv, slv2test);
+                check(write_transaction(test2slv, slv2test));
+                test2slv <= BUS_MST2SLV_IDLE;
+                wait for 20 us;
+                -- Check if stalled
+                test2slv <= bus_mst2slv_read(std_logic_vector(to_unsigned(controllerAddress, bus_address_type'length)));
+                wait until rising_edge(clk) and any_transaction(test2slv, slv2test);
+                check(read_transaction(test2slv, slv2test));
+                test2slv <= BUS_MST2SLV_IDLE;
+                check(slv2test.readData = X"00000002");
+                curAddr := controllerAddress + 128;
+                for i in 0 to 31 loop
+                    expectedReadData := std_logic_vector(to_unsigned(i, expectedReadData'length));
+                    readAddr := std_logic_vector(to_unsigned(curAddr, bus_address_type'length));
+                    test2slv <= bus_mst2slv_read(readAddr);
+                    wait until rising_edge(clk) and any_transaction(test2slv, slv2test);
+                    check(read_transaction(test2slv, slv2test));
+                    test2slv <= BUS_MST2SLV_IDLE;
+                    check_equal(slv2test.readData, expectedReadData);
+                    curAddr := curAddr + 4;
+                end loop;
             end if;
         end loop;
         wait until rising_edge(clk);

@@ -27,7 +27,13 @@ entity mips32_pipeline is
         address_to_cpz : out natural range 0 to 31;
         write_to_cpz : out boolean;
         data_to_cpz : out mips32_data_type;
-        data_from_cpz : in mips32_data_type
+        data_from_cpz : in mips32_data_type;
+
+        -- From/to bus slave
+        address_to_regFile : in mips32_registerFileAddress_type;
+        write_to_regFile : in boolean;
+        data_to_regFile : in mips32_data_type;
+        data_from_regFile : out mips32_data_type
     );
 end entity;
 
@@ -330,9 +336,10 @@ begin
         writePortDoWrite => regWriteFromWb,
         writePortAddress => regWriteAddrFromWb,
         writePortData => regWriteDataFromWb,
-        extPortAddress => 0,
-        writePortExtDoWrite => false,
-        writePortExtData => (others => '0')
+        extPortAddress => address_to_regFile,
+        readPortExtData => data_from_regFile,
+        writePortExtDoWrite => write_to_regFile,
+        writePortExtData => data_to_regFile
     );
 
     branchHelper : entity work.mips32_pipeline_branchHelper

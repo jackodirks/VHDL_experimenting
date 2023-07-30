@@ -9,12 +9,12 @@ context vunit_lib.vc_context;
 library src;
 use src.mips32_pkg.all;
 
-entity mips32_pipeline_idexRegister_tb is
+entity mips32_pipeline_memwbRegister_tb is
     generic (
         runner_cfg : string);
 end entity;
 
-architecture tb of mips32_pipeline_idexRegister_tb is
+architecture tb of mips32_pipeline_memwbRegister_tb is
     constant clk_period : time := 20 ns;
     signal clk : std_logic := '0';
     -- Control in

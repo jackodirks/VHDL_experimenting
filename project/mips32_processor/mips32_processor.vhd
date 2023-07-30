@@ -63,6 +63,11 @@ architecture behaviourial of mips32_processor is
     signal pipeline_to_cpz_data : mips32_data_type := (others => 'X');
     signal cpz_to_pipeline_data : mips32_data_type;
 
+    signal bus_slv_to_regFile_address : natural range 0 to 31;
+    signal bus_slv_to_regFile_doWrite : boolean;
+    signal bus_slv_to_regFile_data : mips32_data_type;
+    signal regFile_to_bus_slv_data : mips32_data_type;
+
 begin
     pipelineStall <= controllerStall or instructionStall or memoryStall;
     forbidBusInteraction <= controllerReset or controllerStall;
@@ -97,7 +102,11 @@ begin
             address_to_cpz => pipeline_to_cpz_address,
             write_to_cpz => pipeline_to_cpz_doWrite,
             data_to_cpz => pipeline_to_cpz_data,
-            data_from_cpz => cpz_to_pipeline_data
+            data_from_cpz => cpz_to_pipeline_data,
+            address_to_regFile => bus_slv_to_regFile_address,
+            write_to_regFile => bus_slv_to_regFile_doWrite,
+            data_to_regFile => bus_slv_to_regFile_data,
+            data_from_regFile => regFile_to_bus_slv_data
         );
 
     bus_slave : entity work.mips32_bus_slave
@@ -110,7 +119,10 @@ begin
         write_to_cpz => bus_slv_to_cpz_doWrite,
         data_to_cpz => bus_slv_to_cpz_data,
         data_from_cpz => cpz_to_bus_slv_data,
-        data_from_regFile => (others => '0')
+        address_to_regFile => bus_slv_to_regFile_address,
+        write_to_regFile => bus_slv_to_regFile_doWrite,
+        data_to_regFile => bus_slv_to_regFile_data,
+        data_from_regFile => regFile_to_bus_slv_data
     );
 
     if2bus : entity work.mips32_if2bus
