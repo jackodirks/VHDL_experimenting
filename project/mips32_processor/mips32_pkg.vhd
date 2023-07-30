@@ -32,7 +32,6 @@ package mips32_pkg is
     end record;
 
     type mips32_ExecuteControlWord_type is record
-        ALUSrc : boolean;
         ALUOpDirective : mips32_exec_directive;
         branchEq : boolean;
         branchNe : boolean;
@@ -59,7 +58,6 @@ package mips32_pkg is
     );
 
     constant mips32_executeControlWordAllFalse : mips32_ExecuteControlWord_type := (
-        ALUSrc => false,
         ALUOpDirective => exec_add,
         branchEq => false,
         branchNe => false,

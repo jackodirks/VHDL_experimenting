@@ -40,11 +40,9 @@ begin
                 executeControlWord_buf.isRtype := true;
             when mips32_opcodeAddiu =>
                 executeControlWord_buf.ALUOpDirective := exec_add;
-                executeControlWord_buf.ALUSrc := true;
                 writeBackControlWord_buf.regWrite := true;
             when mips32_opcodeLw =>
                 executeControlWord_buf.ALUOpDirective := exec_add;
-                executeControlWord_buf.ALUSrc := true;
                 writeBackControlWord_buf.MemtoReg := true;
                 writeBackControlWord_buf.regWrite := true;
                 memoryControlWord_buf.memOp := true;
@@ -54,7 +52,6 @@ begin
                 executeControlWord_buf.branchNe := true;
             when mips32_opcodeSw =>
                 executeControlWord_buf.ALUOpDirective := exec_add;
-                executeControlWord_buf.ALUSrc := true;
                 memoryControlWord_buf.MemOp := true;
                 memoryControlWord_buf.MemOpIsWrite := true;
             when mips32_opcodeJ =>
@@ -63,7 +60,6 @@ begin
                 instructionDecodeControlWord_buf.jump := true;
                 writeBackControlWord_buf.regWrite := true;
                 executeControlWord_buf.ALUOpDirective := exec_add;
-                executeControlWord_buf.ALUSrc := true;
             when mips32_opcodeLui =>
                 executeControlWord_buf.isLui := true;
                 writeBackControlWord_buf.regWrite := true;

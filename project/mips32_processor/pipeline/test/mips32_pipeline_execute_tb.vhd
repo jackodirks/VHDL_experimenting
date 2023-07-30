@@ -50,7 +50,6 @@ begin
                 rsData <= std_logic_vector(to_signed(32, rsData'length));
                 rtData <= std_logic_vector(to_signed(255, rtData'length));
                 immidiate <= std_logic_vector(to_signed(-4, immidiate'length));
-                executeControlWord.ALUSrc <= true;
                 executeControlWord.ALUOpDirective <= exec_add;
                 expectedExecResult := std_logic_vector(to_signed(28, expectedExecResult'length));
                 expectedDestinationRegToMem := 26;

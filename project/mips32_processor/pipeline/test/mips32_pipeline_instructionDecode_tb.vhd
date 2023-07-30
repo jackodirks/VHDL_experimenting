@@ -108,7 +108,6 @@ begin
                 wait until falling_edge(clk);
                 check_equal(destinationReg, expectedDestinationReg);
                 check_equal(immidiate, expectedImmidiate);
-                check(executeControlWord.ALUSrc);
                 check(executeControlWord.ALUOpDirective = exec_add);
                 check(memoryControlWord.MemOp);
                 check(not memoryControlWord.MemOpIsWrite);
@@ -126,7 +125,6 @@ begin
                 wait until falling_edge(clk);
                 check_equal(destinationReg, expectedDestinationReg);
                 check_equal(immidiate, expectedImmidiate);
-                check(executeControlWord.ALUSrc);
                 check(executeControlWord.ALUOpDirective = exec_add);
                 check(memoryControlWord.MemOp);
                 check(memoryControlWord.MemOpIsWrite);
