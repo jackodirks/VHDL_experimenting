@@ -19,6 +19,7 @@ package mips32_pkg is
     subtype mips32_aluFunction_type is natural range 0 to 63;
     subtype mips32_shamt_type is natural range 0 to 31;
     subtype mips32_mf_type is natural range 0 to 31;
+    subtype mips32_byte_mask_type is std_logic_vector(mips32_bytes_per_data_word - 1 downto 0);
 
     type mips32_data_array is array (natural range <>) of mips32_data_type;
     type mips32_byte_array is array (natural range <>) of mips32_byte_type;

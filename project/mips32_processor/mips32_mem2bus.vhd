@@ -21,6 +21,7 @@ entity mips32_mem2bus is
         faultData : out bus_fault_type;
 
         address : in mips32_address_type;
+        byteMask : in mips32_byte_mask_type;
         dataIn : in mips32_data_type;
         dataOut : out mips32_data_type;
         doWrite : in boolean;
@@ -39,29 +40,32 @@ architecture behaviourial of mips32_mem2bus is
     signal read_cache_valid : boolean := false;
     signal read_cache_address : mips32_address_type;
     signal read_cache_data : mips32_data_type;
+    signal read_cache_byteMask : mips32_byte_mask_type;
 
     -- Write cache
     signal write_cache_valid : boolean := false;
     signal write_cache_address : mips32_address_type;
     signal write_cache_data : mips32_data_type;
+    signal write_cache_byteMask : mips32_byte_mask_type;
 begin
     stall_buf <= read_stall or write_stall;
     stall <= stall_buf;
 
-    read_handling : process(doRead, address, read_cache_valid, read_cache_address, read_cache_data)
+    read_handling : process(doRead, address, byteMask, read_cache_valid, read_cache_address, read_cache_data, read_cache_byteMask)
     begin
         dataOut <= read_cache_data;
         read_stall <= false;
         if doRead then
-            read_stall <= not read_cache_valid or read_cache_address /= address;
+            read_stall <= not read_cache_valid or read_cache_address /= address or byteMask /= read_cache_byteMask;
         end if;
     end process;
 
-    write_handling : process(doWrite, address, dataIn, write_cache_valid, write_cache_address, write_cache_data)
+    write_handling : process(doWrite, address, byteMask, dataIn, write_cache_valid, write_cache_address, write_cache_data, write_cache_byteMask)
     begin
         write_stall <= false;
         if doWrite then
-            write_stall <= not (write_cache_valid and address = write_cache_address and dataIn = write_cache_data);
+            write_stall <= not write_cache_valid or address /= write_cache_address or dataIn /= write_cache_data
+                           or byteMask /= write_cache_byteMask;
         end if;
     end process;
 
@@ -85,22 +89,23 @@ begin
                     bus_active := false;
                     read_cache_valid <= true;
                     read_cache_address <= mst2slv_buf.address;
+                    read_cache_byteMask <= mst2slv_buf.byteMask;
                     read_cache_data <= slv2mst.readData;
                 elsif write_transaction(mst2slv_buf, slv2mst) then
                     bus_active := false;
                     write_cache_valid <= true;
                     write_cache_address <= mst2slv_buf.address;
                     write_cache_data <= mst2slv_buf.writeData;
+                    write_cache_byteMask <= mst2slv_buf.byteMask;
                 end if;
                 mst2slv_buf := BUS_MST2SLV_IDLE;
             elsif stall_buf and not bus_active and not hasFault_buf and not forbidBusInteraction then
                 bus_active := true;
                 if doRead then
-                    mst2slv_buf := bus_mst2slv_read(address => address);
+                    mst2slv_buf := bus_mst2slv_read(address, byteMask);
                 elsif doWrite then
                     read_cache_valid <= false;
-                    mst2slv_buf := bus_mst2slv_write(address => address,
-                                                             write_data => dataIn);
+                    mst2slv_buf := bus_mst2slv_write(address, dataIn, byteMask);
                 end if;
             elsif not stall_buf and not doRead and not doWrite then
                 read_cache_valid <= false;

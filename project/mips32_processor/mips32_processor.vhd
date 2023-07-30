@@ -151,6 +151,7 @@ begin
         hasFault => memoryHasFault,
         faultData => memoryFaultData,
         address => dataAddress,
+        byteMask => (others => '1'),
         dataIn => dataToBus,
         dataOut => dataFromBus,
         doWrite => dataWrite,

@@ -35,6 +35,7 @@ architecture tb of mips32_mem2bus_tb is
     signal faultData : bus_fault_type;
 
     signal address : mips32_address_type := (others => '0');
+    signal byteMask : mips32_byte_mask_type := (others => '1');
     signal dataIn : mips32_data_type := (others => '0');
     signal dataOut : mips32_data_type;
     signal doWrite : boolean := false;
@@ -49,7 +50,6 @@ begin
         variable expectedWriteData : mips32_data_type;
         variable expectedWriteAddress : mips32_address_type;
         variable writeAddress : bus_address_type;
-        variable byteMask : bus_byte_mask_type;
         variable writeData : bus_data_type;
         variable memReadData : bus_data_type;
     begin
@@ -61,13 +61,12 @@ begin
                 check(stall);
             elsif run("Requesting read stalls until data is ready") then
                 writeAddress := X"00000004";
-                byteMask := (others => '1');
                 writeData := X"01234567";
                 simulated_bus_memory_pkg.write_to_address(
                     net => net,
                     actor => slaveActor,
                     addr => writeAddress,
-                    mask => byteMask,
+                    mask => (others => '1'),
                     data => writeData);
                 doRead <= true;
                 address <= writeAddress;
@@ -124,13 +123,12 @@ begin
                 check(not stall);
             elsif run("Reading same thing twice results in one stall") then
                 writeAddress := X"00000004";
-                byteMask := (others => '1');
                 writeData := X"01234567";
                 simulated_bus_memory_pkg.write_to_address(
                     net => net,
                     actor => slaveActor,
                     addr => writeAddress,
-                    mask => byteMask,
+                    mask => (others => '1'),
                     data => writeData);
                 doRead <= true;
                 address <= writeAddress;
@@ -159,13 +157,12 @@ begin
                 check(not bus_requesting(mst2slv));
             elsif run("Flushing the cache does lead to two reads") then
                 writeAddress := X"00000004";
-                byteMask := (others => '1');
                 writeData := X"01234567";
                 simulated_bus_memory_pkg.write_to_address(
                     net => net,
                     actor => slaveActor,
                     addr => writeAddress,
-                    mask => byteMask,
+                    mask => (others => '1'),
                     data => writeData);
                 doRead <= true;
                 address <= writeAddress;
@@ -179,13 +176,12 @@ begin
                 check(bus_requesting(mst2slv));
             elsif run("Relevant write after read should reread") then
                 writeAddress := X"00000004";
-                byteMask := (others => '1');
                 writeData := X"01234567";
                 simulated_bus_memory_pkg.write_to_address(
                     net => net,
                     actor => slaveActor,
                     addr => writeAddress,
-                    mask => byteMask,
+                    mask => (others => '1'),
                     data => writeData);
                 doRead <= true;
                 address <= writeAddress;
@@ -199,7 +195,7 @@ begin
                 doRead <= true;
                 wait until rising_edge(clk) and not stall;
                 check_equal(dataOut, writeData);
-            elsif run("no-op after read should reread") then
+            elsif run("no-op after write should rewrite") then
                 writeAddress := X"00000004";
                 doWrite <= true;
                 address <= writeAddress;
@@ -211,9 +207,8 @@ begin
                 wait until rising_edge(clk);
                 wait until falling_edge(clk);
                 check(bus_requesting(mst2slv));
-            elsif run("no-op after write should rewrite") then
+            elsif run("no-op after read should reread") then
                 writeAddress := X"00000004";
-                byteMask := (others => '1');
                 writeData := X"01234567";
                 doRead <= true;
                 address <= writeAddress;
@@ -222,6 +217,46 @@ begin
                 wait until rising_edge(clk);
                 doRead <= true;
                 wait until rising_edge(clk);
+                wait until falling_edge(clk);
+                check(bus_requesting(mst2slv));
+            elsif run("Bytemask is forwarded during read") then
+                wait until falling_edge(clk);
+                writeAddress := X"00000004";
+                writeData := X"01234567";
+                doRead <= true;
+                address <= writeAddress;
+                byteMask <= "0001";
+                wait until falling_edge(clk);
+                check(mst2slv.byteMask = byteMask);
+            elsif run("Bytemask is forwarded during write") then
+                wait until falling_edge(clk);
+                writeAddress := X"00000004";
+                writeData := X"01234567";
+                doWrite <= true;
+                address <= writeAddress;
+                byteMask <= "0001";
+                wait until falling_edge(clk);
+                check(mst2slv.byteMask = byteMask);
+            elsif run("Different bytemask should force reread") then
+                writeAddress := X"00000004";
+                writeData := X"01234567";
+                doRead <= true;
+                address <= writeAddress;
+                byteMask <= "0001";
+                wait until rising_edge(clk) and not stall;
+                wait until falling_edge(clk);
+                byteMask <= "1111";
+                wait until falling_edge(clk);
+                check(bus_requesting(mst2slv));
+            elsif run("Different bytemask should force rewrite") then
+                writeAddress := X"00000004";
+                doWrite <= true;
+                address <= writeAddress;
+                dataIn <= writeData;
+                byteMask <= "0001";
+                wait until rising_edge(clk) and not stall;
+                wait until falling_edge(clk);
+                byteMask <= "1111";
                 wait until falling_edge(clk);
                 check(bus_requesting(mst2slv));
             end if;
@@ -245,6 +280,7 @@ begin
         hasFault => hasFault,
         faultData => faultData,
         address => address,
+        byteMask => byteMask,
         dataIn => dataIn,
         dataOut => dataOut,
         doWrite => doWrite,
