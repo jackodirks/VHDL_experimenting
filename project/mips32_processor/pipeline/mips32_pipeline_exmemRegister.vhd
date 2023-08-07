@@ -33,19 +33,23 @@ end entity;
 architecture behaviourial of mips32_pipeline_exmemRegister is
 begin
     process(clk)
+        variable memoryControlWordOut_buf : mips32_MemoryControlWord_type := mips32_memoryControlWordAllFalse;
+        variable writeBackControlWordOut_buf : mips32_WriteBackControlWord_type := mips32_writeBackControlWordAllFalse;
     begin
         if rising_edge(clk) then
             if nop and not stall then
-                memoryControlWordOut <= mips32_memoryControlWordAllFalse;
-                writeBackControlWordOut <= mips32_writeBackControlWordAllFalse;
+                memoryControlWordOut_buf := mips32_memoryControlWordAllFalse;
+                writeBackControlWordOut_buf := mips32_writeBackControlWordAllFalse;
             elsif not stall then
-                memoryControlWordOut <= memoryControlWordIn;
-                writeBackControlWordOut <= writeBackControlWordIn;
+                memoryControlWordOut_buf := memoryControlWordIn;
+                writeBackControlWordOut_buf := writeBackControlWordIn;
                 execResultOut <= execResultIn;
                 regDataReadOut <= regDataReadIn;
                 destinationRegOut <= destinationRegIn;
                 rdAddressOut <= rdAddressIn;
             end if;
         end if;
+        memoryControlWordOut <= memoryControlWordOut_buf;
+        writeBackControlWordOut <= writeBackControlWordOut_buf;
     end process;
 end architecture;

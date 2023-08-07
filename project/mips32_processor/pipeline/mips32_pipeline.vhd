@@ -18,6 +18,7 @@ entity mips32_pipeline is
         instruction : in mips32_instruction_type;
 
         dataAddress : out mips32_address_type;
+        dataByteMask : out mips32_byte_mask_type;
         dataRead : out boolean;
         dataWrite : out boolean;
         dataOut : out mips32_data_type;
@@ -247,7 +248,6 @@ begin
         memoryControlWord => memControlWordFromExMem,
         execResult => execResFromExMem,
         regDataRead => regDataReadFromExMem,
-        destinationReg => destRegFromExMem,
         rdAddress => rdAddrFromExMem,
 
         memDataRead => memDataFromMem,
@@ -256,6 +256,7 @@ begin
         doMemRead => dataRead,
         doMemWrite => dataWrite,
         memAddress => dataAddress,
+        memByteMask => dataByteMask,
         dataToMem => dataOut,
         dataFromMem => dataIn,
 

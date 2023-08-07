@@ -15,7 +15,6 @@ entity mips32_pipeline_memory is
         -- From execute stage: data
         execResult : in mips32_data_type;
         regDataRead : in mips32_data_type;
-        destinationReg : in mips32_registerFileAddress_type;
         rdAddress : in mips32_registerFileAddress_type;
 
         -- To writeback stage: data
@@ -26,6 +25,7 @@ entity mips32_pipeline_memory is
         doMemRead : out boolean;
         doMemWrite : out boolean;
         memAddress : out mips32_address_type;
+        memByteMask : out mips32_byte_mask_type;
         dataToMem : out mips32_data_type;
         dataFromMem : in mips32_data_type;
 
@@ -38,8 +38,36 @@ entity mips32_pipeline_memory is
 end entity;
 
 architecture behaviourial of mips32_pipeline_memory is
+    pure function loadStoreSizeToByteMask(size : mips32_load_store_size) return mips32_byte_mask_type is
+        variable retVal : mips32_byte_mask_type := "1111";
+    begin
+        if size = ls_halfword then
+            retVal := "0011";
+        elsif size = ls_byte then
+            retVal := "0001";
+        end if;
+        return retVal;
+    end function;
 begin
-    memDataRead <= dataFromMem;
+
+    postProcessMemRead : process(dataFromMem, memoryControlWord)
+        variable readLenBit : natural range 0 to 31 := 31;
+    begin
+        if memoryControlWord.loadStoreSize = ls_byte then
+            readLenBit := 7;
+        elsif memoryControlWord.loadStoreSize = ls_halfword then
+            readLenBit := 15;
+        else
+            readLenBit := 31;
+        end if;
+
+        if memoryControlWord.memReadSignExtend then
+            memDataRead <= std_logic_vector(resize(signed(dataFromMem(readLenBit downto 0)), memDataRead'length));
+        else
+            memDataRead <= std_logic_vector(resize(unsigned(dataFromMem(readLenBit downto 0)), memDataRead'length));
+        end if;
+    end process;
+
     cpzRead <= data_from_cpz;
 
     mem2busOut : process(memoryControlWord, execResult, regDataRead)
@@ -48,6 +76,7 @@ begin
         doMemWrite <= false;
         dataToMem <= regDataRead;
         memAddress <= execResult;
+        memByteMask <= loadStoreSizeToByteMask(memoryControlWord.loadStoreSize);
         if memoryControlWord.MemOp then
             if memoryControlWord.MemOpIsWrite then
                 doMemWrite <= true;

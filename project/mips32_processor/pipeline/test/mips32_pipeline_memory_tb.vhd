@@ -22,7 +22,6 @@ architecture tb of mips32_pipeline_memory_tb is
 
     signal execResult : mips32_data_type;
     signal regDataRead : mips32_data_type;
-    signal destinationReg : mips32_registerFileAddress_type;
     signal rdAddress : mips32_registerFileAddress_type;
 
     signal memDataRead : mips32_data_type;
@@ -31,6 +30,7 @@ architecture tb of mips32_pipeline_memory_tb is
     signal doMemRead : boolean;
     signal doMemWrite : boolean;
     signal memAddress : mips32_address_type;
+    signal memByteMask : mips32_byte_mask_type;
     signal dataToMem : mips32_data_type;
     signal dataFromMem : mips32_data_type;
 
@@ -75,7 +75,7 @@ begin
                 memoryControlWord.MemOpIsWrite <= false;
                 expectedMemAddress := X"0000FFF0";
                 execResult <= expectedMemAddress;
-                dataFromMem <= X"01020304";
+                dataFromMem <= X"F1020304";
                 wait for 10 ns;
                 check_equal(memAddress, expectedMemAddress);
                 check(not doMemWrite);
@@ -115,6 +115,70 @@ begin
                 data_from_cpz <= X"F1F2F3F4";
                 wait for 10 ns;
                 check(cpzRead = data_from_cpz);
+            elsif run("lhu sets correct bytemask 0011") then
+                opcode <= mips32_opcodeLhu;
+                wait for 1 fs;
+                memoryControlWord <= decodedMemoryControlWord;
+                wait for 1 fs;
+                check_equal(memByteMask, std_logic_vector'("0011"));
+            elsif run("lhu zeros the upper 2 byte") then
+                opcode <= mips32_opcodeLhu;
+                wait for 1 fs;
+                memoryControlWord <= decodedMemoryControlWord;
+                dataFromMem <= X"01020304";
+                wait for 1 fs;
+                check_equal(memDataRead, X"0000" & dataFromMem(15 downto 0));
+            elsif run("lbu sets correct bytemask 0001") then
+                opcode <= mips32_opcodeLbu;
+                wait for 1 fs;
+                memoryControlWord <= decodedMemoryControlWord;
+                wait for 1 fs;
+                check_equal(memByteMask, std_logic_vector'("0001"));
+            elsif run("lbu zeros the upper 3 byte") then
+                opcode <= mips32_opcodeLbu;
+                wait for 1 fs;
+                memoryControlWord <= decodedMemoryControlWord;
+                dataFromMem <= X"01020304";
+                wait for 1 fs;
+                check_equal(memDataRead, X"000000" & dataFromMem(7 downto 0));
+            elsif run("lb sets bytemask 0001") then
+                opcode <= mips32_opcodeLb;
+                wait for 1 fs;
+                memoryControlWord <= decodedMemoryControlWord;
+                wait for 1 fs;
+                check_equal(memByteMask, std_logic_vector'("0001"));
+            elsif run("lb sign-extends") then
+                opcode <= mips32_opcodeLb;
+                wait for 1 fs;
+                memoryControlWord <= decodedMemoryControlWord;
+                dataFromMem <= X"01020384";
+                wait for 1 fs;
+                check_equal(memDataRead, X"ffffff" & dataFromMem(7 downto 0));
+            elsif run("lh sets bytemask 0011") then
+                opcode <= mips32_opcodeLh;
+                wait for 1 fs;
+                memoryControlWord <= decodedMemoryControlWord;
+                wait for 1 fs;
+                check_equal(memByteMask, std_logic_vector'("0011"));
+            elsif run("lh sign-extends") then
+                opcode <= mips32_opcodeLh;
+                wait for 1 fs;
+                memoryControlWord <= decodedMemoryControlWord;
+                dataFromMem <= X"01028384";
+                wait for 1 fs;
+                check_equal(memDataRead, X"ffff" & dataFromMem(15 downto 0));
+            elsif run("sb sets bytemask 0001") then
+                opcode <= mips32_opcodeSb;
+                wait for 1 fs;
+                memoryControlWord <= decodedMemoryControlWord;
+                wait for 1 fs;
+                check_equal(memByteMask, std_logic_vector'("0001"));
+            elsif run("sh sets bytemask 0011") then
+                opcode <= mips32_opcodeSh;
+                wait for 1 fs;
+                memoryControlWord <= decodedMemoryControlWord;
+                wait for 1 fs;
+                check_equal(memByteMask, std_logic_vector'("0011"));
             end if;
         end loop;
         test_runner_cleanup(runner);
@@ -129,13 +193,13 @@ begin
         memoryControlWord => memoryControlWord,
         execResult => execResult,
         regDataRead => regDataRead,
-        destinationReg => destinationReg,
         rdAddress => rdAddress,
         memDataRead => memDataRead,
         cpzRead => cpzRead,
         doMemRead => doMemRead,
         doMemWrite => doMemWrite,
         memAddress => memAddress,
+        memByteMask => memByteMask,
         dataToMem => dataToMem,
         dataFromMem => dataFromMem,
         address_to_cpz => address_to_cpz,

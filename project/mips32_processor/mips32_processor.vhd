@@ -36,6 +36,7 @@ architecture behaviourial of mips32_processor is
     signal instructionAddress : mips32_address_type;
     signal instruction : mips32_instruction_type;
     signal dataAddress : mips32_address_type;
+    signal dataByteMask : mips32_byte_mask_type;
     signal dataRead : boolean;
     signal dataWrite : boolean;
     signal dataToBus : mips32_data_type;
@@ -95,6 +96,7 @@ begin
             instructionAddress => instructionAddress,
             instruction => instruction,
             dataAddress => dataAddress,
+            dataByteMask => dataByteMask,
             dataRead => dataRead,
             dataWrite => dataWrite,
             dataOut => dataToBus,
@@ -151,7 +153,7 @@ begin
         hasFault => memoryHasFault,
         faultData => memoryFaultData,
         address => dataAddress,
-        byteMask => (others => '1'),
+        byteMask => dataByteMask,
         dataIn => dataToBus,
         dataOut => dataFromBus,
         doWrite => dataWrite,
