@@ -13,13 +13,36 @@ static constexpr uint32_t spiMemStartAddress = 0x100000;
 static constexpr uint32_t spiMemLength = 0x60000;
 static constexpr uint32_t cpuBaseAddress = 0x2000;
 
-static void dumpList(DeppUartMaster& master) {
-    uint32_t curAddress = spiMemStartAddress + 0x98;
-    for (std::size_t i = 0; i < 11; ++i) {
-        int32_t tmp = master.readWord(curAddress);
-        std::cout << std::dec << "At index " << i << " value " << tmp << std::endl;
+template<typename T>
+static void dumpSubList(DeppUartMaster& master, uint32_t startAddress) {
+    uint32_t curAddress = startAddress;
+    T data[12];
+    std::size_t index = 0;
+    std::size_t totalWords = (sizeof(T)*12)/sizeof(uint32_t);
+    for (std::size_t i = 0; i < totalWords; ++i) {
+        uint32_t tmp = master.readWord(curAddress);
+        for (std::size_t j = 0; j < sizeof(uint32_t)/sizeof(T); ++j) {
+            data[index] = static_cast<T>(tmp);
+            index++;
+            tmp >>= sizeof(T)*8;
+        }
         curAddress += 4;
     }
+    for (std::size_t i = 0; i < 11; ++i) {
+        std::cout << std::dec << "At index " << i << " value " << (int)data[i] << std::endl;
+    }
+}
+
+static void dumpList(DeppUartMaster& master) {
+    uint32_t curAddress = spiMemStartAddress + 0x18c;
+    std::cout << "32 bit:" << std::endl;
+    dumpSubList<int32_t>(master, curAddress);
+    curAddress = spiMemStartAddress + 0x174;
+    std::cout << "16 bit:" << std::endl;
+    dumpSubList<int16_t>(master, curAddress);
+    curAddress = spiMemStartAddress + 0x168;
+    std::cout << "8 bit:" << std::endl;
+    dumpSubList<int8_t>(master, curAddress);
 }
 
 static void writeAndVerify(DeppUartMaster& master, const std::string& filePath, uint32_t startAddress) {
@@ -48,7 +71,7 @@ static void dumpRegFile(DeppUartMaster& master) {
     uint32_t currentAddress = cpuBaseAddress + (32*4);
     for (size_t i = 0; i < 32; ++i) {
         uint32_t readData = master.readWord(currentAddress);
-        std::cout << std::dec << "$" << i << std::hex << ": " << readData << std::dec << std::endl; 
+        std::cout << std::dec << "$" << i << std::hex << ": " << readData << std::dec << std::endl;
         currentAddress += 4;
     }
 }

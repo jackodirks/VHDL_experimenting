@@ -10,13 +10,18 @@ SECTIONS
         *(.text)
     } > SRAM
 
-    .data : 
+    .data :
     {
         *(.data)
     } > SRAM
 
-    .bss : 
+    .bss :
     {
-        *(.data)
+        *(.bss)
+    } > SRAM
+
+    .MIPS.abiflags :
+    {
+        *(.MIPS.abiflags)
     } > SRAM
 }

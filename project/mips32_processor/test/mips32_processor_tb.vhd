@@ -167,18 +167,39 @@ begin
                 wait until rising_edge(clk) and any_transaction(test2slv, slv2test);
                 check(write_transaction(test2slv, slv2test));
                 test2slv <= BUS_MST2SLV_IDLE;
-                wait for 125 us;
-                curAddr := 16#98#;
+                wait for 375 us;
+                curAddr := 16#18c#;
                 for i in -5 to 5 loop
-                    expectedReadData := std_logic_vector(to_signed(i, expectedReadData'length));
                     readAddr := std_logic_vector(to_unsigned(curAddr, bus_address_type'length));
                     simulated_bus_memory_pkg.read_from_address(
                         net => net,
                         actor => memActor,
                         addr => readAddr,
                         data => readData);
-                    check_equal(readData, expectedReadData);
+                    check_equal(signed(readData), i);
                     curAddr := curAddr + 4;
+                end loop;
+                curAddr := 16#174#;
+                for i in -5 to 5 loop
+                    readAddr := std_logic_vector(to_unsigned(curAddr, bus_address_type'length));
+                    simulated_bus_memory_pkg.read_from_address(
+                        net => net,
+                        actor => memActor,
+                        addr => readAddr,
+                        data => readData);
+                    check_equal(signed(readData(15 downto 0)), i);
+                    curAddr := curAddr + 2;
+                end loop;
+                curAddr := 16#168#;
+                for i in -5 to 5 loop
+                    readAddr := std_logic_vector(to_unsigned(curAddr, bus_address_type'length));
+                    simulated_bus_memory_pkg.read_from_address(
+                        net => net,
+                        actor => memActor,
+                        addr => readAddr,
+                        data => readData);
+                    check_equal(signed(readData(7 downto 0)), i);
+                    curAddr := curAddr + 1;
                 end loop;
             elsif run("mtc0 test") then
                 simulated_bus_memory_pkg.write_file_to_address(
@@ -322,7 +343,7 @@ begin
    mem : entity work.simulated_bus_memory
    generic map (
         depth_log2b => 10,
-        allow_unaligned_access => false,
+        allow_unaligned_access => true,
         actor => memActor,
         read_delay => 5,
         write_delay => 5
