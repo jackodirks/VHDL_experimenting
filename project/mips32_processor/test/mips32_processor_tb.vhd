@@ -23,6 +23,13 @@ architecture tb of mips32_processor_tb is
     constant memoryAddress : natural := 16#100000#;
     constant controllerAddress : natural := 16#2000#;
     constant resetAddress : mips32_address_type := std_logic_vector(to_unsigned(memoryAddress, mips32_address_type'length));
+    constant iCache_rangeMap : addr_range_and_mapping_type :=
+        address_range_and_map(
+            low => std_logic_vector(to_unsigned(16#100000#, bus_address_type'length)),
+            high => std_logic_vector(to_unsigned(16#160000# - 1, bus_address_type'length)),
+            mapping => bus_map_constant(bus_address_type'high - 18, '0') & bus_map_range(18, 0)
+        );
+    constant iCache_word_count_log2b : natural := 8;
 
     constant memActor : actor_t := new_actor("slave");
 
@@ -82,7 +89,7 @@ begin
                 wait until rising_edge(clk) and any_transaction(test2slv, slv2test);
                 check(write_transaction(test2slv, slv2test));
                 test2slv <= BUS_MST2SLV_IDLE;
-                wait for 102*clk_period;
+                wait for 100*clk_period;
                 expectedReadData := X"00000003";
                 readAddr := std_logic_vector(to_unsigned(16#24#, bus_address_type'length));
                 simulated_bus_memory_pkg.read_from_address(
@@ -105,7 +112,7 @@ begin
                 wait until rising_edge(clk) and any_transaction(test2slv, slv2test);
                 check(write_transaction(test2slv, slv2test));
                 test2slv <= BUS_MST2SLV_IDLE;
-                wait for 200*clk_period;
+                wait for 100*clk_period;
                 expectedReadData := X"00000003";
                 readAddr := std_logic_vector(to_unsigned(16#2c#, bus_address_type'length));
                 simulated_bus_memory_pkg.read_from_address(
@@ -136,7 +143,7 @@ begin
                 wait until rising_edge(clk) and any_transaction(test2slv, slv2test);
                 check(write_transaction(test2slv, slv2test));
                 test2slv <= BUS_MST2SLV_IDLE;
-                wait for 400*clk_period;
+                wait for 200*clk_period;
                 expectedReadData := X"00000004";
                 readAddr := std_logic_vector(to_unsigned(16#38#, bus_address_type'length));
                 simulated_bus_memory_pkg.read_from_address(
@@ -167,7 +174,7 @@ begin
                 wait until rising_edge(clk) and any_transaction(test2slv, slv2test);
                 check(write_transaction(test2slv, slv2test));
                 test2slv <= BUS_MST2SLV_IDLE;
-                wait for 375 us;
+                wait for 150 us;
                 curAddr := 16#18c#;
                 for i in -5 to 5 loop
                     readAddr := std_logic_vector(to_unsigned(curAddr, bus_address_type'length));
@@ -301,7 +308,9 @@ begin
     processor : entity src.mips32_processor
     generic map (
         startAddress => resetAddress,
-        clk_period => clk_period
+        clk_period => clk_period,
+        iCache_rangeMap => iCache_rangeMap,
+        iCache_word_count_log2b => iCache_word_count_log2b
     ) port map (
         clk => clk,
         rst => rst,

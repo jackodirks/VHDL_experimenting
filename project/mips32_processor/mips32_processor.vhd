@@ -9,7 +9,9 @@ use work.mips32_pkg.all;
 entity mips32_processor is
     generic (
         startAddress : bus_address_type;
-        clk_period : time
+        clk_period : time;
+        iCache_rangeMap : addr_range_and_mapping_type;
+        iCache_word_count_log2b : natural
     );
     port (
         clk : in std_logic;
@@ -128,7 +130,10 @@ begin
     );
 
     if2bus : entity work.mips32_if2bus
-    port map (
+    generic map (
+        rangeMap => iCache_rangeMap,
+        word_count_log2b => iCache_word_count_log2b
+    ) port map (
         clk => clk,
         rst => rst,
         forbidBusInteraction => forbidBusInteraction,
