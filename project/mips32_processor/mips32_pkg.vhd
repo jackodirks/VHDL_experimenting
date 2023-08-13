@@ -22,6 +22,7 @@ package mips32_pkg is
     subtype mips32_byte_mask_type is std_logic_vector(mips32_bytes_per_data_word - 1 downto 0);
 
     type mips32_data_array is array (natural range <>) of mips32_data_type;
+    type mips32_instruction_array is array (natural range <>) of mips32_instruction_type;
     type mips32_byte_array is array (natural range <>) of mips32_byte_type;
     type mips32_exec_directive is (exec_add, exec_sub);
     type mips32_alu_cmd is (cmd_add, cmd_sub, cmd_and, cmd_or, cmd_nor, cmd_sltu, cmd_slt, cmd_sll, cmd_srl, cmd_sra);
