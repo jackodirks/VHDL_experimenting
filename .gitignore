@@ -47,3 +47,8 @@ uart_master/obj/*
 #Hal project
 hal/final*
 hal/obj/*
+
+#vivado tcl
+vivado_tcl/build/*
+vivado_tcl/.Xil/*
+vivado_tcl/tight_setup_hold_pins.txt
