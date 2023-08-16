@@ -25,7 +25,6 @@ architecture tb of mips32_pipeline_memory_tb is
     signal rdAddress : mips32_registerFileAddress_type;
 
     signal memDataRead : mips32_data_type;
-    signal cpzRead : mips32_data_type;
 
     signal doMemRead : boolean;
     signal doMemWrite : boolean;
@@ -114,7 +113,7 @@ begin
                 memoryControlWord <= decodedMemoryControlWord;
                 data_from_cpz <= X"F1F2F3F4";
                 wait for 10 ns;
-                check(cpzRead = data_from_cpz);
+                check(memDataRead = data_from_cpz);
             elsif run("lhu sets correct bytemask 0011") then
                 opcode <= mips32_opcodeLhu;
                 wait for 1 fs;
@@ -195,7 +194,6 @@ begin
         regDataRead => regDataRead,
         rdAddress => rdAddress,
         memDataRead => memDataRead,
-        cpzRead => cpzRead,
         doMemRead => doMemRead,
         doMemWrite => doMemWrite,
         memAddress => memAddress,

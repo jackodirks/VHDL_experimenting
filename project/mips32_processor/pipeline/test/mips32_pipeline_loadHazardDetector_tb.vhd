@@ -37,14 +37,6 @@ begin
                 writeBackControlWordFromEx.regWrite <= true;
                 wait for clk_period/2;
                 check(loadHazardDetected);
-            elsif run("Regaddress 5 cop0ToReg load hazard on port 1") then
-                targetRegFromEx <= 5;
-                readPortOneAddressFromID <= 5;
-                readPortTwoAddressFromID <= 31;
-                writeBackControlWordFromEx.cop0ToReg <= true;
-                writeBackControlWordFromEx.regWrite <= true;
-                wait for clk_period/2;
-                check(loadHazardDetected);
             elsif run("No load hazard because of reg mismatch port 1") then
                 targetRegFromEx <= 4;
                 readPortOneAddressFromID <= 5;

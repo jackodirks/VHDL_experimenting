@@ -25,14 +25,12 @@ architecture tb of mips32_pipeline_memwbRegister_tb is
     -- Pipeline data in
     signal execResultIn : mips32_data_type := (others => '0');
     signal memDataReadIn : mips32_data_type := (others => '0');
-    signal cpzDataReadIn : mips32_data_type := (others => '0');
     signal destinationRegIn : mips32_registerFileAddress_type := 0;
     -- Pipeline control out
     signal writeBackControlWordOut : mips32_WriteBackControlWord_type;
     -- Pipeline data out
     signal execResultOut : mips32_data_type;
     signal memDataReadOut : mips32_data_type;
-    signal cpzDataReadOut : mips32_data_type;
     signal destinationRegOut : mips32_registerFileAddress_type;
 begin
     clk <= not clk after (clk_period/2);
@@ -100,14 +98,12 @@ begin
         -- Pipeline data in
         execResultIn => execResultIn,
         memDataReadIn => memDataReadIn,
-        cpzDataReadIn => cpzDataReadIn,
         destinationRegIn => destinationRegIn,
         -- Pipeline control out
         writeBackControlWordOut => writeBackControlWordOut,
         -- Pipeline data out
         execResultOut => execResultOut,
         memDataReadOut => memDataReadOut,
-        cpzDataReadOut => cpzDataReadOut,
         destinationRegOut => destinationRegOut
     );
 end architecture;

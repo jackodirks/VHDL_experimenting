@@ -251,7 +251,6 @@ begin
         rdAddress => rdAddrFromExMem,
 
         memDataRead => memDataFromMem,
-        cpzRead => cpzDataFromMem,
 
         doMemRead => dataRead,
         doMemWrite => dataWrite,
@@ -274,12 +273,10 @@ begin
        writeBackControlWordIn => wbControlWordFromExMem,
        execResultIn => execResFromExMem,
        memDataReadIn => memDataFromMem,
-       cpzDataReadIn => cpzDataFromMem,
        destinationRegIn => destRegFromExMem,
        writeBackControlWordOut => wbControlWordFromMemWb,
        execResultOut => execResFromMemWb,
        memDataReadOut => memDataFromMemWb,
-       cpzDataReadOut => cpzDataFromMemWb,
        destinationRegOut => destRegFromMemWb
    );
 
@@ -288,7 +285,6 @@ begin
         writeBackControlWord => wbControlWordFromMemWb,
         execResult => execResFromMemWb,
         memDataRead => memDataFromMemWb,
-        cpzRead => cpzDataFromMemWb,
         destinationReg => destRegFromMemWb,
 
         regWrite => regWriteFromWb,

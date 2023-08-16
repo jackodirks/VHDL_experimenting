@@ -53,7 +53,6 @@ package mips32_pkg is
     type mips32_WriteBackControlWord_type is record
         regWrite : boolean;
         MemtoReg : boolean;
-        cop0ToReg : boolean;
     end record;
 
     constant mips32_instructionDecodeControlWordAllFalse : mips32_InstructionDecodeControlWord_type := (
@@ -80,8 +79,7 @@ package mips32_pkg is
 
     constant mips32_writeBackControlWordAllFalse : mips32_WriteBackControlWord_type := (
         regWrite => false,
-        MemtoReg => false,
-        cop0ToReg => false
+        MemtoReg => false
     );
 
     -- To begin, this processor will support the following instructions:

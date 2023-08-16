@@ -23,5 +23,5 @@ begin
     loadHazardPortOne <= targetRegFromEx = readPortOneAddressFromID;
     loadHazardPortTwo <= targetRegFromEx = readPortTwoAddressFromID;
 
-    loadHazardDetected <= (loadHazardPortOne or loadHazardPortTwo) and (writeBackControlWordFromEx.memToReg or writeBackControlWordFromEx.cop0ToReg) and targetRegFromEx /= 0;
+    loadHazardDetected <= (loadHazardPortOne or loadHazardPortTwo) and writeBackControlWordFromEx.memToReg and targetRegFromEx /= 0;
 end architecture;

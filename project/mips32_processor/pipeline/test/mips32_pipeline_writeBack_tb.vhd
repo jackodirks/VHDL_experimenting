@@ -25,7 +25,6 @@ architecture tb of mips32_pipeline_writeBack_tb is
     signal execResult : mips32_data_type;
     signal memDataRead : mips32_data_type;
     signal destinationReg : mips32_registerFileAddress_type;
-    signal cpzRead : mips32_data_type;
 
     signal regWrite : boolean;
     signal regWriteAddress : mips32_registerFileAddress_type;
@@ -68,13 +67,6 @@ begin
                 writeBackControlWord.MemtoReg <= true;
                 wait until rising_edge(clk);
                 check(not regWrite);
-            elsif run("cpz write back works") then
-                cpzRead <= X"F0F1F2F3";
-                writeBackControlWord.regWrite <= true;
-                writeBackControlWord.cop0ToReg <= true;
-                wait for clk_period/4;
-                check(regWrite);
-                check_equal(regWriteData, cpzRead);
             end if;
         end loop;
         wait until rising_edge(clk);
@@ -89,7 +81,6 @@ begin
         writeBackControlWord => writeBackControlWord,
         execResult => execResult,
         memDataRead => memDataRead,
-        cpzRead => cpzRead,
         destinationReg => destinationReg,
         regWrite => regWrite,
         regWriteAddress => regWriteAddress,

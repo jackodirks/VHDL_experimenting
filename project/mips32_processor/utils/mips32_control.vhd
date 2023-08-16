@@ -58,7 +58,7 @@ begin
                 if mf = 0 then
                     -- mfc0, move from system control processor
                     writeBackControlWord_buf.regWrite := true;
-                    writeBackControlWord_buf.cop0ToReg := true;
+                    writeBackControlWord_buf.MemtoReg := true;
                 elsif mf = 4 then
                     -- mtc0, move to system control processor
                     memoryControlWord_buf.cop0Write := true;

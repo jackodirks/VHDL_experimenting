@@ -16,14 +16,12 @@ entity mips32_pipeline_memwbRegister is
         -- Pipeline data in
         execResultIn : in mips32_data_type;
         memDataReadIn : in mips32_data_type;
-        cpzDataReadIn : in mips32_data_type;
         destinationRegIn : in mips32_registerFileAddress_type;
         -- Pipeline control out
         writeBackControlWordOut : out mips32_WriteBackControlWord_type;
         -- Pipeline data out
         execResultOut : out mips32_data_type;
         memDataReadOut : out mips32_data_type;
-        cpzDataReadOut : out mips32_data_type;
         destinationRegOut : out mips32_registerFileAddress_type
     );
 end entity;
@@ -39,7 +37,6 @@ begin
                 writeBackControlWordOut <= writeBackControlWordIn;
                 execResultOut <= execResultIn;
                 memDataReadOut <= memDataReadIn;
-                cpzDataReadOut <= cpzDataReadIn;
                 destinationRegOut <= destinationRegIn;
             end if;
         end if;

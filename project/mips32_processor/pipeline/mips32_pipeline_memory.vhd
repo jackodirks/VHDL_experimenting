@@ -19,7 +19,6 @@ entity mips32_pipeline_memory is
 
         -- To writeback stage: data
         memDataRead: out mips32_data_type;
-        cpzRead: out mips32_data_type;
 
         -- To mem2bus unit
         doMemRead : out boolean;
@@ -50,7 +49,7 @@ architecture behaviourial of mips32_pipeline_memory is
     end function;
 begin
 
-    postProcessMemRead : process(dataFromMem, memoryControlWord)
+    postProcessMemRead : process(dataFromMem, memoryControlWord, data_from_cpz)
         variable readLenBit : natural range 0 to 31 := 31;
     begin
         if memoryControlWord.loadStoreSize = ls_byte then
@@ -61,14 +60,14 @@ begin
             readLenBit := 31;
         end if;
 
-        if memoryControlWord.memReadSignExtend then
+        if not memoryControlWord.MemOp then
+            memDataRead <= data_from_cpz;
+        elsif memoryControlWord.memReadSignExtend then
             memDataRead <= std_logic_vector(resize(signed(dataFromMem(readLenBit downto 0)), memDataRead'length));
         else
             memDataRead <= std_logic_vector(resize(unsigned(dataFromMem(readLenBit downto 0)), memDataRead'length));
         end if;
     end process;
-
-    cpzRead <= data_from_cpz;
 
     mem2busOut : process(memoryControlWord, execResult, regDataRead)
     begin
