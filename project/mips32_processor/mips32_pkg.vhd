@@ -10,6 +10,8 @@ package mips32_pkg is
 
     constant mips32_bytes_per_data_word : natural := 2**(mips32_data_width_log2b - mips32_byte_width_log2b);
 
+    constant mips32_byte_width : natural := 2**mips32_byte_width_log2b;
+
     subtype mips32_address_type is std_logic_vector(2**mips32_address_width_log2b - 1 downto  0);
     subtype mips32_data_type is std_logic_vector(2**mips32_data_width_log2b -1 downto 0);
     subtype mips32_instruction_type is std_logic_vector(2**mips32_instruction_width_log2b - 1 downto 0);

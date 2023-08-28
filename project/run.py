@@ -43,6 +43,9 @@ tb_library.add_source_files(SRC_PATH / "mips32_processor" / "utils" / "test" / "
 src_library.add_source_files(SRC_PATH / "mips32_processor" / "icache" / "*.vhd")
 tb_library.add_source_files(SRC_PATH / "mips32_processor" / "icache" / "test" / "*.vhd")
 
+src_library.add_source_files(SRC_PATH / "mips32_processor" / "dcache" / "*.vhd")
+tb_library.add_source_files(SRC_PATH / "mips32_processor" / "dcache" / "test" / "*.vhd")
+
 src_library.add_source_files(SRC_PATH / "uart_bus_master" / "*.vhd")
 tb_library.add_source_files(SRC_PATH / "uart_bus_master" / "test" / "*.vhd")
 
