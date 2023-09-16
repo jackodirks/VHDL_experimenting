@@ -52,3 +52,6 @@ hal/obj/*
 vivado_tcl/build/*
 vivado_tcl/.Xil/*
 vivado_tcl/tight_setup_hold_pins.txt
+
+#ctags
+tags
