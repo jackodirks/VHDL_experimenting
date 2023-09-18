@@ -11,7 +11,9 @@ entity mips32_processor is
         startAddress : bus_address_type;
         clk_period : time;
         iCache_rangeMap : addr_range_and_mapping_type;
-        iCache_word_count_log2b : natural
+        iCache_word_count_log2b : natural;
+        dCache_range : addr_range_type;
+        dCache_word_count_log2b : natural
     );
     port (
         clk : in std_logic;
@@ -148,7 +150,10 @@ begin
     );
 
     mem2bus : entity work.mips32_mem2bus
-    port map (
+    generic map (
+        range_to_cache => dCache_range,
+        cache_word_count_log2b => dCache_word_count_log2b
+    ) port map (
         clk => clk,
         rst => rst,
         forbidBusInteraction => forbidBusInteraction,

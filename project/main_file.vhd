@@ -91,7 +91,9 @@ begin
         startAddress => procStartAddress,
         clk_period => clk_period,
         iCache_rangeMap => address_map(1),
-        iCache_word_count_log2b => 8
+        iCache_word_count_log2b => 8,
+        dCache_range => address_map(1).addr_range,
+        dCache_word_count_log2b => 8
     ) port map (
         clk => clk,
         rst => rst,

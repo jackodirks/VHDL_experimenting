@@ -72,6 +72,7 @@ read_vhdl -vhdl2008 [ glob ../project/common/simple_multishot_timer.vhd ]
 read_vhdl -vhdl2008 [ glob ../project/bus/*.vhd ]
 read_vhdl -vhdl2008 [ glob ../project/mips32_processor/*.vhd ]
 read_vhdl -vhdl2008 [ glob ../project/mips32_processor/icache/*.vhd ]
+read_vhdl -vhdl2008 [ glob ../project/mips32_processor/dcache/*.vhd ]
 read_vhdl -vhdl2008 [ glob ../project/mips32_processor/pipeline/*.vhd ]
 read_vhdl -vhdl2008 [ glob ../project/mips32_processor/utils/*.vhd ]
 read_vhdl -vhdl2008 [ glob ../project/triple_23lc1024_controller/*.vhd ]
@@ -96,6 +97,7 @@ append SYNTH_ARGS " " -max_bram " {" -1 "} "
 append SYNTH_ARGS " " -max_dsp " {" -1 "} "
 append SYNTH_ARGS " " -cascade_dsp " " auto " "
 set_msg_config -id {[Synth 8-327]} -new_severity ERROR
+set_msg_config -id {[Synth 8-614]} -new_severity ERROR
 set_msg_config -id {[Synth 8-7129]} -new_severity INFO
 set_msg_config -id {[Synth 8-7080]} -new_severity INFO
 set sysclk_freq_mhz [ get_property CONFIG.CLKOUT1_REQUESTED_OUT_FREQ [get_ips main_clock_gen] ]
@@ -110,9 +112,12 @@ puts "Step 4/5: Place design"
 set_clock_uncertainty 0.200 [get_clocks CLKSYS_main_clock_gen]
 place_design -directive EarlyBlockPlacement > $placeDesignDir/log
 set WNS -1
+set iteration 0
 while { $WNS < 0} {
     run_phys_opt $placeDesignDir place_design
     set WNS [ get_property SLACK [get_timing_paths -max_paths 1 -nworst 1 -setup] ]
+    report_timing_summary -file $placeDesignDir/timing_summary_$iteration.rpt -quiet
+    incr iteration
     if {$WNS < 0} {
         puts "WNS below zero, rerunning place_design with post_place_opt.."
         place_design -post_place_opt >> $placeDesignDir/post_place_place_opt.log
@@ -123,10 +128,13 @@ set_clock_uncertainty 0 [get_clocks CLKSYS_main_clock_gen]
 # Route design
 puts "Step 5/5: Route design"
 set WNS -1
+set iteration 0
 while { $WNS < 0} {
     route_design -directive AggressiveExplore -tns_cleanup >> $routeDesignDir/log
     run_phys_opt $routeDesignDir route_design
     set WNS [ get_property SLACK [get_timing_paths -max_paths 1 -nworst 1 -setup] ]
+    report_timing_summary -file $routeDesignDir/timing_summary_$iteration.rpt -quiet
+    incr iteration
     if {$WNS < 0} {
         puts "WNS below zero, rerunning place_design with post_place_opt.."
         place_design -post_place_opt >> $routeDesignDir/post_route_place_opt.log

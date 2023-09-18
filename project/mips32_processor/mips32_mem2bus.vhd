@@ -7,6 +7,10 @@ use work.bus_pkg.all;
 use work.mips32_pkg.all;
 
 entity mips32_mem2bus is
+    generic (
+        range_to_cache : addr_range_type;
+        cache_word_count_log2b : natural
+    );
     port (
         clk : in std_logic;
         rst : in std_logic;
@@ -32,93 +36,179 @@ entity mips32_mem2bus is
 end entity;
 
 architecture behaviourial of mips32_mem2bus is
-    signal stall_buf : boolean := false;
+    signal transaction_required : boolean := false;
     signal read_stall : boolean := false;
     signal write_stall : boolean := false;
+    signal corrected_byte_mask : mips32_byte_mask_type;
+    signal corrected_address : mips32_address_type;
 
-    -- Read cache
-    signal read_cache_valid : boolean := false;
-    signal read_cache_address : mips32_address_type;
-    signal read_cache_data : mips32_data_type;
-    signal read_cache_byteMask : mips32_byte_mask_type;
+    signal mst2slv_buf : bus_mst2slv_type := BUS_MST2SLV_IDLE;
 
-    -- Write cache
-    signal write_cache_valid : boolean := false;
-    signal write_cache_address : mips32_address_type;
-    signal write_cache_data : mips32_data_type;
-    signal write_cache_byteMask : mips32_byte_mask_type;
+    -- Read cache, volatile
+    signal volatile_read_cache_data : mips32_data_type;
+    signal volatile_read_cache_miss : boolean := false;
+
+    -- Write cache, volatile
+    signal volatile_write_cache_miss : boolean := false;
+
+    -- Data cache
+    signal dcache_address_in : mips32_address_type;
+    signal dcache_data_out : mips32_data_type;
+    signal dcache_data_in : mips32_data_type;
+    signal dcache_byte_mask : mips32_byte_mask_type;
+    signal dcache_do_write : boolean;
+    signal dcache_miss : boolean;
+    signal dcache_significant_hit : boolean;
+    signal address_in_dcache_range : boolean;
 begin
-    stall_buf <= read_stall or write_stall;
-    stall <= stall_buf;
+    address_in_dcache_range <= bus_addr_in_range(address, range_to_cache);
+    dcache_significant_hit <= address_in_dcache_range and not dcache_miss;
+    read_stall <= (not dcache_significant_hit) and volatile_read_cache_miss and doRead;
+    write_stall <= volatile_write_cache_miss and doWrite;
+    transaction_required <= read_stall or write_stall;
+    stall <= transaction_required;
+    mst2slv <= mst2slv_buf;
 
-    read_handling : process(doRead, address, byteMask, read_cache_valid, read_cache_address, read_cache_data, read_cache_byteMask)
+    data_out_handling : process(dcache_significant_hit, dcache_data_out, volatile_read_cache_data)
     begin
-        dataOut <= read_cache_data;
-        read_stall <= false;
-        if doRead then
-            read_stall <= not read_cache_valid or read_cache_address /= address or byteMask /= read_cache_byteMask;
+        if dcache_significant_hit then
+            dataOut <= dcache_data_out;
+        else
+            dataOut <= volatile_read_cache_data;
         end if;
     end process;
 
-    write_handling : process(doWrite, address, byteMask, dataIn, write_cache_valid, write_cache_address, write_cache_data, write_cache_byteMask)
+    correct_for_dcache : process(byteMask, address, address_in_dcache_range, dcache_miss, doRead)
     begin
-        write_stall <= false;
-        if doWrite then
-            write_stall <= not write_cache_valid or address /= write_cache_address or dataIn /= write_cache_data
-                           or byteMask /= write_cache_byteMask;
+        corrected_address <= address;
+        if address_in_dcache_range and dcache_miss and doRead then
+            corrected_byte_mask <= (others => '1');
+            corrected_address(mips32_data_width_log2b - mips32_byte_width_log2b - 1 downto 0) <= (others => '0');
+        else
+            corrected_byte_mask <= byteMask;
+        end if;
+    end process;
+
+    volatile_read_cache : process(clk, address, byteMask)
+        variable cache_valid : boolean := false;
+        variable cache_address : mips32_address_type;
+        variable cache_data : mips32_data_type;
+        variable cache_byteMask : mips32_byte_mask_type;
+    begin
+        if rising_edge(clk) then
+            if read_transaction(mst2slv_buf, slv2mst) then
+                cache_valid := true;
+                cache_address := mst2slv_buf.address;
+                cache_data := slv2mst.readData;
+                cache_byteMask := mst2slv_buf.byteMask;
+            elsif not doRead or flushCache then
+                cache_valid := false;
+            end if;
+        end if;
+
+        volatile_read_cache_miss <= not cache_valid or cache_address /= address or cache_byteMask /= byteMask;
+        volatile_read_cache_data <= cache_data;
+    end process;
+
+    volatile_write_cache : process(clk, address, dataIn, byteMask)
+        variable cache_valid : boolean := false;
+        variable cache_address : mips32_address_type;
+        variable cache_data : mips32_data_type;
+        variable cache_byteMask : mips32_byte_mask_type;
+    begin
+        if rising_edge(clk) then
+            if write_transaction(mst2slv_buf, slv2mst) then
+                cache_valid := true;
+                cache_address := mst2slv_buf.address;
+                cache_data := mst2slv_buf.writeData;
+                cache_byteMask := mst2slv_buf.byteMask;
+            elsif not doWrite or flushCache then
+                cache_valid := false;
+            end if;
+        end if;
+
+        volatile_write_cache_miss <= not cache_valid or cache_address /= address or cache_byteMask /= byteMask or cache_data /= dataIn;
+    end process;
+
+    dcache_controller : process(clk, address, byteMask, dcache_significant_hit, doWrite, dataIn)
+        variable override_inputs : boolean := false;
+        variable overriding_address : mips32_address_type;
+        variable overriding_data_in : mips32_data_type;
+        variable overriding_byteMask : mips32_byte_mask_type;
+        variable overriding_write : boolean;
+    begin
+        if rising_edge(clk) then
+            if read_transaction(mst2slv_buf, slv2mst) then
+                override_inputs := true;
+                overriding_byteMask := mst2slv.byteMask;
+                overriding_address := mst2slv.address;
+                overriding_data_in := slv2mst.readData;
+                overriding_write := address_in_dcache_range;
+            else
+                override_inputs := false;
+            end if;
+        end if;
+
+        if override_inputs then
+            dcache_address_in <= overriding_address;
+            dcache_byte_mask <= overriding_byteMask;
+            dcache_do_write <= overriding_write;
+            dcache_data_in <= overriding_data_in;
+        else
+            dcache_address_in <= address;
+            dcache_byte_mask <= byteMask;
+            dcache_do_write <= dcache_significant_hit and doWrite;
+            dcache_data_in <= dataIn;
         end if;
     end process;
 
     bus_handling : process(clk)
-        variable mst2slv_buf : bus_mst2slv_type := BUS_MST2SLV_IDLE;
         variable hasFault_buf : boolean := false;
         variable bus_active : boolean := false;
+        variable transaction_finishing : boolean := false;
     begin
         if rising_edge(clk) then
             if rst = '1' then
-                mst2slv_buf := BUS_MST2SLV_IDLE;
+                mst2slv_buf <= BUS_MST2SLV_IDLE;
                 hasFault_buf := false;
                 bus_active := false;
-                read_cache_valid <= false;
-                write_cache_valid <= false;
+            elsif transaction_finishing then
+                transaction_finishing := false;
             elsif any_transaction(mst2slv_buf, slv2mst) then
                 if fault_transaction(mst2slv_buf, slv2mst) then
                     hasFault_buf := true;
                     faultData <= slv2mst.faultData;
-                elsif read_transaction(mst2slv_buf, slv2mst) then
+                else
                     bus_active := false;
-                    read_cache_valid <= true;
-                    read_cache_address <= mst2slv_buf.address;
-                    read_cache_byteMask <= mst2slv_buf.byteMask;
-                    read_cache_data <= slv2mst.readData;
-                elsif write_transaction(mst2slv_buf, slv2mst) then
-                    bus_active := false;
-                    write_cache_valid <= true;
-                    write_cache_address <= mst2slv_buf.address;
-                    write_cache_data <= mst2slv_buf.writeData;
-                    write_cache_byteMask <= mst2slv_buf.byteMask;
                 end if;
-                mst2slv_buf := BUS_MST2SLV_IDLE;
-            elsif stall_buf and not bus_active and not hasFault_buf and not forbidBusInteraction then
+                transaction_finishing := true;
+                mst2slv_buf <= BUS_MST2SLV_IDLE;
+            elsif transaction_required and not bus_active and not hasFault_buf and not forbidBusInteraction then
                 bus_active := true;
                 if doRead then
-                    mst2slv_buf := bus_mst2slv_read(address, byteMask);
+                    mst2slv_buf <= bus_mst2slv_read(corrected_address, corrected_byte_mask);
                 elsif doWrite then
-                    read_cache_valid <= false;
-                    mst2slv_buf := bus_mst2slv_write(address, dataIn, byteMask);
+                    mst2slv_buf <= bus_mst2slv_write(corrected_address, dataIn, corrected_byte_mask);
                 end if;
-            elsif not stall_buf and not doRead and not doWrite then
-                read_cache_valid <= false;
-                write_cache_valid <= false;
             end if;
 
-            if flushCache then
-                read_cache_valid <= false;
-                write_cache_valid <= false;
-            end if;
         end if;
-        mst2slv <= mst2slv_buf;
         hasFault <= hasFault_buf;
     end process;
+
+    dache : entity work.mips32_dcache
+    generic map (
+        word_count_log2b => cache_word_count_log2b
+    ) port map (
+        clk => clk,
+        rst => rst,
+        addressIn => dcache_address_in,
+        dataIn => dcache_data_in,
+        dataOut => dcache_data_out,
+        byteMask => dcache_byte_mask,
+        doWrite => dcache_do_write,
+        miss => dcache_miss,
+        resetDirty => true
+    );
 
 end architecture;

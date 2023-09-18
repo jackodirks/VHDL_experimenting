@@ -19,6 +19,14 @@ entity mips32_mem2bus_tb is
 end entity;
 
 architecture tb of mips32_mem2bus_tb is
+
+    constant cache_range_start : natural := 16#400#;
+    constant cache_range_end : natural := 16#800# - 1;
+    constant range_to_cache : addr_range_type := (
+            low => std_logic_vector(to_unsigned(cache_range_start, bus_address_type'length)),
+            high => std_logic_vector(to_unsigned(cache_range_end, bus_address_type'length))
+        );
+
     constant clk_period : time := 20 ns;
     constant slaveActor : actor_t := new_actor("slave");
 
@@ -259,6 +267,131 @@ begin
                 byteMask <= "1111";
                 wait until falling_edge(clk);
                 check(bus_requesting(mst2slv));
+            elsif run("Reads in dcache range are cached") then
+                writeAddress := std_logic_vector(to_unsigned(cache_range_start, writeAddress'length));
+                writeData := X"F1F2F3F4";
+                simulated_bus_memory_pkg.write_to_address(
+                    net => net,
+                    actor => slaveActor,
+                    addr => writeAddress,
+                    mask => (others => '1'),
+                    data => writeData);
+                writeAddress := std_logic_vector(to_unsigned(cache_range_start + 4, writeAddress'length));
+                writeData := X"01020304";
+                simulated_bus_memory_pkg.write_to_address(
+                    net => net,
+                    actor => slaveActor,
+                    addr => writeAddress,
+                    mask => (others => '1'),
+                    data => writeData);
+                wait until falling_edge(clk);
+                doRead <= true;
+                address <= std_logic_vector(to_unsigned(cache_range_start, address'length));
+                byteMask <= "1111";
+                wait until rising_edge(clk) and not stall;
+                doRead <= true;
+                address <= std_logic_vector(to_unsigned(cache_range_start + 4, address'length));
+                byteMask <= "1111";
+                wait until rising_edge(clk) and not stall;
+                doRead <= true;
+                address <= std_logic_vector(to_unsigned(cache_range_start, address'length));
+                byteMask <= "1111";
+                wait until rising_edge(clk);
+                check(not stall);
+                check_equal(dataOut, std_logic_vector'(X"F1F2F3F4"));
+            elsif run("Word aligned byte read in dcache range caches entire word") then
+                writeAddress := std_logic_vector(to_unsigned(cache_range_start, writeAddress'length));
+                writeData := X"F1F2F3F4";
+                simulated_bus_memory_pkg.write_to_address(
+                    net => net,
+                    actor => slaveActor,
+                    addr => writeAddress,
+                    mask => (others => '1'),
+                    data => writeData);
+                wait until falling_edge(clk);
+                doRead <= true;
+                address <= std_logic_vector(to_unsigned(cache_range_start, address'length));
+                byteMask <= "0001";
+                wait until rising_edge(clk) and not stall;
+                doRead <= true;
+                address <= std_logic_vector(to_unsigned(cache_range_start, address'length));
+                byteMask <= "0010";
+                wait until rising_edge(clk);
+                check(not stall);
+                check_equal(dataOut(15 downto 8), std_logic_vector'(X"F3"));
+            elsif run("Non-word aligned byte read in dcache range caches entire word") then
+                writeAddress := std_logic_vector(to_unsigned(cache_range_start, writeAddress'length));
+                writeData := X"F1F2F3F4";
+                simulated_bus_memory_pkg.write_to_address(
+                    net => net,
+                    actor => slaveActor,
+                    addr => writeAddress,
+                    mask => (others => '1'),
+                    data => writeData);
+                wait until falling_edge(clk);
+                doRead <= true;
+                address <= std_logic_vector(to_unsigned(cache_range_start + 1, address'length));
+                byteMask <= "0001";
+                wait until rising_edge(clk) and not stall;
+                check_equal(dataOut(7 downto 0), std_logic_vector'(X"F3"));
+                doRead <= true;
+                address <= std_logic_vector(to_unsigned(cache_range_start, address'length));
+                byteMask <= "0001";
+                wait until rising_edge(clk);
+                check(not stall);
+                check_equal(dataOut(7 downto 0), std_logic_vector'(X"F4"));
+            elsif run("Cache hitting write updates the cache") then
+                writeAddress := std_logic_vector(to_unsigned(cache_range_start, writeAddress'length));
+                writeData := X"F1F2F3F4";
+                simulated_bus_memory_pkg.write_to_address(
+                    net => net,
+                    actor => slaveActor,
+                    addr => writeAddress,
+                    mask => (others => '1'),
+                    data => writeData);
+                wait until falling_edge(clk);
+                doRead <= true;
+                address <= std_logic_vector(to_unsigned(cache_range_start, address'length));
+                byteMask <= (others => '1');
+                wait until rising_edge(clk) and not stall;
+                doRead <= false;
+                doWrite <= true;
+                address <= std_logic_vector(to_unsigned(cache_range_start, address'length));
+                dataIn <= X"01020304";
+                byteMask <= "1111";
+                wait until rising_edge(clk) and not stall;
+                doRead <= true;
+                address <= std_logic_vector(to_unsigned(cache_range_start, address'length));
+                byteMask <= (others => '1');
+                wait until rising_edge(clk);
+                check(not stall);
+                check_equal(dataOut, std_logic_vector'(X"01020304"));
+            elsif run("No write means no update") then
+                writeAddress := std_logic_vector(to_unsigned(cache_range_start, writeAddress'length));
+                writeData := X"F1F2F3F4";
+                simulated_bus_memory_pkg.write_to_address(
+                    net => net,
+                    actor => slaveActor,
+                    addr => writeAddress,
+                    mask => (others => '1'),
+                    data => writeData);
+                wait until falling_edge(clk);
+                doRead <= true;
+                address <= std_logic_vector(to_unsigned(cache_range_start, address'length));
+                byteMask <= (others => '1');
+                wait until rising_edge(clk) and not stall;
+                doRead <= false;
+                doWrite <= false;
+                address <= std_logic_vector(to_unsigned(cache_range_start, address'length));
+                dataIn <= X"01020304";
+                byteMask <= "1111";
+                wait until rising_edge(clk) and not stall;
+                doRead <= true;
+                address <= std_logic_vector(to_unsigned(cache_range_start, address'length));
+                byteMask <= (others => '1');
+                wait until rising_edge(clk);
+                check(not stall);
+                check_equal(dataOut, std_logic_vector'(X"F1F2F3F4"));
             end if;
         end loop;
         wait until rising_edge(clk);
@@ -270,7 +403,10 @@ begin
     test_runner_watchdog(runner,  1 us);
 
     mem2bus : entity src.mips32_mem2bus
-    port map (
+    generic map (
+        range_to_cache => range_to_cache,
+        cache_word_count_log2b => 4
+    ) port map (
         clk => clk,
         rst => rst,
         forbidBusInteraction => forbidBusInteraction,
