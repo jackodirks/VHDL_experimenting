@@ -1,6 +1,7 @@
 library IEEE;
 use IEEE.std_logic_1164.all;
 use IEEE.numeric_std.all;
+use ieee.math_real.all;
 
 library work;
 use work.bus_pkg.all;
@@ -36,6 +37,13 @@ entity mips32_mem2bus is
 end entity;
 
 architecture behaviourial of mips32_mem2bus is
+
+    constant cache_range_low : natural := to_integer(unsigned(range_to_cache.low));
+    constant cache_range_high : natural := to_integer(unsigned(range_to_cache.high));
+    constant cache_range : natural := cache_range_high - cache_range_low;
+    constant cache_range_log2 : natural := integer(ceil(log2(real(cache_range))));
+    constant tag_size : natural := cache_range_log2 - cache_word_count_log2b + bus_byte_size_log2b - bus_address_width_log2b;
+
     signal transaction_required : boolean := false;
     signal read_stall : boolean := false;
     signal write_stall : boolean := false;
@@ -198,7 +206,8 @@ begin
 
     dache : entity work.mips32_dcache
     generic map (
-        word_count_log2b => cache_word_count_log2b
+        word_count_log2b => cache_word_count_log2b,
+        tag_size => tag_size
     ) port map (
         clk => clk,
         rst => rst,

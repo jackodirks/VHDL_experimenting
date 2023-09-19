@@ -18,6 +18,7 @@ end entity;
 architecture tb of mips32_dcache_tb is
     constant clk_period : time := 20 ns;
     constant word_count_log2b : natural := 8;
+    constant tag_size : natural := 22;
 
     signal clk : std_logic := '0';
     signal rst : std_logic := '0';
@@ -137,7 +138,8 @@ begin
 
     dcache : entity src.mips32_dcache
     generic map (
-        word_count_log2b => word_count_log2b
+        word_count_log2b => word_count_log2b,
+        tag_size => tag_size
     ) port map (
         clk => clk,
         rst => rst,

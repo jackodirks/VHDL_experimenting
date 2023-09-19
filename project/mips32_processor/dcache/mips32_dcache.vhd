@@ -9,7 +9,8 @@ use work.bus_pkg.all;
 
 entity mips32_dcache is
     generic (
-        word_count_log2b : natural
+        word_count_log2b : natural;
+        tag_size : natural
     );
     port (
         clk : in std_logic;
@@ -31,13 +32,12 @@ end entity;
 architecture behaviourial of mips32_dcache is
     -- Tag size is what is left after subtracting the fact that we store word based and the address bits that are covered by the
     -- actual cache address.
-    constant tag_size : natural := 2**(mips32_address_width_log2b) - (mips32_address_width_log2b - mips32_byte_width_log2b) - word_count_log2b;
     constant sub_word_part_lsb : natural := 0;
     constant sub_word_part_msb : natural := mips32_address_width_log2b - mips32_byte_width_log2b - 1;
     constant address_part_lsb : natural := mips32_address_width_log2b - mips32_byte_width_log2b;
     constant address_part_msb : natural := address_part_lsb + word_count_log2b - 1;
     constant tag_part_lsb : natural := address_part_msb + 1;
-    constant tag_part_msb : natural := mips32_data_type'high;
+    constant tag_part_msb : natural := tag_part_lsb + tag_size - 1;
 
     signal tagOut : std_logic_vector(tag_size - 1 downto 0);
     signal tagIn : std_logic_vector(tag_size - 1 downto 0);
@@ -68,6 +68,7 @@ begin
 
     miss <= not valid or (tagIn /= tagOut);
     dirty <= dirtyOut and valid;
+    addressOut(addressOut'high downto tag_part_msb) <= (others => '0');
     addressOut(tag_part_msb downto tag_part_lsb) <= tagOut;
     addressOut(address_part_msb downto address_part_lsb) <= requestAddress;
     addressOut(sub_word_part_msb downto sub_word_part_lsb) <= (others => '0');
