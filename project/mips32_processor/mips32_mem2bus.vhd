@@ -47,6 +47,7 @@ architecture behaviourial of mips32_mem2bus is
     signal transaction_required : boolean := false;
     signal read_stall : boolean := false;
     signal write_stall : boolean := false;
+    signal dcache_updating_from_bus : boolean := false;
     signal corrected_byte_mask : mips32_byte_mask_type;
     signal corrected_address : mips32_address_type;
 
@@ -74,7 +75,7 @@ begin
     read_stall <= (not dcache_significant_hit) and volatile_read_cache_miss and doRead;
     write_stall <= volatile_write_cache_miss and doWrite;
     transaction_required <= read_stall or write_stall;
-    stall <= transaction_required;
+    stall <= transaction_required or dcache_updating_from_bus;
     mst2slv <= mst2slv_buf;
 
     data_out_handling : process(dcache_significant_hit, dcache_data_out, volatile_read_cache_data)
@@ -156,7 +157,7 @@ begin
                 override_inputs := false;
             end if;
         end if;
-
+        dcache_updating_from_bus <= override_inputs;
         if override_inputs then
             dcache_address_in <= overriding_address;
             dcache_byte_mask <= overriding_byteMask;
@@ -173,15 +174,12 @@ begin
     bus_handling : process(clk)
         variable hasFault_buf : boolean := false;
         variable bus_active : boolean := false;
-        variable transaction_finishing : boolean := false;
     begin
         if rising_edge(clk) then
             if rst = '1' then
                 mst2slv_buf <= BUS_MST2SLV_IDLE;
                 hasFault_buf := false;
                 bus_active := false;
-            elsif transaction_finishing then
-                transaction_finishing := false;
             elsif any_transaction(mst2slv_buf, slv2mst) then
                 if fault_transaction(mst2slv_buf, slv2mst) then
                     hasFault_buf := true;
@@ -189,9 +187,8 @@ begin
                 else
                     bus_active := false;
                 end if;
-                transaction_finishing := true;
                 mst2slv_buf <= BUS_MST2SLV_IDLE;
-            elsif transaction_required and not bus_active and not hasFault_buf and not forbidBusInteraction then
+            elsif transaction_required and not bus_active and not hasFault_buf and not forbidBusInteraction and not dcache_updating_from_bus then
                 bus_active := true;
                 if doRead then
                     mst2slv_buf <= bus_mst2slv_read(corrected_address, corrected_byte_mask);
