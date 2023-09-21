@@ -68,10 +68,13 @@ begin
 
     miss <= not valid or (tagIn /= tagOut);
     dirty <= dirtyOut and valid;
-    addressOut(addressOut'high downto tag_part_msb) <= (others => '0');
-    addressOut(tag_part_msb downto tag_part_lsb) <= tagOut;
-    addressOut(address_part_msb downto address_part_lsb) <= requestAddress;
-    addressOut(sub_word_part_msb downto sub_word_part_lsb) <= (others => '0');
+
+    determineAddressOut : process(tagOut, requestAddress)
+    begin
+        addressOut <= (others => '0');
+        addressOut(tag_part_msb downto tag_part_lsb) <= tagOut;
+        addressOut(address_part_msb downto address_part_lsb) <= requestAddress;
+    end process;
 
     dcache_bank : entity work.mips32_dcache_bank
     generic map (
