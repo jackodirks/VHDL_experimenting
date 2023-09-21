@@ -8,7 +8,7 @@ use work.mips32_pkg.all;
 entity mips32_icache_bank is
     generic (
         word_count_log2b : natural;
-        tag_size_log2b : natural
+        tag_size : natural
     );
     port (
         clk : in std_logic;
@@ -17,8 +17,8 @@ entity mips32_icache_bank is
         requestAddress : in std_logic_vector(word_count_log2b - 1 downto 0);
         instructionOut : out mips32_instruction_type;
         instructionIn : in mips32_instruction_type;
-        tagOut : out std_logic_vector(tag_size_log2b - 1 downto 0);
-        tagIn : in std_logic_vector(tag_size_log2b - 1 downto 0);
+        tagOut : out std_logic_vector(tag_size - 1 downto 0);
+        tagIn : in std_logic_vector(tag_size - 1 downto 0);
 
         valid : out boolean;
         doWrite : in boolean
@@ -26,7 +26,7 @@ entity mips32_icache_bank is
 end entity;
 
 architecture behaviourial of mips32_icache_bank is
-    type tag_array is array (natural range <>) of std_logic_vector(tag_size_log2b - 1 downto 0);
+    type tag_array is array (natural range <>) of std_logic_vector(tag_size - 1 downto 0);
     type valid_array is array (natural range <>) of boolean;
 
     constant word_count : natural := 2**word_count_log2b;

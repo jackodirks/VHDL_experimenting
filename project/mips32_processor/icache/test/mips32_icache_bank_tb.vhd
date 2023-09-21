@@ -18,7 +18,7 @@ end entity;
 architecture tb of mips32_icache_bank_tb is
     constant clk_period : time := 20 ns;
     constant word_count_log2b : natural := 8;
-    constant tag_size_log2b : natural := 4;
+    constant tag_size : natural := 4;
 
     signal clk : std_logic := '0';
     signal rst : std_logic := '0';
@@ -26,8 +26,8 @@ architecture tb of mips32_icache_bank_tb is
     signal requestAddress : std_logic_vector(word_count_log2b - 1 downto 0) := (others => '0');
     signal instructionOut : mips32_instruction_type;
     signal instructionIn : mips32_instruction_type := mips32_instructionNop;
-    signal tagOut : std_logic_vector(tag_size_log2b - 1 downto 0);
-    signal tagIn : std_logic_vector(tag_size_log2b - 1 downto 0) := (others => '0');
+    signal tagOut : std_logic_vector(tag_size - 1 downto 0);
+    signal tagIn : std_logic_vector(tag_size - 1 downto 0) := (others => '0');
     signal valid : boolean;
     signal doWrite : boolean := false;
 begin
@@ -84,7 +84,7 @@ begin
     icache_bank : entity src.mips32_icache_bank
     generic map (
         word_count_log2b => word_count_log2b,
-        tag_size_log2b => tag_size_log2b
+        tag_size => tag_size
     ) port map (
         clk => clk,
         rst => rst,
