@@ -69,6 +69,7 @@ architecture behaviourial of mips32_mem2bus is
     signal dcache_miss : boolean;
     signal dcache_significant_hit : boolean;
     signal address_in_dcache_range : boolean;
+    signal dcache_reset : std_logic;
 begin
     address_in_dcache_range <= bus_addr_in_range(address, range_to_cache);
     dcache_significant_hit <= address_in_dcache_range and not dcache_miss;
@@ -77,6 +78,8 @@ begin
     transaction_required <= read_stall or write_stall;
     stall <= transaction_required or dcache_updating_from_bus;
     mst2slv <= mst2slv_buf;
+
+    dcache_reset <= '1' when flushCache or rst = '1' else '0';
 
     data_out_handling : process(dcache_significant_hit, dcache_data_out, volatile_read_cache_data)
     begin
@@ -207,7 +210,7 @@ begin
         tag_size => tag_size
     ) port map (
         clk => clk,
-        rst => rst,
+        rst => dcache_reset,
         addressIn => dcache_address_in,
         dataIn => dcache_data_in,
         dataOut => dcache_data_out,
