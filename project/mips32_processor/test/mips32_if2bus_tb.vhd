@@ -17,11 +17,11 @@ end entity;
 
 architecture tb of mips32_if2bus_tb is
     constant clk_period : time := 20 ns;
-    constant range_and_map : addr_range_and_mapping_type :=
-        address_range_and_map(
-            low => std_logic_vector(to_unsigned(16#100000#, bus_address_type'length)),
-            high => std_logic_vector(to_unsigned(16#160000# - 1, bus_address_type'length)),
-            mapping => bus_map_constant(bus_address_type'high - 18, '0') & bus_map_range(18, 0)
+    constant cache_range_start : natural := 16#100000#;
+    constant cache_range_end : natural := 16#160000# - 1;
+    constant range_to_cache : addr_range_type := (
+            low => std_logic_vector(to_unsigned(cache_range_start, bus_address_type'length)),
+            high => std_logic_vector(to_unsigned(cache_range_end, bus_address_type'length))
         );
     constant word_count_log2b : natural := 8;
 
@@ -182,8 +182,8 @@ begin
 
     if2bus : entity src.mips32_if2bus
     generic map (
-        rangeMap => range_and_map,
-        word_count_log2b => word_count_log2b
+        range_to_cache => range_to_cache,
+        cache_word_count_log2b => word_count_log2b
     ) port map (
         clk => clk,
         rst => rst,

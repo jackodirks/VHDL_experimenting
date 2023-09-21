@@ -17,12 +17,6 @@ end entity;
 
 architecture tb of mips32_icache_tb is
     constant clk_period : time := 20 ns;
-    constant range_and_map : addr_range_and_mapping_type :=
-        address_range_and_map(
-            low => std_logic_vector(to_unsigned(16#100000#, bus_address_type'length)),
-            high => std_logic_vector(to_unsigned(16#160000# - 1, bus_address_type'length)),
-            mapping => bus_map_constant(bus_address_type'high - 18, '0') & bus_map_range(18, 0)
-        );
     constant word_count_log2b : natural := 8;
 
     signal clk : std_logic := '0';
@@ -32,7 +26,6 @@ architecture tb of mips32_icache_tb is
     signal instructionOut : mips32_instruction_type;
     signal instructionIn : mips32_instruction_type := mips32_instructionNop;
     signal doWrite : boolean := false;
-    signal fault : boolean;
     signal miss : boolean;
 begin
 
@@ -44,15 +37,7 @@ begin
     begin
         test_runner_setup(runner, runner_cfg);
         while test_suite loop
-            if run("Address out of range triggers fault") then
-                requestAddress <= X"00000000";
-                wait for 1 ns;
-                check(fault);
-            elsif run("Address in range does not cause fault") then
-                requestAddress <= X"00100000";
-                wait for 1 ns;
-                check(not fault);
-            elsif run("Uncached requestAddress causes miss") then
+            if run("Uncached requestAddress causes miss") then
                 requestAddress <= X"00100004";
                 wait for 1 ns;
                 check(miss);
@@ -115,7 +100,7 @@ begin
     icache : entity src.mips32_icache
     generic map (
         word_count_log2b => word_count_log2b,
-        rangeMap => range_and_map
+        tag_size => 8
     ) port map (
         clk => clk,
         rst => rst,
@@ -123,7 +108,6 @@ begin
         instructionOut => instructionOut,
         instructionIn => instructionIn,
         doWrite => doWrite,
-        fault => fault,
         miss => miss
     );
 

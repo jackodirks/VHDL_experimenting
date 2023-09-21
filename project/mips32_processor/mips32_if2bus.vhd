@@ -1,6 +1,7 @@
 library IEEE;
 use IEEE.std_logic_1164.all;
 use IEEE.numeric_std.all;
+use ieee.math_real.all;
 
 library work;
 use work.bus_pkg.all;
@@ -8,8 +9,8 @@ use work.mips32_pkg.all;
 
 entity mips32_if2bus is
     generic (
-        rangeMap : addr_range_and_mapping_type;
-        word_count_log2b : natural
+        range_to_cache : addr_range_type;
+        cache_word_count_log2b : natural
     );
     port (
         clk : in std_logic;
@@ -31,6 +32,12 @@ entity mips32_if2bus is
 end entity;
 
 architecture behaviourial of mips32_if2bus is
+    constant cache_range_low : natural := to_integer(unsigned(range_to_cache.low));
+    constant cache_range_high : natural := to_integer(unsigned(range_to_cache.high));
+    constant cache_range : natural := cache_range_high - cache_range_low;
+    constant cache_range_log2 : natural := integer(ceil(log2(real(cache_range))));
+    constant tag_size : natural := cache_range_log2 - cache_word_count_log2b + bus_byte_size_log2b - bus_address_width_log2b;
+
     signal instruction_from_bus : mips32_instruction_type;
     signal icache_write : boolean := false;
     signal icache_miss : boolean;
@@ -40,6 +47,7 @@ architecture behaviourial of mips32_if2bus is
 
 begin
 
+    icache_fault <= not bus_addr_in_range(requestAddress, range_to_cache);
     stall <= icache_miss or icache_fault;
     icache_reset <= '1' when flushCache or rst = '1' else '0';
 
@@ -87,8 +95,8 @@ begin
 
     icache : entity work.mips32_icache
     generic map (
-        word_count_log2b => word_count_log2b,
-        rangeMap => rangeMap
+        word_count_log2b => cache_word_count_log2b,
+        tag_size => tag_size
     ) port map (
         clk => clk,
         rst => icache_reset,
@@ -96,7 +104,6 @@ begin
         instructionOut => instruction,
         instructionIn => instruction_from_bus,
         doWrite => iCache_write,
-        fault => icache_fault,
         miss => icache_miss
     );
 

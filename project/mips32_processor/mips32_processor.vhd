@@ -10,7 +10,7 @@ entity mips32_processor is
     generic (
         startAddress : bus_address_type;
         clk_period : time;
-        iCache_rangeMap : addr_range_and_mapping_type;
+        iCache_range : addr_range_type;
         iCache_word_count_log2b : natural;
         dCache_range : addr_range_type;
         dCache_word_count_log2b : natural
@@ -133,8 +133,8 @@ begin
 
     if2bus : entity work.mips32_if2bus
     generic map (
-        rangeMap => iCache_rangeMap,
-        word_count_log2b => iCache_word_count_log2b
+        range_to_cache => iCache_range,
+        cache_word_count_log2b => iCache_word_count_log2b
     ) port map (
         clk => clk,
         rst => rst,
