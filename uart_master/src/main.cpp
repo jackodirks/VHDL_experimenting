@@ -24,7 +24,9 @@ static void dumpSubList(DeppUartMaster& master, uint32_t startAddress) {
         for (std::size_t j = 0; j < sizeof(uint32_t)/sizeof(T); ++j) {
             data[index] = static_cast<T>(tmp);
             index++;
-            tmp >>= sizeof(T)*8;
+            if (sizeof(T) != sizeof(uint32_t)) {
+                tmp >>= sizeof(T)*8;
+            }
         }
         curAddress += 4;
     }
