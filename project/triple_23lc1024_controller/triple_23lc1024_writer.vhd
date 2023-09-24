@@ -88,7 +88,7 @@ begin
                         fault_latched := false;
                         valid_internal := '1';
                         transmitCommandAndAddress := instructionWrite & "0000000" & address;
-                        transmitData := reorder_nibbles(write_data);
+                        transmitData := write_data;
                         burst_internal := burst;
                         cs_set_internal := '0';
                         cs_request_out <= cs_request_in;
@@ -126,7 +126,7 @@ begin
                 if count = count_goal - 1 then
                     if burst_internal = '1' and not fault_latched then
                         if ready then
-                            transmitData := reorder_nibbles(write_data);
+                            transmitData := write_data;
                             burst_internal := burst;
                             valid_internal := '1';
                             count := 15;

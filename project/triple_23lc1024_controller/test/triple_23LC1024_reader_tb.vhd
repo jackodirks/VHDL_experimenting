@@ -83,7 +83,7 @@ begin
                 check(bus_data_width_log2b >= 3);
             elsif run("Read from address zero which contains 255 results in 255") then
                 set_all_mode(SeqMode, SqiMode, actor, net);
-                write_bus_word(net, actor, std_logic_vector(to_unsigned(0, 17)), std_logic_vector(to_unsigned(255, bus_data_type'length)));
+                write_bus_word(net, actor, std_logic_vector(to_unsigned(0, 17)), reorder_nibbles(std_logic_vector(to_unsigned(255, bus_data_type'length))));
                 address <= std_logic_vector(to_unsigned(0, address'length));
                 rst <= '0';
                 ready <= true;
@@ -100,7 +100,7 @@ begin
             elsif run("Read from address zero which contains 0xFFFEFDFC results in 0xFFFEFDFC") then
                 set_all_mode(SeqMode, SqiMode, actor, net);
                 exp_data := X"FFFEFDFC";
-                write_bus_word(net, actor, std_logic_vector(to_unsigned(0, 17)), exp_data);
+                write_bus_word(net, actor, std_logic_vector(to_unsigned(0, 17)), reorder_nibbles(exp_data));
                 address <= std_logic_vector(to_unsigned(0, address'length));
                 rst <= '0';
                 ready <= true;
@@ -116,8 +116,8 @@ begin
                 wait until not active;
             elsif run("Read from address zero which contains 254 and address 4 which contains 14 results in 254, 14") then
                 set_all_mode(SeqMode, SqiMode, actor, net);
-                write_bus_word(net, actor, std_logic_vector(to_unsigned(0, 17)), std_logic_vector(to_unsigned(254, bus_data_type'length)));
-                write_bus_word(net, actor, std_logic_vector(to_unsigned(4, 17)), std_logic_vector(to_unsigned(14, bus_data_type'length)));
+                write_bus_word(net, actor, std_logic_vector(to_unsigned(0, 17)), reorder_nibbles(std_logic_vector(to_unsigned(254, bus_data_type'length))));
+                write_bus_word(net, actor, std_logic_vector(to_unsigned(4, 17)), reorder_nibbles(std_logic_vector(to_unsigned(14, bus_data_type'length))));
                 address <= std_logic_vector(to_unsigned(0, address'length));
                 rst <= '0';
                 ready <= true;
@@ -135,8 +135,8 @@ begin
                 wait until not active;
             elsif run("Burst read from address zero which contains 254 and address 4 which contains 14 results in 254, 14") then
                 set_all_mode(SeqMode, SqiMode, actor, net);
-                write_bus_word(net, actor, std_logic_vector(to_unsigned(0, 17)), std_logic_vector(to_unsigned(254, bus_data_type'length)));
-                write_bus_word(net, actor, std_logic_vector(to_unsigned(4, 17)), std_logic_vector(to_unsigned(14, bus_data_type'length)));
+                write_bus_word(net, actor, std_logic_vector(to_unsigned(0, 17)), reorder_nibbles(std_logic_vector(to_unsigned(254, bus_data_type'length))));
+                write_bus_word(net, actor, std_logic_vector(to_unsigned(4, 17)), reorder_nibbles(std_logic_vector(to_unsigned(14, bus_data_type'length))));
                 address <= std_logic_vector(to_unsigned(0, address'length));
                 rst <= '0';
                 ready <= true;
@@ -155,8 +155,8 @@ begin
                 wait until not active;
             elsif run("Paused burst read from address zero which contains 254 and address 4 which contains 14 results in 254, 14") then
                 set_all_mode(SeqMode, SqiMode, actor, net);
-                write_bus_word(net, actor, std_logic_vector(to_unsigned(0, 17)), std_logic_vector(to_unsigned(254, bus_data_type'length)));
-                write_bus_word(net, actor, std_logic_vector(to_unsigned(4, 17)), std_logic_vector(to_unsigned(14, bus_data_type'length)));
+                write_bus_word(net, actor, std_logic_vector(to_unsigned(0, 17)), reorder_nibbles(std_logic_vector(to_unsigned(254, bus_data_type'length))));
+                write_bus_word(net, actor, std_logic_vector(to_unsigned(4, 17)), reorder_nibbles(std_logic_vector(to_unsigned(14, bus_data_type'length))));
                 address <= std_logic_vector(to_unsigned(0, address'length));
                 rst <= '0';
                 ready <= true;
@@ -209,7 +209,7 @@ begin
                 wait until not active;
             elsif run("Read of size 2 works") then
                 set_all_mode(SeqMode, SqiMode, actor, net);
-                write_bus_word(net, actor, std_logic_vector(to_unsigned(0, 17)), X"87654321");
+                write_bus_word(net, actor, std_logic_vector(to_unsigned(0, 17)), reorder_nibbles(X"87654321"));
                 address <= std_logic_vector(to_unsigned(0, address'length));
                 rst <= '0';
                 ready <= true;
@@ -217,9 +217,10 @@ begin
                 request_length <= 2;
                 wait until rising_edge(clk) and valid = '1';
                 exp_data := X"00004321";
+                check_equal(read_data, exp_data);
             elsif run("Read of size 1 works") then
                 set_all_mode(SeqMode, SqiMode, actor, net);
-                write_bus_word(net, actor, std_logic_vector(to_unsigned(0, 17)), X"87654321");
+                write_bus_word(net, actor, std_logic_vector(to_unsigned(0, 17)), reorder_nibbles(X"87654321"));
                 address <= std_logic_vector(to_unsigned(0, address'length));
                 rst <= '0';
                 ready <= true;
@@ -227,7 +228,6 @@ begin
                 request_length <= 1;
                 wait until rising_edge(clk) and valid = '1';
                 exp_data := X"00000021";
-                check_equal(read_data, exp_data);
                 check_equal(read_data, exp_data);
             end if;
         end loop;

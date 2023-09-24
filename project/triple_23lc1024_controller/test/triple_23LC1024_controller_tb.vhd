@@ -70,8 +70,8 @@ begin
                 triple_23lc1024_tb_pkg.check_all_mode(M23LC1024_pkg.SeqMode, M23LC1024_pkg.SqiMode, actors, net);
             elsif run("Burst read works as intented") then
                 rst <= '0';
-                triple_23lc1024_tb_pkg.write_bus_word(net, actor_mem0, std_logic_vector(to_unsigned(0, 17)), X"01020304");
-                triple_23lc1024_tb_pkg.write_bus_word(net, actor_mem0, std_logic_vector(to_unsigned(4, 17)), X"F1F2F3F4");
+                triple_23lc1024_tb_pkg.write_bus_word(net, actor_mem0, std_logic_vector(to_unsigned(0, 17)), triple_23lc1024_tb_pkg.reorder_nibbles(X"01020304"));
+                triple_23lc1024_tb_pkg.write_bus_word(net, actor_mem0, std_logic_vector(to_unsigned(4, 17)), triple_23lc1024_tb_pkg.reorder_nibbles(X"F1F2F3F4"));
                 mst2slv <= bus_pkg.bus_mst2slv_read(std_logic_vector(to_unsigned(0, bus_pkg.bus_address_type'length)), burst => '1');
                 expected_data := X"01020304";
                 wait until rising_edge(clk) and bus_pkg.read_transaction(mst2slv, slv2mst);
@@ -85,12 +85,12 @@ begin
                 triple_23lc1024_tb_pkg.write_bus_word(net, actor_mem0, std_logic_vector(to_unsigned(0, 17)), (others => '0'));
                 triple_23lc1024_tb_pkg.write_bus_word(net, actor_mem0, std_logic_vector(to_unsigned(4, 17)), (others => '0'));
                 mst2slv <= bus_pkg.bus_mst2slv_write(std_logic_vector(to_unsigned(0, bus_pkg.bus_address_type'length)),
-                                                     X"01020304",
+                                                     triple_23lc1024_tb_pkg.reorder_nibbles(X"01020304"),
                                                      X"F",
                                                      '1');
                 wait until rising_edge(clk) and bus_pkg.write_transaction(mst2slv, slv2mst);
                 mst2slv <= bus_pkg.bus_mst2slv_write(std_logic_vector(to_unsigned(4, bus_pkg.bus_address_type'length)),
-                                                     X"F1F2F3F4",
+                                                     triple_23lc1024_tb_pkg.reorder_nibbles(X"f1f2f3f4"),
                                                      X"F",
                                                      '0');
                 wait until rising_edge(clk) and bus_pkg.write_transaction(mst2slv, slv2mst);
@@ -109,8 +109,8 @@ begin
                 check_equal(slv2mst.faultData, bus_pkg.bus_fault_unaligned_access);
             elsif run("Read after fault aborted read burst works") then
                 rst <= '0';
-                triple_23lc1024_tb_pkg.write_bus_word(net, actor_mem0, std_logic_vector(to_unsigned(0, 17)), X"01020304");
-                triple_23lc1024_tb_pkg.write_bus_word(net, actor_mem0, std_logic_vector(to_unsigned(4, 17)), X"F1F2F3F4");
+                triple_23lc1024_tb_pkg.write_bus_word(net, actor_mem0, std_logic_vector(to_unsigned(0, 17)), triple_23lc1024_tb_pkg.reorder_nibbles(X"01020304"));
+                triple_23lc1024_tb_pkg.write_bus_word(net, actor_mem0, std_logic_vector(to_unsigned(4, 17)), triple_23lc1024_tb_pkg.reorder_nibbles(X"F1F2F3F4"));
                 mst2slv <= bus_pkg.bus_mst2slv_read(X"00000000", burst => '1');
                 wait until rising_edge(clk) and bus_pkg.read_transaction(mst2slv, slv2mst);
                 mst2slv <= bus_pkg.bus_mst2slv_read(X"00000004", byte_mask => "1010");
@@ -188,11 +188,8 @@ begin
                     mst2slv <= bus_pkg.bus_mst2slv_read(std_logic_vector(to_unsigned(i*4, bus_pkg.bus_address_type'length)), burst => '0');
                     wait until rising_edge(clk) and bus_pkg.read_transaction(mst2slv, slv2mst);
                     expected_data := std_logic_vector(to_unsigned(i, bus_pkg.bus_data_type'length));
-                    --check_equal(slv2mst.readData, expected_data);
+                    check_equal(slv2mst.readData, expected_data);
                 end loop;
-                expected_data := X"0000000F";
-                triple_23lc1024_tb_pkg.read_bus_word(net, actor_mem0, std_logic_vector(to_unsigned(4*15, 17)), read_data);
-                check_equal(read_data, expected_data);
                 for i in 0 to burst_size - 1 loop
                     mst2slv <= bus_pkg.bus_mst2slv_read(std_logic_vector(to_unsigned(16#20000# + i*4, bus_pkg.bus_address_type'length)), burst => '0');
                     wait until rising_edge(clk) and bus_pkg.read_transaction(mst2slv, slv2mst);
@@ -207,7 +204,7 @@ begin
                 end loop;
             elsif run ("Partial write then read works") then
                 rst <= '0';
-                triple_23lc1024_tb_pkg.write_bus_word(net, actor_mem0, std_logic_vector(to_unsigned(0, 17)), X"87654321");
+                triple_23lc1024_tb_pkg.write_bus_word(net, actor_mem0, std_logic_vector(to_unsigned(0, 17)), triple_23lc1024_tb_pkg.reorder_nibbles(X"87654321"));
                 mst2slv <= bus_pkg.bus_mst2slv_write(X"00000000", X"ffffffff", byte_mask => "0001");
                 wait until rising_edge(clk) and bus_pkg.write_transaction(mst2slv, slv2mst);
                 mst2slv <= bus_pkg.bus_mst2slv_read(X"00000000");

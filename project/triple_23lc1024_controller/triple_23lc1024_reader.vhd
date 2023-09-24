@@ -161,7 +161,8 @@ begin
             end if;
         end if;
         cs_set <= cs_set_internal;
-        read_data <= reorder_nibbles(read_data_internal);
+        --read_data <= reorder_nibbles(read_data_internal);
+        read_data <= read_data_internal;
     end process;
 
     half_period_timer : entity work.simple_multishot_timer

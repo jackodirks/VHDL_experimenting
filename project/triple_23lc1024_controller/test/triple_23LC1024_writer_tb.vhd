@@ -99,7 +99,7 @@ begin
                 write_data <= (others => 'X');
                 wait until rising_edge(cs_n(0));
                 read_bus_word(net, actor, std_logic_vector(to_unsigned(0, 17)), read_data);
-                check_equal(read_data, exp_data);
+                check_equal(reorder_nibbles(read_data), exp_data);
             elsif run("Write 255 to address zero and address 4 results in 255 at address zero and address 4") then
                 set_all_mode(SeqMode, SqiMode, actor, net);
                 write_bus_word(net, actor, std_logic_vector(to_unsigned(0, 17)), std_logic_vector(to_unsigned(0, bus_data_type'length)));
@@ -177,7 +177,7 @@ begin
                 wait until rising_edge(cs_n(0));
                 for i in 0 to 49 loop
                     read_bus_word(net, actor, std_logic_vector(to_unsigned(i*4, 17)), read_data);
-                    check_equal(read_data, std_logic_vector(to_unsigned(i*17, read_data'length)));
+                    check_equal(reorder_nibbles(read_data), std_logic_vector(to_unsigned(i*17, read_data'length)));
                 end loop;
             elsif run("Paused burst write 255 to address zero and address 4 results in 255 at address zero and address 4") then
                 set_all_mode(SeqMode, SqiMode, actor, net);
