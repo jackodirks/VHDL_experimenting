@@ -27,6 +27,8 @@ architecture tb of triple_23LC1024_bus_parser_tb is
 
     signal cs_request : cs_request_type;
     signal fault_data : bus_pkg.bus_fault_type;
+    signal write_data : bus_pkg.bus_data_type;
+    signal address : bus_pkg.bus_address_type;
 
     signal has_fault : boolean;
     signal read_request : boolean;
@@ -153,6 +155,20 @@ begin
                 mst2slv <= bus_pkg.bus_mst2slv_read(X"0001fffc", burst => '1');
                 wait until rising_edge(clk) and has_fault;
                 check(fault_data = bus_pkg.bus_fault_illegal_address_for_burst);
+            elsif run("Aligned read with bytemask 0110 leads to size 4 read") then
+                mst2slv <= bus_pkg.bus_mst2slv_read(X"00021100", byte_mask => "0110");
+                wait until rising_edge(clk) and read_request;
+                check_equal(request_length, 4);
+            elsif run("Aligned write with bytemask 0110 leads to size 2 write, address and data modified") then
+                mst2slv <= bus_pkg.bus_mst2slv_write(X"00021100", X"01234567", "0110");
+                wait until rising_edge(clk) and write_request;
+                check_equal(request_length, 2);
+                check_equal(address, std_logic_vector'(X"00021101"));
+                check_equal(write_data, std_logic_vector'(X"00012345"));
+            elsif run("Bytemask with holes is illegal") then
+                mst2slv <= bus_pkg.bus_mst2slv_read(X"00021100", byte_mask => "0101");
+                wait until rising_edge(clk) and has_fault;
+                check(fault_data = bus_pkg.bus_fault_illegal_byte_mask);
             end if;
         end loop;
         wait for 2*clk_period;
@@ -172,6 +188,8 @@ begin
         request_length => request_length,
         cs_request => cs_request,
         fault_data => fault_data,
+        write_data => write_data,
+        address => address,
         has_fault => has_fault,
         read_request => read_request,
         write_request => write_request

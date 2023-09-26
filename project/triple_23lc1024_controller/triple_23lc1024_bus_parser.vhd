@@ -18,6 +18,8 @@ entity triple_23lc1024_bus_parser is
         request_length : out positive range 1 to bus_pkg.bus_bytes_per_word;
         cs_request : out cs_request_type;
         fault_data : out bus_pkg.bus_fault_type;
+        write_data : out bus_pkg.bus_data_type;
+        address : out bus_pkg.bus_address_type;
 
         has_fault : out boolean;
         read_request : out boolean;
@@ -26,6 +28,46 @@ entity triple_23lc1024_bus_parser is
 end entity;
 
 architecture behavioral of triple_23lc1024_bus_parser is
+
+    pure function count_leading_zeros (
+        byte_mask : bus_pkg.bus_byte_mask_type) return natural is
+            variable ret_val : natural := 0;
+    begin
+       for i in 0 to bus_pkg.bus_byte_mask_type'high loop
+           if byte_mask(i) = '0' then
+               ret_val := ret_val + 1;
+            else
+                exit;
+           end if;
+       end loop;
+       return ret_val;
+    end function;
+
+    pure function count_trailing_zeros (
+        byte_mask : bus_pkg.bus_byte_mask_type) return natural is
+            variable ret_val : natural := 0;
+    begin
+       for i in 0 to bus_pkg.bus_byte_mask_type'high loop
+           if byte_mask(bus_pkg.bus_byte_mask_type'high - i) = '0' then
+               ret_val := ret_val + 1;
+            else
+                exit;
+           end if;
+       end loop;
+       return ret_val;
+    end function;
+
+    pure function count_total_zeros (
+        byte_mask : bus_pkg.bus_byte_mask_type) return natural is
+            variable ret_val : natural := 0;
+    begin
+       for i in 0 to bus_pkg.bus_byte_mask_type'high loop
+           if byte_mask(i) = '0' then
+               ret_val := ret_val + 1;
+           end if;
+       end loop;
+       return ret_val;
+    end function;
 
     procedure check_mask_alignment (
         signal lsb : in std_logic_vector(1 downto 0);
@@ -45,7 +87,10 @@ architecture behavioral of triple_23lc1024_bus_parser is
                 has_fault_buf := true;
                 fault_data_buf := bus_pkg.bus_fault_unaligned_access;
             end if;
-        elsif byte_mask /= "0001" then
+        elsif count_leading_zeros(byte_mask) + count_trailing_zeros(byte_mask) /= count_total_zeros(byte_mask) then
+            has_fault_buf := true;
+            fault_data_buf := bus_pkg.bus_fault_illegal_byte_mask;
+        elsif lsb /= "00" or byte_mask = "0000" then
             has_fault_buf := true;
             fault_data_buf := bus_pkg.bus_fault_illegal_byte_mask;
         end if;
@@ -74,17 +119,32 @@ architecture behavioral of triple_23lc1024_bus_parser is
         end if;
     end procedure;
 
-    pure function determine_request_length (
+    pure function determine_read_request_length (
         byte_mask : bus_pkg.bus_byte_mask_type) return natural is
             variable ret_val : natural := 0;
     begin
-        for i in 0 to bus_pkg.bus_byte_mask_type'high loop
-            if byte_mask(i) = '1' then
-                ret_val := ret_val + 1;
-            end if;
-        end loop;
+        if byte_mask = "0001" then
+            ret_val := 1;
+        elsif byte_mask = "0011" then
+            ret_val := 2;
+        else
+            ret_val := 4;
+        end if;
         return ret_val;
     end function;
+
+    pure function determine_write_request_length (
+        byte_mask : bus_pkg.bus_byte_mask_type) return natural is
+            variable ret_val : natural := 0;
+    begin
+       for i in 0 to bus_pkg.bus_byte_mask_type'high loop
+           if byte_mask(i) = '1' then
+               ret_val := ret_val + 1;
+           end if;
+       end loop;
+       return ret_val;
+    end function;
+
 
 begin
     process(clk)
@@ -116,7 +176,11 @@ begin
                     write_request <= true when mst2slv.writeReady = '1' else false;
                 end if;
                 cs_request <= encode_cs_request_type(mst2slv.address);
-                request_length_buf := determine_request_length(mst2slv.byteMask);
+                if mst2slv.readReady = '1' then
+                    request_length_buf := determine_read_request_length(mst2slv.byteMask);
+                else
+                    request_length_buf := determine_write_request_length(mst2slv.byteMask);
+                end if;
             end if;
         end if;
         if request_length_buf = 0 then
@@ -124,6 +188,8 @@ begin
         else
             request_length <= request_length_buf;
         end if;
+        write_data <= std_logic_vector(shift_right(unsigned(mst2slv.writeData), count_leading_zeros(mst2slv.byteMask)*bus_pkg.bus_byte_size));
+        address <= std_logic_vector(unsigned(mst2slv.address) + count_leading_zeros(mst2slv.byteMask));
     end process;
 
 end architecture;

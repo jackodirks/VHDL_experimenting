@@ -113,7 +113,7 @@ begin
                 triple_23lc1024_tb_pkg.write_bus_word(net, actor_mem0, std_logic_vector(to_unsigned(4, 17)), triple_23lc1024_tb_pkg.reorder_nibbles(X"F1F2F3F4"));
                 mst2slv <= bus_pkg.bus_mst2slv_read(X"00000000", burst => '1');
                 wait until rising_edge(clk) and bus_pkg.read_transaction(mst2slv, slv2mst);
-                mst2slv <= bus_pkg.bus_mst2slv_read(X"00000004", byte_mask => "1010");
+                mst2slv <= bus_pkg.bus_mst2slv_read(X"00000003", byte_mask => "1010");
                 wait until rising_edge(clk) and bus_pkg.fault_transaction(mst2slv, slv2mst);
                 mst2slv <= bus_pkg.bus_mst2slv_read(X"00000000");
                 wait until rising_edge(clk) and bus_pkg.read_transaction(mst2slv, slv2mst);
@@ -123,7 +123,7 @@ begin
                 rst <= '0';
                 mst2slv <= bus_pkg.bus_mst2slv_write(X"00000000", X"11111111", burst => '1');
                 wait until rising_edge(clk) and bus_pkg.write_transaction(mst2slv, slv2mst);
-                mst2slv <= bus_pkg.bus_mst2slv_write(X"00000004", X"11111111", byte_mask => "1010");
+                mst2slv <= bus_pkg.bus_mst2slv_write(X"00000003", X"11111111", byte_mask => "1010");
                 wait until rising_edge(clk) and bus_pkg.fault_transaction(mst2slv, slv2mst);
                 mst2slv <= bus_pkg.bus_mst2slv_write(X"00000000", X"ffffffff");
                 wait until rising_edge(clk) and bus_pkg.write_transaction(mst2slv, slv2mst);
@@ -210,6 +210,15 @@ begin
                 mst2slv <= bus_pkg.bus_mst2slv_read(X"00000000");
                 wait until rising_edge(clk) and bus_pkg.read_transaction(mst2slv, slv2mst);
                 expected_data := X"876543ff";
+                check_equal(slv2mst.readData, expected_data);
+            elsif run("Partial write mask test") then
+                rst <= '0';
+                triple_23lc1024_tb_pkg.write_bus_word(net, actor_mem0, std_logic_vector(to_unsigned(0, 17)), triple_23lc1024_tb_pkg.reorder_nibbles(X"00000000"));
+                mst2slv <= bus_pkg.bus_mst2slv_write(X"00000000", X"ffffffff", byte_mask => "0110");
+                wait until rising_edge(clk) and bus_pkg.write_transaction(mst2slv, slv2mst);
+                mst2slv <= bus_pkg.bus_mst2slv_read(X"00000000");
+                wait until rising_edge(clk) and bus_pkg.read_transaction(mst2slv, slv2mst);
+                expected_data := X"00ffff00";
                 check_equal(slv2mst.readData, expected_data);
             end if;
         end loop;

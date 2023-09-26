@@ -71,6 +71,8 @@ architecture behavioral of triple_23lc1024_controller is
     signal read_request : boolean;
     signal has_fault : boolean;
     signal cs_request : cs_request_type;
+    signal write_data : bus_data_type;
+    signal address : bus_address_type;
 begin
 
     slv2mst.fault <= '1' when has_fault else '0';
@@ -170,7 +172,7 @@ begin
         active => read_active,
         fault => has_fault,
         reading => reading,
-        address => mst2slv.address(16 downto 0),
+        address => address(16 downto 0),
         cs_request_in => cs_request,
         cs_request_out => cs_request_reader,
         request_length => request_length,
@@ -193,11 +195,11 @@ begin
         valid => valid_write,
         active => write_active,
         fault => has_fault,
-        address => mst2slv.address(16 downto 0),
+        address => address(16 downto 0),
         cs_request_in => cs_request,
         cs_request_out => cs_request_writer,
         request_length => request_length,
-        write_data => mst2slv.writeData,
+        write_data => write_data,
         burst => mst2slv.burst
     );
 
@@ -212,6 +214,8 @@ begin
         cs_request => cs_request,
         fault_data => slv2mst.faultData,
         has_fault => has_fault,
+        write_data => write_data,
+        address => address,
         read_request => read_request,
         write_request => write_request
     );
