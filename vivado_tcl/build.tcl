@@ -86,11 +86,11 @@ append SYNTH_ARGS " " -flatten_hierarchy " " none " "
 append SYNTH_ARGS " " -gated_clock_conversion " " off " "
 append SYNTH_ARGS " " -bufg " {" 12 "} "
 append SYNTH_ARGS " " -fanout_limit " {" 10000 "} "
-append SYNTH_ARGS " " -directive " " PerformanceOptimized " "
+append SYNTH_ARGS " " -directive " " AlternateRoutability " "
 append SYNTH_ARGS " " -keep_equivalent_registers " "
 append SYNTH_ARGS " " -fsm_extraction " " auto " "
 append SYNTH_ARGS " " -resource_sharing " " off " "
-append SYNTH_ARGS " " -control_set_opt_threshold " " 16 " "
+append SYNTH_ARGS " " -control_set_opt_threshold " " 4 " "
 append SYNTH_ARGS " " -no_lc " "
 append SYNTH_ARGS " " -shreg_min_size " {" 5 "} "
 append SYNTH_ARGS " " -max_bram " {" -1 "} "
@@ -105,35 +105,33 @@ eval "synth_design -top toplevel -generic clk_freq_mhz=$sysclk_freq_mhz $SYNTH_A
 
 # Optimize design
 puts "Step 3/5: Optimize design"
-opt_design -directive ExploreWithRemap > $optDesignDir/log
+opt_design -directive ExploreSequentialArea > $optDesignDir/log
 
 #Place design
 puts "Step 4/5: Place design"
-set_clock_uncertainty 0.200 [get_clocks CLKSYS_main_clock_gen]
-place_design -directive EarlyBlockPlacement > $placeDesignDir/log
+place_design -directive ExtraNetDelay_high > $placeDesignDir/log
 set WNS -1
 set iteration 0
 while { $WNS < 0} {
     run_phys_opt $placeDesignDir place_design
     set WNS [ get_property SLACK [get_timing_paths -max_paths 1 -nworst 1 -setup] ]
-    report_timing_summary -file $placeDesignDir/timing_summary_$iteration.rpt -quiet
+    report_timing_summary -file $placeDesignDir/timing_summary_$iteration.rpt -delay_type max -max_paths 50 -quiet
     incr iteration
     if {$WNS < 0} {
         puts "WNS below zero, rerunning place_design with post_place_opt.."
         place_design -post_place_opt >> $placeDesignDir/post_place_place_opt.log
     }
 }
-set_clock_uncertainty 0 [get_clocks CLKSYS_main_clock_gen]
 
 # Route design
 puts "Step 5/5: Route design"
 set WNS -1
 set iteration 0
 while { $WNS < 0} {
-    route_design -directive AggressiveExplore -tns_cleanup >> $routeDesignDir/log
+    route_design -directive MoreGlobalIterations -tns_cleanup >> $routeDesignDir/log
     run_phys_opt $routeDesignDir route_design
     set WNS [ get_property SLACK [get_timing_paths -max_paths 1 -nworst 1 -setup] ]
-    report_timing_summary -file $routeDesignDir/timing_summary_$iteration.rpt -quiet
+    report_timing_summary -file $routeDesignDir/timing_summary_$iteration.rpt -delay_type max -max_paths 50 -quiet
     incr iteration
     if {$WNS < 0} {
         puts "WNS below zero, rerunning place_design with post_place_opt.."
