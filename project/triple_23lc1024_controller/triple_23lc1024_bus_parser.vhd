@@ -182,14 +182,14 @@ begin
                     request_length_buf := determine_write_request_length(mst2slv.byteMask);
                 end if;
             end if;
+            write_data <= std_logic_vector(shift_right(unsigned(mst2slv.writeData), count_leading_zeros(mst2slv.byteMask)*bus_pkg.bus_byte_size));
+            address <= std_logic_vector(unsigned(mst2slv.address) + count_leading_zeros(mst2slv.byteMask));
+            if request_length_buf = 0 then
+                request_length <= 1;
+            else
+                request_length <= request_length_buf;
+            end if;
         end if;
-        if request_length_buf = 0 then
-            request_length <= 1;
-        else
-            request_length <= request_length_buf;
-        end if;
-        write_data <= std_logic_vector(shift_right(unsigned(mst2slv.writeData), count_leading_zeros(mst2slv.byteMask)*bus_pkg.bus_byte_size));
-        address <= std_logic_vector(unsigned(mst2slv.address) + count_leading_zeros(mst2slv.byteMask));
     end process;
 
 end architecture;
