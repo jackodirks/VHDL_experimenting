@@ -178,6 +178,52 @@ begin
                 memoryControlWord <= decodedMemoryControlWord;
                 wait for 1 fs;
                 check_equal(memByteMask, std_logic_vector'("0011"));
+            elsif run("lwl results in an aligned address") then
+                opcode <= mips32_opcodeLwl;
+                execResult <= X"00000006";
+                wait for 1 fs;
+                memoryControlWord <= decodedMemoryControlWord;
+                wait for 1 fs;
+                check_equal(memAddress, std_logic_vector'(X"00000004"));
+            elsif run("lwl 6 results in a bytemask of 0111") then
+                opcode <= mips32_opcodeLwl;
+                execResult <= X"00000006";
+                wait for 1 fs;
+                memoryControlWord <= decodedMemoryControlWord;
+                wait for 1 fs;
+                check_equal(memByteMask, std_logic_vector'("0111"));
+            elsif run("lwl merges incoming word and word from memory") then
+                opcode <= mips32_opcodeLwl;
+                execResult <= X"00000006";
+                regDataRead <= X"f1f2f3f4";
+                wait for 1 fs;
+                memoryControlWord <= decodedMemoryControlWord;
+                dataFromMem <= X"01020304";
+                wait for 1 fs;
+                check_equal(memDataRead, dataFromMem(23 downto 0) & regDataRead(7 downto 0));
+            elsif run("lwr results in an aligned address") then
+                opcode <= mips32_opcodeLwr;
+                execResult <= X"00000003";
+                wait for 1 fs;
+                memoryControlWord <= decodedMemoryControlWord;
+                wait for 1 fs;
+                check_equal(memAddress, std_logic_vector'(X"00000000"));
+            elsif run("lwr 3 results in a bytemask of 1000") then
+                opcode <= mips32_opcodeLwr;
+                execResult <= X"00000003";
+                wait for 1 fs;
+                memoryControlWord <= decodedMemoryControlWord;
+                wait for 1 fs;
+                check_equal(memByteMask, std_logic_vector'("1000"));
+            elsif run("lwr merges incoming word and word from memory") then
+                opcode <= mips32_opcodeLwr;
+                execResult <= X"00000003";
+                regDataRead <= X"f1f2f3f4";
+                wait for 1 fs;
+                memoryControlWord <= decodedMemoryControlWord;
+                dataFromMem <= X"01020304";
+                wait for 1 fs;
+                check_equal(memDataRead, regDataRead(31 downto 8) & dataFromMem(31 downto 24));
             end if;
         end loop;
         test_runner_cleanup(runner);

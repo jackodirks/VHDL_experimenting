@@ -12,7 +12,7 @@ OFILES := $(patsubst $(SRCDIR)%,$(ODIR)%,$(OFILES))
 TARGET:=final
 TARGETBIN:=final.bin
 TARGETTXT:=final.txt
-LDFLAGS :=
+LDFLAGS := --gc-sections --entry=__start
 
 .PHONY: all release clean
 

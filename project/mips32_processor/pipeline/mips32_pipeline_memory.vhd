@@ -47,10 +47,14 @@ architecture behaviourial of mips32_pipeline_memory is
         end if;
         return retVal;
     end function;
+
+    signal addressToMem : mips32_address_type;
+    signal byteMaskToMem : mips32_byte_mask_type;
 begin
 
-    postProcessMemRead : process(dataFromMem, memoryControlWord, data_from_cpz)
+    postProcessMemRead : process(dataFromMem, memoryControlWord, data_from_cpz, byteMaskToMem, regDataRead, execResult)
         variable readLenBit : natural range 0 to 31 := 31;
+        variable subWordNumber : natural range 0 to 3;
     begin
         if memoryControlWord.loadStoreSize = ls_byte then
             readLenBit := 7;
@@ -60,8 +64,16 @@ begin
             readLenBit := 31;
         end if;
 
+        subWordNumber := to_integer(unsigned(execResult(mips32_data_width_log2b - mips32_byte_width_log2b - 1 downto 0)));
+
         if not memoryControlWord.MemOp then
             memDataRead <= data_from_cpz;
+        elsif memoryControlWord.wordLeft then
+            memDataRead <= regDataRead;
+            memDataRead(31 downto (3 - subWordNumber)*8) <= dataFromMem(subWordNumber*8 + 7 downto 0);
+        elsif memoryControlWord.wordRight then
+            memDataRead <= regDataRead;
+            memDataRead((3 - subWordNumber) * 8 + 7 downto 0) <= dataFromMem(31 downto subWordNumber * 8);
         elsif memoryControlWord.memReadSignExtend then
             memDataRead <= std_logic_vector(resize(signed(dataFromMem(readLenBit downto 0)), memDataRead'length));
         else
@@ -69,13 +81,44 @@ begin
         end if;
     end process;
 
-    mem2busOut : process(memoryControlWord, execResult, regDataRead)
+    preProcessAddress : process(execResult, memoryControlWord)
+    begin
+        addressToMem <= execResult;
+        if memoryControlWord.wordLeft or memoryControlWord.wordRight then
+            addressToMem(mips32_data_width_log2b - mips32_byte_width_log2b - 1 downto 0) <= (others => '0');
+        end if;
+    end process;
+
+    preProcessByteMask : process(memoryControlWord, execResult)
+        variable subWordNumber : natural range 0 to 3;
+    begin
+        byteMaskToMem <= loadStoreSizeToByteMask(memoryControlWord.loadStoreSize);
+        if memoryControlWord.wordLeft then
+            subWordNumber := to_integer(unsigned(execResult(mips32_data_width_log2b - mips32_byte_width_log2b - 1 downto 0)));
+            case subWordNumber is
+                when 0 => byteMaskToMem <= "0001";
+                when 1 => byteMaskToMem <= "0011";
+                when 2 => byteMaskToMem <= "0111";
+                when 3 => byteMaskToMem <= "1111";
+            end case;
+        elsif memoryControlWord.wordRight then
+            subWordNumber := to_integer(unsigned(execResult(mips32_data_width_log2b - mips32_byte_width_log2b - 1 downto 0)));
+            case subWordNumber is
+                when 0 => byteMaskToMem <= "1111";
+                when 1 => byteMaskToMem <= "1110";
+                when 2 => byteMaskToMem <= "1100";
+                when 3 => byteMaskToMem <= "1000";
+            end case;
+        end if;
+    end process;
+
+    mem2busOut : process(memoryControlWord, addressToMem, regDataRead, byteMaskToMem)
     begin
         doMemRead <= false;
         doMemWrite <= false;
         dataToMem <= regDataRead;
-        memAddress <= execResult;
-        memByteMask <= loadStoreSizeToByteMask(memoryControlWord.loadStoreSize);
+        memAddress <= addressToMem;
+        memByteMask <= byteMaskToMem;
         if memoryControlWord.MemOp then
             if memoryControlWord.MemOpIsWrite then
                 doMemWrite <= true;

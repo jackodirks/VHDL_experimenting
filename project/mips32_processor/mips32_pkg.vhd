@@ -50,6 +50,8 @@ package mips32_pkg is
         cop0Write : boolean;
         memReadSignExtend : boolean;
         loadStoreSize : mips32_load_store_size;
+        wordLeft : boolean;
+        wordRight : boolean;
     end record;
 
     type mips32_WriteBackControlWord_type is record
@@ -76,7 +78,9 @@ package mips32_pkg is
         MemOpIsWrite => false,
         cop0Write => false,
         memReadSignExtend => false,
-        loadStoreSize => ls_word
+        loadStoreSize => ls_word,
+        wordLeft => false,
+        wordRight => false
     );
 
     constant mips32_writeBackControlWordAllFalse : mips32_WriteBackControlWord_type := (
@@ -99,9 +103,11 @@ package mips32_pkg is
     constant mips32_opcodeCOP0 : mips32_opcode_type := 16#10#;
     constant mips32_opcodeLb : mips32_opcode_type := 16#20#;
     constant mips32_opcodeLh : mips32_opcode_type := 16#21#;
+    constant mips32_opcodeLwl : mips32_opcode_type := 16#22#;
     constant mips32_opcodeLw : mips32_opcode_type := 16#23#;
     constant mips32_opcodeLbu : mips32_opcode_type := 16#24#;
     constant mips32_opcodeLhu : mips32_opcode_type := 16#25#;
+    constant mips32_opcodeLwr : mips32_opcode_type := 16#26#;
     constant mips32_opcodeSb : mips32_opcode_type := 16#28#;
     constant mips32_opcodeSh : mips32_opcode_type := 16#29#;
     constant mips32_opcodeSw : mips32_opcode_type := 16#2b#;
