@@ -267,6 +267,21 @@ begin
                 byteMask <= "1111";
                 wait until falling_edge(clk);
                 check(bus_requesting(mst2slv));
+            elsif run("Reads in dcache range resolve correctly") then
+                writeAddress := std_logic_vector(to_unsigned(cache_range_start, writeAddress'length));
+                writeData := X"F1F2F3F4";
+                simulated_bus_memory_pkg.write_to_address(
+                    net => net,
+                    actor => slaveActor,
+                    addr => writeAddress,
+                    mask => (others => '1'),
+                    data => writeData);
+                wait until falling_edge(clk);
+                doRead <= true;
+                address <= std_logic_vector(to_unsigned(cache_range_start, address'length));
+                byteMask <= "1111";
+                wait until rising_edge(clk) and not stall;
+                check_equal(dataOut, std_logic_vector'(X"F1F2F3F4"));
             elsif run("Reads in dcache range are cached") then
                 writeAddress := std_logic_vector(to_unsigned(cache_range_start, writeAddress'length));
                 writeData := X"F1F2F3F4";
