@@ -4,14 +4,14 @@ __start:
     addiu $4, $4,%lo(source)
     lui $5,%hi(dest)
     addiu $5, $5,%lo(dest)
-    lwl $2, 4($4)
-    lwr $2, 1($4)
-    sw  $2, 0($5)    
+    lw $2, 0($4)
+    swl $2, 4($5)
+    swr $2, 1($5)
 epilogue:
     j epilogue
 
-source:
-    .byte   1
-    .4byte  32
 dest:
-    .word 0
+    .byte   254
+    .4byte  0
+source:
+    .word 0xFFFFFFFF

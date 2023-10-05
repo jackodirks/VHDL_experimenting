@@ -110,7 +110,9 @@ package mips32_pkg is
     constant mips32_opcodeLwr : mips32_opcode_type := 16#26#;
     constant mips32_opcodeSb : mips32_opcode_type := 16#28#;
     constant mips32_opcodeSh : mips32_opcode_type := 16#29#;
+    constant mips32_opcodeSwl : mips32_opcode_type := 16#2a#;
     constant mips32_opcodeSw : mips32_opcode_type := 16#2b#;
+    constant mips32_opcodeSwr : mips32_opcode_type := 16#2e#;
 
     constant mips32_aluFunctionSll : mips32_aluFunction_type := 16#00#;
     constant mips32_aluFunctionSrl : mips32_aluFunction_type := 16#02#;

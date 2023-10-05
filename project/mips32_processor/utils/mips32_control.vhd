@@ -118,10 +118,20 @@ begin
                 memoryControlWord_buf.MemOp := true;
                 memoryControlWord_buf.MemOpIsWrite := true;
                 memoryControlWord_buf.loadStoreSize := ls_halfword;
+            when mips32_opcodeSwl =>
+                executeControlWord_buf.ALUOpDirective := exec_add;
+                memoryControlWord_buf.MemOp := true;
+                memoryControlWord_buf.MemOpIsWrite := true;
+                memoryControlWord_buf.wordLeft := true;
             when mips32_opcodeSw =>
                 executeControlWord_buf.ALUOpDirective := exec_add;
                 memoryControlWord_buf.MemOp := true;
                 memoryControlWord_buf.MemOpIsWrite := true;
+            when mips32_opcodeSwr =>
+                executeControlWord_buf.ALUOpDirective := exec_add;
+                memoryControlWord_buf.MemOp := true;
+                memoryControlWord_buf.MemOpIsWrite := true;
+                memoryControlWord_buf.wordRight := true;
             when others =>
                 invalidOpcode <= true;
         end case;

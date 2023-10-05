@@ -224,6 +224,44 @@ begin
                 dataFromMem <= X"01020304";
                 wait for 1 fs;
                 check_equal(memDataRead, regDataRead(31 downto 8) & dataFromMem(31 downto 24));
+            elsif run("swl results in an aligned address") then
+                opcode <= mips32_opcodeSwl;
+                execResult <= X"00000006";
+                wait for 1 fs;
+                memoryControlWord <= decodedMemoryControlWord;
+                wait for 1 fs;
+                check_equal(memAddress, std_logic_vector'(X"00000004"));
+            elsif run("swl correctly right shifts outgoing data") then
+                opcode <= mips32_opcodeSwl;
+                execResult <= X"00000006";
+                regDataRead <= X"ffffff00";
+                wait for 1 fs;
+                memoryControlWord <= decodedMemoryControlWord;
+                wait for 1 fs;
+                check_equal(dataToMem, std_logic_vector'(X"00ffffff"));
+            elsif run("swl on address ending in 3 does not shift") then
+                opcode <= mips32_opcodeSwl;
+                execResult <= X"000000f3";
+                regDataRead <= X"ffffff00";
+                wait for 1 fs;
+                memoryControlWord <= decodedMemoryControlWord;
+                wait for 1 fs;
+                check_equal(dataToMem, std_logic_vector'(X"ffffff00"));
+            elsif run("swr results in an aligned address") then
+                opcode <= mips32_opcodeSwr;
+                execResult <= X"00000003";
+                wait for 1 fs;
+                memoryControlWord <= decodedMemoryControlWord;
+                wait for 1 fs;
+                check_equal(memAddress, std_logic_vector'(X"00000000"));
+            elsif run("swr correctly left-shifts outgoing data") then
+                opcode <= mips32_opcodeSwr;
+                execResult <= X"00000003";
+                regDataRead <= X"ffffffee";
+                wait for 1 fs;
+                memoryControlWord <= decodedMemoryControlWord;
+                wait for 1 fs;
+                check_equal(dataToMem, std_logic_vector'(X"ee000000"));
             end if;
         end loop;
         test_runner_cleanup(runner);

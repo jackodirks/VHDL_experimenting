@@ -50,6 +50,7 @@ architecture behaviourial of mips32_pipeline_memory is
 
     signal addressToMem : mips32_address_type;
     signal byteMaskToMem : mips32_byte_mask_type;
+    signal memWriteData : mips32_data_type;
 begin
 
     postProcessMemRead : process(dataFromMem, memoryControlWord, data_from_cpz, byteMaskToMem, regDataRead, execResult)
@@ -112,26 +113,27 @@ begin
         end if;
     end process;
 
-    mem2busOut : process(memoryControlWord, addressToMem, regDataRead, byteMaskToMem)
+    preProcessOutgoingData : process(memoryControlWord, regDataRead, execResult)
+        variable subWordNumber : natural range 0 to 3;
     begin
-        doMemRead <= false;
-        doMemWrite <= false;
-        dataToMem <= regDataRead;
-        memAddress <= addressToMem;
-        memByteMask <= byteMaskToMem;
-        if memoryControlWord.MemOp then
-            if memoryControlWord.MemOpIsWrite then
-                doMemWrite <= true;
-            else
-                doMemRead <= true;
-            end if;
+        subWordNumber := to_integer(unsigned(execResult(mips32_data_width_log2b - mips32_byte_width_log2b - 1 downto 0)));
+        memWriteData <= regDataRead;
+        if memoryControlWord.wordLeft then
+            memWriteData <= std_logic_vector(shift_right(unsigned(regDataRead), 8*(3 - subWordNumber)));
+        elsif memoryControlWord.wordRight then
+            memWriteData <= std_logic_vector(shift_left(unsigned(regDataRead), 8*subWordNumber));
         end if;
     end process;
 
-    cpzOut : process(memoryControlWord, execResult, stall, rdAddress, regDataRead)
-    begin
-        address_to_cpz <= rdAddress;
-        write_to_cpz <= memoryControlWord.cop0Write and not stall;
-        data_to_cpz <= regDataRead;
-    end process;
+    -- mem2bus
+    dataToMem <= memWriteData;
+    memAddress <= addressToMem;
+    memByteMask <= byteMaskToMem;
+    doMemWrite <= memoryControlWord.MemOp and memoryControlWord.MemOpIsWrite;
+    doMemRead <= memoryControlWord.MemOp and not memoryControlWord.MemOpIsWrite;
+
+    -- To coprocessor 0
+    address_to_cpz <= rdAddress;
+    write_to_cpz <= memoryControlWord.cop0Write and not stall;
+    data_to_cpz <= regDataRead;
 end architecture;

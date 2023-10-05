@@ -354,6 +354,21 @@ begin
                     addr => readAddr,
                     data => readData);
                 check_equal(readData, expectedReadData);
+            elsif run("swl/swr test") then
+                simulated_bus_memory_pkg.write_file_to_address(net, memActor, 0, "./mips32_processor/test/programs/swlSwrTest.txt");
+                test2slv <= bus_mst2slv_write(std_logic_vector(to_unsigned(controllerAddress, bus_address_type'length)), (others => '0'));
+                wait until rising_edge(clk) and any_transaction(test2slv, slv2test);
+                check(write_transaction(test2slv, slv2test));
+                test2slv <= BUS_MST2SLV_IDLE;
+                wait for 5 us;
+                expectedReadData := X"fffffffe";
+                readAddr := std_logic_vector(to_unsigned(16#24#, bus_address_type'length));
+                simulated_bus_memory_pkg.read_from_address(net, memActor, readAddr, readData);
+                check_equal(readData, expectedReadData);
+                expectedReadData := X"000000ff";
+                readAddr := std_logic_vector(to_unsigned(16#28#, bus_address_type'length));
+                simulated_bus_memory_pkg.read_from_address(net, memActor, readAddr, readData);
+                check_equal(readData, expectedReadData);
             elsif run("load then store test") then
                 simulated_bus_memory_pkg.write_file_to_address(net, memActor, 0, "./mips32_processor/test/programs/loadThenStoreTest.txt");
                 test2slv <= bus_mst2slv_write(std_logic_vector(to_unsigned(controllerAddress, bus_address_type'length)), (others => '0'));
