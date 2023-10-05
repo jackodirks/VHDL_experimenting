@@ -144,16 +144,12 @@ begin
 
     dcache_controller : process(clk, address, byteMask, dcache_significant_hit, doWrite, dataIn)
         variable override_inputs : boolean := false;
-        variable overriding_address : mips32_address_type;
         variable overriding_data_in : mips32_data_type;
-        variable overriding_byteMask : mips32_byte_mask_type;
         variable overriding_write : boolean;
     begin
         if rising_edge(clk) then
             if read_transaction(mst2slv_buf, slv2mst) then
                 override_inputs := true;
-                overriding_byteMask := mst2slv.byteMask;
-                overriding_address := mst2slv.address;
                 overriding_data_in := slv2mst.readData;
                 overriding_write := address_in_dcache_range;
             else
@@ -161,13 +157,13 @@ begin
             end if;
         end if;
         dcache_updating_from_bus <= override_inputs;
+        dcache_address_in <= address;
         if override_inputs then
-            dcache_address_in <= overriding_address;
-            dcache_byte_mask <= overriding_byteMask;
+            dcache_address_in(1 downto 0) <= (others => '0');
+            dcache_byte_mask <= (others => '1');
             dcache_do_write <= overriding_write;
             dcache_data_in <= overriding_data_in;
         else
-            dcache_address_in <= address;
             dcache_byte_mask <= byteMask;
             dcache_do_write <= dcache_significant_hit and doWrite;
             dcache_data_in <= dataIn;
