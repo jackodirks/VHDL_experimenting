@@ -109,6 +109,7 @@ opt_design -directive ExploreSequentialArea > $optDesignDir/log
 
 #Place design
 puts "Step 4/5: Place design"
+set_clock_uncertainty 0.500 [get_clocks CLKSYS_main_clock_gen]
 place_design -directive ExtraNetDelay_high > $placeDesignDir/log
 set WNS -1
 set iteration 0
@@ -122,6 +123,7 @@ while { $WNS < 0} {
         place_design -post_place_opt >> $placeDesignDir/post_place_place_opt.log
     }
 }
+set_clock_uncertainty 0 [get_clocks CLKSYS_main_clock_gen]
 
 # Route design
 puts "Step 5/5: Route design"
