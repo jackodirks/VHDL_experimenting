@@ -55,12 +55,10 @@ begin
                 executeControlWord_buf.isLui := true;
                 writeBackControlWord_buf.regWrite := true;
             when mips32_opcodeCOP0 =>
-                if mf = 0 then
-                    -- mfc0, move from system control processor
+                if mf = mips32_mf_mfc0 then
                     writeBackControlWord_buf.regWrite := true;
                     writeBackControlWord_buf.MemtoReg := true;
-                elsif mf = 4 then
-                    -- mtc0, move to system control processor
+                elsif mf = mips32_mf_mtc0 then
                     memoryControlWord_buf.cop0Write := true;
                 else
                     invalidOpcode <= true;

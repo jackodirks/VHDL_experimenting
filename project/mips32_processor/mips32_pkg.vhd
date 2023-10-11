@@ -127,4 +127,7 @@ package mips32_pkg is
     constant mips32_aluFunctionNor : mips32_aluFunction_type := 16#27#;
     constant mips32_aluFunctionSetLessThan : mips32_aluFunction_type := 16#2a#;
     constant mips32_aluFunctionSetLessThanUnsigned : mips32_aluFunction_type := 16#2b#;
+
+    constant mips32_mf_mfc0 : mips32_mf_type := 16#0#;
+    constant mips32_mf_mtc0 : mips32_mf_type := 16#4#;
 end package;
