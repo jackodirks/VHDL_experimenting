@@ -4,7 +4,7 @@ This is a mips32 revision 5 processor without a floating point coprocessor. More
 | Instruction | Implementation complete |
 |-------------|-------------------------|
 | ADD         | X                       |
-| ADDI        |                         |
+| ADDI        | X                       |
 | ADDIU       | X                       |
 | ADDU        | X                       |
 | AND         | X                       |

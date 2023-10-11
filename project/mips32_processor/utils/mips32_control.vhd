@@ -48,7 +48,7 @@ begin
                 executeControlWord_buf.branchEq := true;
             when mips32_opcodeBne =>
                 executeControlWord_buf.branchNe := true;
-            when mips32_opcodeAddiu =>
+            when mips32_opcodeAddiu | mips32_opcodeAddi =>
                 executeControlWord_buf.ALUOpDirective := exec_add;
                 writeBackControlWord_buf.regWrite := true;
             when mips32_opcodeLui =>
