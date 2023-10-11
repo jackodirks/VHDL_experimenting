@@ -101,7 +101,7 @@ set_msg_config -id {[Synth 8-614]} -new_severity ERROR
 set_msg_config -id {[Synth 8-7129]} -new_severity INFO
 set_msg_config -id {[Synth 8-7080]} -new_severity INFO
 set sysclk_freq_mhz [ get_property CONFIG.CLKOUT1_REQUESTED_OUT_FREQ [get_ips main_clock_gen] ]
-eval "synth_design -top toplevel -generic clk_freq_mhz=$sysclk_freq_mhz $SYNTH_ARGS" > $synthesisDir/log
+synth_design -top toplevel -generic clk_freq_mhz=$sysclk_freq_mhz {*}$SYNTH_ARGS > $synthesisDir/log
 
 # Optimize design
 puts "Step 3/5: Optimize design"
