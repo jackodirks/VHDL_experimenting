@@ -167,6 +167,12 @@ begin
                 wait until falling_edge(clk);
                 check(executeControlWord = expectedExecuteControlword);
                 check(immidiate =  X"00100024");
+            elsif run("Jal always has rs address 0") then
+                instructionIn := X"0cf4000b";
+                programCounterPlusFour <= X"00100020";
+                instructionFromInstructionFetch <= instructionIn;
+                wait for 1 ns;
+                check_equal(rsAddress, 0);
             end if;
         end loop;
         wait until rising_edge(clk);

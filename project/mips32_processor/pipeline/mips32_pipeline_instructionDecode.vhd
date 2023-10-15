@@ -65,12 +65,20 @@ begin
     writeBackControlWord <= decodedWriteBackControlWord;
     memoryControlWord <= decodedMemoryControlWord;
     executeControlWord <= decodedExecuteControlWord;
-    rsAddress <= to_integer(unsigned(instructionFromInstructionFetch(25 downto 21)));
     rtAddress <= rtAddress_buf;
     immidiate <= immidiate_buf;
     destinationReg <= destinationReg_buf;
     rdAddress <= rdAddress_buf;
     shamt <= to_integer(unsigned(instructionFromInstructionFetch(10 downto 6)));
+
+    determineRs : process(instructionFromInstructionFetch, decodedInstructionDecodeControlWord)
+    begin
+        if decodedInstructionDecodeControlWord.jump then
+            rsAddress <= 0;
+        else
+            rsAddress <= to_integer(unsigned(instructionFromInstructionFetch(25 downto 21)));
+        end if;
+    end process;
 
     determineDestinationReg : process(rtAddress_buf, rdAddress_buf, decodedInstructionDecodeControlWord)
     begin
