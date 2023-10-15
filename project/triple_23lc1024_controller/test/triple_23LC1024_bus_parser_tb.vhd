@@ -42,36 +42,33 @@ begin
         test_runner_setup(runner, runner_cfg);
         while test_suite loop
             if run("Decodes cs_request for zero") then
-               mst2slv <= bus_pkg.bus_mst2slv_read(X"00001100");
-               wait for clk_period;
-               check(cs_request = request_zero);
+                mst2slv <= bus_pkg.bus_mst2slv_read(X"00001100");
+                wait until rising_edge(clk) and read_request;
+                check(cs_request = request_zero);
             elsif run("Decodes cs_request for one") then
-               mst2slv <= bus_pkg.bus_mst2slv_read(X"00021100");
-               wait for clk_period;
-               check(cs_request = request_one);
-            elsif run("Forwards read request") then
-               mst2slv <= bus_pkg.bus_mst2slv_read(X"00021100");
-               wait for clk_period;
-               check(read_request);
+                mst2slv <= bus_pkg.bus_mst2slv_read(X"00021100");
+                wait until rising_edge(clk) and read_request;
+                check(cs_request = request_one);
             elsif run("Has no active read request on IDLE") then
                 mst2slv <= bus_pkg.BUS_MST2SLV_IDLE;
-                wait for clk_period;
                 check(not read_request);
+                wait for 5*clk_period;
+                check(read_request'stable(5*clk_period));
             elsif run("Deactivates read on transaction") then
                 mst2slv <= bus_pkg.bus_mst2slv_read(X"00021100");
-                wait for clk_period;
-                check(read_request);
+                wait until rising_edge(clk) and read_request;
                 transaction_ready <= true;
+                wait until falling_edge(clk);
                 wait for clk_period;
                 check(not read_request);
             elsif run("Forwards write request") then
                 mst2slv <= bus_pkg.bus_mst2slv_write(X"00021100", X"0f0f0f0f");
-                wait for clk_period;
-                check(write_request);
+                wait until rising_edge(clk) and write_request;
             elsif run("Has no active write request on IDLE") then
                 mst2slv <= bus_pkg.BUS_MST2SLV_IDLE;
-                wait for clk_period;
                 check(not write_request);
+                wait for 5*clk_period;
+                check(write_request'stable(5*clk_period));
             elsif run("Deactivates write on transaction") then
                 mst2slv <= bus_pkg.bus_mst2slv_write(X"00021100", X"0f0f0f0f");
                 wait for clk_period;
@@ -88,11 +85,11 @@ begin
                 wait until rising_edge(clk) and read_request;
             elsif run("On fault, read_request is false") then
                 mst2slv <= bus_pkg.bus_mst2slv_read(X"ffffffff");
-                wait for clk_period;
+                wait until rising_edge(clk) and has_fault;
                 check(not read_request);
             elsif run("On fault, write_request is false") then
                 mst2slv <= bus_pkg.bus_mst2slv_write(X"ffffffff", X"0f0f0f0f");
-                wait for clk_period;
+                wait until rising_edge(clk) and has_fault;
                 check(not write_request);
             elsif run("Fault transaction can finish") then
                 mst2slv <= bus_pkg.bus_mst2slv_read(X"ffffffff");
@@ -109,28 +106,27 @@ begin
                 check(fault_data = bus_pkg.bus_fault_unaligned_access);
             elsif run("byte mask 0011 requires a 2 byte alignment") then
                 mst2slv <= bus_pkg.bus_mst2slv_read(X"00021102", byte_mask => "0011");
-                wait for clk_period;
-                check(not has_fault);
-            elsif run("byte mask 0100 is illegal") then
+                wait until rising_edge(clk) and read_request;
+            elsif run("Unaligned address and byte mask 0100 is illegal") then
                 mst2slv <= bus_pkg.bus_mst2slv_read(X"0002110f", byte_mask => "0100");
                 wait until rising_edge(clk) and has_fault;
                 check(fault_data = bus_pkg.bus_fault_illegal_byte_mask);
             elsif run("Byte mask 0001 allows any alignment") then
                 mst2slv <= bus_pkg.bus_mst2slv_read(X"0002110f", byte_mask => "0001");
-                wait for clk_period;
-                check(not has_fault);
+                wait until rising_edge(clk) and read_request;
             elsif run("byte mask 1111 results in request length of 4") then
                 mst2slv <= bus_pkg.bus_mst2slv_read(X"00021100", byte_mask => "1111");
-                wait for clk_period;
+                wait until rising_edge(clk) and read_request;
                 check_equal(request_length, 4);
             elsif run("byte mask 0011 results in request length of 2") then
                 mst2slv <= bus_pkg.bus_mst2slv_read(X"00021100", byte_mask => "0011");
-                wait for clk_period;
+                wait until rising_edge(clk) and read_request;
                 check_equal(request_length, 2);
             elsif run("No request means no fault") then
                 mst2slv.byteMask <= "0000";
-                wait for clk_period;
                 check(not has_fault);
+                wait for 5*clk_period;
+                check(has_fault'stable(5*clk_period));
             elsif run("Rst works") then
                 mst2slv <= bus_pkg.bus_mst2slv_read(X"00021100", byte_mask => "0011");
                 wait for clk_period;
@@ -176,7 +172,7 @@ begin
         wait;
     end process;
 
-    test_runner_watchdog(runner, 1 ms);
+    test_runner_watchdog(runner, 10 us);
 
     parser : entity src.triple_23lc1024_bus_parser
     port map (

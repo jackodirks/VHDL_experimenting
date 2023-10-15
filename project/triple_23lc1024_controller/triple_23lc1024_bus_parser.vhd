@@ -87,6 +87,8 @@ architecture behavioral of triple_23lc1024_bus_parser is
                 has_fault_buf := true;
                 fault_data_buf := bus_pkg.bus_fault_unaligned_access;
             end if;
+        elsif byte_mask = "0001" then
+            has_fault_buf := false;
         elsif count_leading_zeros(byte_mask) + count_trailing_zeros(byte_mask) /= count_total_zeros(byte_mask) then
             has_fault_buf := true;
             fault_data_buf := bus_pkg.bus_fault_illegal_byte_mask;
