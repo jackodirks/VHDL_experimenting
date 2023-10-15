@@ -1,17 +1,16 @@
 .global __start
 __start:
-    lui $4,%hi(source)
-    addiu $4, $4,%lo(source)
-    lui $5,%hi(dest)
-    addiu $5, $5,%lo(dest)
-    lw $2, 0($4)
-    swl $2, 4($5)
-    swr $2, 1($5)
+        lui $4,%hi(array_int32)
+        addiu $4, $4,%lo(array_int32)
+        li $5, 11
+        jal bubbleSort_int32
+        lui $4,%hi(array_int16)
+        addiu $4, $4,%lo(array_int16)
+        li $5, 11
+        jal bubbleSort_int16
+        lui $4,%hi(array_int8)
+        addiu $4, $4,%lo(array_int8)
+        li $5, 11
+        jal bubbleSort_int8
 epilogue:
-    j epilogue
-
-dest:
-    .byte   254
-    .4byte  0
-source:
-    .word 0xFFFFFFFF
+        j epilogue
