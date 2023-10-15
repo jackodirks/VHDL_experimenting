@@ -10,7 +10,7 @@ This is a mips32 revision 5 processor without a floating point coprocessor. More
 | AND         | X                       |
 | ANDI        | X                       |
 | BEQ         | X                       |
-| BEQL        |                         |
+| BEQL        | X                       |
 | BGEZ        |                         |
 | BGEZAL      |                         |
 | BGEZALL     |                         |

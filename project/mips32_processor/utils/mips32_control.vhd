@@ -85,7 +85,7 @@ begin
                 executeControlWord_buf.exec_directive := mips32_exec_alu;
                 executeControlWord_buf.alu_cmd := cmd_alu_add;
                 executeControlWord_buf.use_immidiate := true;
-            when mips32_opcode_Beq =>
+            when mips32_opcode_Beq | mips32_opcode_Beql =>
                 executeControlWord_buf.exec_directive := mips32_exec_branch;
                 executeControlWord_buf.branch_cmd := cmd_branch_eq;
             when mips32_opcode_Bne =>
