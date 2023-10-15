@@ -8,7 +8,7 @@ This is a mips32 revision 5 processor without a floating point coprocessor. More
 | ADDIU       | X                       |
 | ADDU        | X                       |
 | AND         | X                       |
-| ANDI        |                         |
+| ANDI        | X                       |
 | BEQ         | X                       |
 | BEQL        |                         |
 | BGEZ        |                         |

@@ -96,6 +96,11 @@ begin
                 executeControlWord_buf.alu_cmd := cmd_alu_add;
                 executeControlWord_buf.use_immidiate := true;
                 writeBackControlWord_buf.regWrite := true;
+            when mips32_opcode_Andi =>
+                executeControlWord_buf.exec_directive := mips32_exec_alu;
+                executeControlWord_buf.alu_cmd := cmd_alu_and;
+                executeControlWord_buf.use_immidiate := true;
+                writeBackControlWord_buf.regWrite := true;
             when mips32_opcode_Lui =>
                 executeControlWord_buf.exec_directive := mips32_exec_alu;
                 executeControlWord_buf.alu_cmd := cmd_alu_lui;
