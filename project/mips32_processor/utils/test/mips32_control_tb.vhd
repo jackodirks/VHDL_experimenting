@@ -18,13 +18,14 @@ end entity;
 
 architecture tb of mips32_control_tb is
     constant clk_period : time := 20 ns;
-    constant illegalOpcode : mips32_opcode_type := 16#1#;
+    constant illegalOpcode : mips32_opcode_type := 16#6#;
 
     signal clk : std_logic := '0';
 
     signal opcode : mips32_opcode_type := illegalOpcode;
     signal func : mips32_function_type := mips32_function_Sll;
     signal mf : mips32_mf_type := 0;
+    signal regimm : mips32_regimm_type := 0;
 
     signal instructionDecodeControlWord : mips32_InstructionDecodeControlWord_type;
     signal executeControlWord : mips32_ExecuteControlWord_type;
@@ -58,6 +59,7 @@ begin
         opcode => opcode,
         mf => mf,
         func => func,
+        regimm => regimm,
         instructionDecodeControlWord => instructionDecodeControlWord,
         executeControlWord => executeControlWord,
         memoryControlWord => memoryControlWord,

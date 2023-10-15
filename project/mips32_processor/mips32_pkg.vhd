@@ -21,6 +21,7 @@ package mips32_pkg is
     subtype mips32_function_type is natural range 0 to 63;
     subtype mips32_shamt_type is natural range 0 to 31;
     subtype mips32_mf_type is natural range 0 to 31;
+    subtype mips32_regimm_type is natural range 0 to 31;
     subtype mips32_byte_mask_type is std_logic_vector(mips32_bytes_per_data_word - 1 downto 0);
 
     type mips32_data_array is array (natural range <>) of mips32_data_type;
@@ -31,7 +32,7 @@ package mips32_pkg is
     type mips32_exec_type is (mips32_exec_alu, mips32_exec_shift, mips32_exec_branch);
     type mips32_alu_cmd is (cmd_alu_add, cmd_alu_sub, cmd_alu_and, cmd_alu_or, cmd_alu_nor, cmd_alu_lui, cmd_alu_sltu, cmd_alu_slt);
     type mips32_shift_cmd is (cmd_shift_sll, cmd_shift_srl, cmd_shift_sra);
-    type mips32_branch_cmd is (cmd_branch_ne, cmd_branch_eq, cmd_branch_jumpreg);
+    type mips32_branch_cmd is (cmd_branch_ne, cmd_branch_eq, cmd_branch_bgez, cmd_branch_jumpreg);
 
     type mips32_InstructionDecodeControlWord_type is record
         jump : boolean;
@@ -97,6 +98,7 @@ package mips32_pkg is
     constant mips32_instructionNop : mips32_instruction_type := X"00000000";
 
     constant mips32_opcode_Special : mips32_opcode_type := 16#0#;
+    constant mips32_opcode_regimm : mips32_opcode_type := 16#1#;
     constant mips32_opcode_J : mips32_opcode_type := 16#2#;
     constant mips32_opcode_Jal : mips32_opcode_type := 16#3#;
     constant mips32_opcode_Beq : mips32_opcode_type := 16#4#;
@@ -136,4 +138,6 @@ package mips32_pkg is
 
     constant mips32_mf_mfc0 : mips32_mf_type := 16#0#;
     constant mips32_mf_mtc0 : mips32_mf_type := 16#4#;
+
+    constant mips32_regimm_bgez : mips32_regimm_type := 16#1#;
 end package;

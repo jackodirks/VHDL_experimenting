@@ -11,20 +11,22 @@ entity mips32_control is
         opcode : in mips32_opcode_type;
         mf : in mips32_mf_type;
         func : in mips32_function_type;
+        regimm : in mips32_regimm_type;
 
         instructionDecodeControlWord : out mips32_InstructionDecodeControlWord_type;
         executeControlWord : out mips32_ExecuteControlWord_type;
         memoryControlWord : out mips32_MemoryControlWord_type;
         writeBackControlWord : out mips32_WriteBackControlWord_type;
         invalidOpcode : out boolean;
-        invalidFunction : out boolean
+        invalidFunction : out boolean;
+        invalidRegimm : out boolean
     );
 end entity;
 
 architecture behaviourial of mips32_control is
 begin
 
-    decodeOpcode : process(opcode, mf, func)
+    decodeOpcode : process(opcode, mf, func, regimm)
         variable instructionDecodeControlWord_buf : mips32_InstructionDecodeControlWord_type;
         variable executeControlWord_buf : mips32_ExecuteControlWord_type;
         variable memoryControlWord_buf : mips32_MemoryControlWord_type;
@@ -36,6 +38,7 @@ begin
         writeBackControlWord_buf := mips32_writeBackControlWordAllFalse;
         invalidOpcode <= false;
         invalidFunction <= false;
+        invalidRegimm <= false;
         case opcode is
             when mips32_opcode_special =>
                 instructionDecodeControlWord_buf.regDstIsRd := true;
@@ -76,6 +79,14 @@ begin
                         executeControlWord_buf.alu_cmd := cmd_alu_sltu;
                     when others =>
                         invalidFunction <= true;
+                end case;
+            when mips32_opcode_regimm =>
+                case regimm is
+                    when mips32_regimm_bgez =>
+                        executeControlWord_buf.exec_directive := mips32_exec_branch;
+                        executeControlWord_buf.branch_cmd := cmd_branch_bgez;
+                    when others =>
+                        invalidRegimm <= true;
                 end case;
             when mips32_opcode_J =>
                 instructionDecodeControlWord_buf.jump := true;

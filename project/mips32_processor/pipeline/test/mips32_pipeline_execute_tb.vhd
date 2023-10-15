@@ -31,6 +31,7 @@ architecture tb of mips32_pipeline_execute_tb is
     signal opcode : mips32_opcode_type := mips32_opcode_special;
     signal mf : mips32_mf_type := 0;
     signal func : mips32_function_type := mips32_function_Sll;
+    signal regimm : mips32_regimm_type := 0;
 begin
     main : process
         variable expectedExecResult : mips32_data_type;
@@ -104,6 +105,35 @@ begin
                 wait for 10 ns;
                 check(overrideProgramCounter);
                 check_equal(rsData, newProgramCounter);
+            elsif run("bgez branches on 0") then
+                rsData <= std_logic_vector(to_signed(0, rsData'length));
+                immidiate <= std_logic_vector(to_signed(-1, immidiate'length));
+                programCounterPlusFour <= std_logic_vector(to_unsigned(16, programCounterPlusFour'length));
+                opcode <= mips32_opcode_regimm;
+                regimm <= mips32_regimm_bgez;
+                expectedBranchTarget := std_logic_vector(to_unsigned(12, expectedBranchTarget'length));
+                wait for 10 ns;
+                check(overrideProgramCounter);
+                check_equal(newProgramCounter, expectedBranchTarget);
+            elsif run("bgez does not branch on -1") then
+                rsData <= std_logic_vector(to_signed(-1, rsData'length));
+                immidiate <= std_logic_vector(to_signed(-1, immidiate'length));
+                programCounterPlusFour <= std_logic_vector(to_unsigned(16, programCounterPlusFour'length));
+                opcode <= mips32_opcode_regimm;
+                regimm <= mips32_regimm_bgez;
+                expectedBranchTarget := std_logic_vector(to_unsigned(12, expectedBranchTarget'length));
+                wait for 10 ns;
+                check(not overrideProgramCounter);
+            elsif run("bgez does branch on 5") then
+                rsData <= std_logic_vector(to_signed(5, rsData'length));
+                immidiate <= std_logic_vector(to_signed(-1, immidiate'length));
+                programCounterPlusFour <= std_logic_vector(to_unsigned(16, programCounterPlusFour'length));
+                opcode <= mips32_opcode_regimm;
+                regimm <= mips32_regimm_bgez;
+                expectedBranchTarget := std_logic_vector(to_unsigned(12, expectedBranchTarget'length));
+                wait for 10 ns;
+                check(overrideProgramCounter);
+                check_equal(newProgramCounter, expectedBranchTarget);
             end if;
         end loop;
         test_runner_cleanup(runner);
@@ -130,6 +160,7 @@ begin
         opcode => opcode,
         mf => mf,
         func => func,
+        regimm => regimm,
         executeControlWord => executeControlWord
     );
 

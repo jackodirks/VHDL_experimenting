@@ -20,6 +20,7 @@ architecture tb of mips32_pipeline_branchHelper_tb is
 
     signal opcode : mips32_opcode_type := mips32_opcode_Special;
     signal func : mips32_function_type := mips32_function_Sll;
+    signal regimm : mips32_regimm_type := 0;
 begin
     main : process
     begin
@@ -61,6 +62,7 @@ begin
         opcode => opcode,
         mf => 0,
         func => func,
+        regimm => regimm,
         executeControlWord => executeControlWord
     );
 end architecture;

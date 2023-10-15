@@ -60,13 +60,16 @@ begin
     begin
         overrideProgramCounter <= false;
         if executeControlWord.exec_directive = mips32_exec_branch then
-            if executeControlWord.branch_cmd = cmd_branch_eq and rsData = rtData then
-                overrideProgramCounter <= true;
-            elsif executeControlWord.branch_cmd = cmd_branch_ne and rsData /= rtData then
-                overrideProgramCounter <= true;
-            elsif executeControlWord.branch_cmd = cmd_branch_jumpreg then
-                overrideProgramCounter <= true;
-            end if;
+            case executeControlWord.branch_cmd is
+                when cmd_branch_eq =>
+                    overrideProgramCounter <= rsData = rtData;
+                when cmd_branch_ne =>
+                    overrideProgramCounter <= rsData /= rtData;
+                when cmd_branch_bgez =>
+                    overrideProgramCounter <= signed(rsData) >= 0;
+                when cmd_branch_jumpreg =>
+                    overrideProgramCounter <= true;
+            end case;
         end if;
     end process;
 

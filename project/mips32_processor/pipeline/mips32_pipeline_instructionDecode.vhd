@@ -106,6 +106,7 @@ begin
         opcode => to_integer(unsigned(instructionFromInstructionFetch(31 downto 26))),
         mf => to_integer(unsigned(instructionFromInstructionFetch(25 downto 21))),
         func => to_integer(unsigned(instructionFromInstructionFetch(5 downto 0))),
+        regimm => to_integer(unsigned(instructionFromInstructionFetch(20 downto 16))),
         instructionDecodeControlWord => decodedInstructionDecodeControlWord,
         executeControlWord => decodedExecuteControlWord,
         memoryControlWord => decodedMemoryControlWord,

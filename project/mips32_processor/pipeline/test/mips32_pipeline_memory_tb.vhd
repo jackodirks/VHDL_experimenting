@@ -41,6 +41,7 @@ architecture tb of mips32_pipeline_memory_tb is
     signal opcode : mips32_opcode_type := 0;
     signal mf : mips32_mf_type := 0;
     signal func : mips32_function_type := 0;
+    signal regimm : mips32_regimm_type := 0;
 begin
     main : process
         variable expectedMemAddress : mips32_address_type;
@@ -243,6 +244,7 @@ begin
         opcode => opcode,
         mf => mf,
         func => func,
+        regimm => regimm,
         memoryControlWord => memoryControlWord
     );
 
