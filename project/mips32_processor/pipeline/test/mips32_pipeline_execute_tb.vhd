@@ -20,7 +20,6 @@ architecture tb of mips32_pipeline_execute_tb is
     signal rsData : mips32_data_type;
     signal rtData : mips32_data_type;
     signal immidiate : mips32_data_type;
-    signal aluFunction : mips32_aluFunction_type;
     signal shamt : mips32_shamt_type;
     signal programCounterPlusFour : mips32_address_type;
 
@@ -28,6 +27,10 @@ architecture tb of mips32_pipeline_execute_tb is
 
     signal overrideProgramCounter : boolean;
     signal newProgramCounter : mips32_address_type;
+
+    signal opcode : mips32_opcode_type := mips32_opcode_special;
+    signal mf : mips32_mf_type := 0;
+    signal func : mips32_function_type := mips32_function_Sll;
 begin
     main : process
         variable expectedExecResult : mips32_data_type;
@@ -40,8 +43,8 @@ begin
             if run("R-type subtract function works") then
                 rsData <= std_logic_vector(to_signed(100, rsData'length));
                 rtData <= std_logic_vector(to_signed(10, rtData'length));
-                executeControlWord.isRtype <= true;
-                aluFunction <= mips32_aluFunctionSubtract;
+                opcode <= mips32_opcode_special;
+                func <= mips32_function_Subtract;
                 expectedExecResult := std_logic_vector(to_signed(90, expectedExecResult'length));
                 expectedDestinationRegToMem := 13;
                 wait for 10 ns;
@@ -50,7 +53,7 @@ begin
                 rsData <= std_logic_vector(to_signed(32, rsData'length));
                 rtData <= std_logic_vector(to_signed(255, rtData'length));
                 immidiate <= std_logic_vector(to_signed(-4, immidiate'length));
-                executeControlWord.ALUOpDirective <= exec_add;
+                opcode <= mips32_opcode_Addi;
                 expectedExecResult := std_logic_vector(to_signed(28, expectedExecResult'length));
                 expectedDestinationRegToMem := 26;
                 expectedRegDataRead := std_logic_vector(to_signed(255, expectedRegDataRead'length));
@@ -60,9 +63,8 @@ begin
                 rsData <= std_logic_vector(to_signed(100, rsData'length));
                 rtData <= std_logic_vector(to_signed(100, rtData'length));
                 immidiate <= std_logic_vector(to_signed(-1, immidiate'length));
+                opcode <= mips32_opcode_Beq;
                 programCounterPlusFour <= std_logic_vector(to_unsigned(16, programCounterPlusFour'length));
-                executeControlWord.ALUOpDirective <= exec_sub;
-                executeControlWord.branchEq <= true;
                 expectedBranchTarget := std_logic_vector(to_unsigned(12, expectedBranchTarget'length));
                 wait for 10 ns;
                 check(overrideProgramCounter);
@@ -72,8 +74,7 @@ begin
                 rtData <= std_logic_vector(to_signed(100, rtData'length));
                 immidiate <= std_logic_vector(to_signed(-1, immidiate'length));
                 programCounterPlusFour <= std_logic_vector(to_unsigned(16, programCounterPlusFour'length));
-                executeControlWord.ALUOpDirective <= exec_sub;
-                executeControlWord.branchEq <= true;
+                opcode <= mips32_opcode_Beq;
                 expectedBranchTarget := std_logic_vector(to_unsigned(12, expectedBranchTarget'length));
                 wait for 10 ns;
                 check(not overrideProgramCounter);
@@ -82,8 +83,7 @@ begin
                 rtData <= std_logic_vector(to_signed(100, rtData'length));
                 immidiate <= std_logic_vector(to_signed(-1, immidiate'length));
                 programCounterPlusFour <= std_logic_vector(to_unsigned(16, programCounterPlusFour'length));
-                executeControlWord.ALUOpDirective <= exec_sub;
-                executeControlWord.branchNe <= true;
+                opcode <= mips32_opcode_Bne;
                 expectedBranchTarget := std_logic_vector(to_unsigned(12, expectedBranchTarget'length));
                 wait for 10 ns;
                 check(overrideProgramCounter);
@@ -93,34 +93,17 @@ begin
                 rtData <= std_logic_vector(to_signed(20, rtData'length));
                 immidiate <= std_logic_vector(to_signed(-1, immidiate'length));
                 programCounterPlusFour <= std_logic_vector(to_unsigned(16, programCounterPlusFour'length));
-                executeControlWord.ALUOpDirective <= exec_sub;
-                executeControlWord.branchNe <= true;
+                opcode <= mips32_opcode_Bne;
                 expectedBranchTarget := std_logic_vector(to_unsigned(12, expectedBranchTarget'length));
                 wait for 10 ns;
                 check(not overrideProgramCounter);
             elsif run("Jump on jr") then
                 rsData <= std_logic_vector(to_signed(20, rsData'length));
-                aluFunction <= mips32_aluFunctionJumpReg;
-                executeControlWord.isRtype <= true;
+                opcode <= mips32_opcode_special;
+                func <= mips32_function_JumpReg;
                 wait for 10 ns;
                 check(overrideProgramCounter);
                 check_equal(rsData, newProgramCounter);
-            elsif run("No jump if not rtype") then
-                aluFunction <= mips32_aluFunctionJumpReg;
-                executeControlWord.isRtype <= false;
-                wait for 10 ns;
-                check(not overrideProgramCounter);
-            elsif run("branch target is correct when alufunc is jumpReg") then
-                rsData <= std_logic_vector(to_signed(100, rsData'length));
-                rtData <= std_logic_vector(to_signed(100, rtData'length));
-                immidiate <= std_logic_vector(to_signed(-1, immidiate'length));
-                programCounterPlusFour <= std_logic_vector(to_unsigned(16, programCounterPlusFour'length));
-                executeControlWord.ALUOpDirective <= exec_sub;
-                executeControlWord.branchEq <= true;
-                aluFunction <= mips32_aluFunctionJumpReg;
-                expectedBranchTarget := std_logic_vector(to_unsigned(12, expectedBranchTarget'length));
-                wait for 10 ns;
-                check_equal(newProgramCounter, expectedBranchTarget);
             end if;
         end loop;
         test_runner_cleanup(runner);
@@ -135,12 +118,19 @@ begin
         rsData => rsData,
         rtData => rtData,
         immidiate => immidiate,
-        aluFunction => aluFunction,
         shamt => shamt,
         programCounterPlusFour => programCounterPlusFour,
         execResult => execResult,
         overrideProgramCounter => overrideProgramCounter,
         newProgramCounter => newProgramCounter
+    );
+
+    controlDecode : entity src.mips32_control
+    port map (
+        opcode => opcode,
+        mf => mf,
+        func => func,
+        executeControlWord => executeControlWord
     );
 
 end architecture;

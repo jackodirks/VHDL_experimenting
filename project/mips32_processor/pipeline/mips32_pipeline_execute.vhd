@@ -15,7 +15,6 @@ entity mips32_pipeline_execute is
         rsData : in mips32_data_type;
         rtData : in mips32_data_type;
         immidiate : in mips32_data_type;
-        aluFunction : in mips32_aluFunction_type;
         shamt : in mips32_shamt_type;
         programCounterPlusFour : in mips32_address_type;
 
@@ -31,95 +30,51 @@ end entity;
 architecture behaviourial of mips32_pipeline_execute is
     signal aluResultImmidiate : mips32_data_type;
     signal aluResultRtype : mips32_data_type;
-    signal luiResult : mips32_data_type;
     signal shifterResult : mips32_data_type;
-    signal shifterActive : boolean;
-    signal aluCmd : mips32_alu_cmd;
-    signal overrideProgramCounter_buf : boolean;
-
-    pure function translateAluFunc( func : mips32_aluFunction_type) return mips32_alu_cmd is
-        variable ret : mips32_alu_cmd := cmd_add;
-    begin
-        case func is
-            when mips32_aluFunctionSll =>
-                ret := cmd_sll;
-            when mips32_aluFunctionSrl =>
-                ret := cmd_srl;
-            when mips32_aluFunctionAdd | mips32_aluFunctionAddUnsigned =>
-                ret := cmd_add;
-            when mips32_aluFunctionSubtract | mips32_aluFunctionSubtractUnsigned =>
-                ret := cmd_sub;
-            when mips32_aluFunctionAnd =>
-                ret := cmd_and;
-            when mips32_aluFunctionOr =>
-                ret := cmd_or;
-            when mips32_aluFunctionNor =>
-                ret := cmd_nor;
-            when mips32_aluFunctionSetLessThan =>
-                ret := cmd_slt;
-            when mips32_aluFunctionSetLessThanUnsigned =>
-                ret := cmd_sltu;
-            when mips32_aluFunctionSra =>
-                ret := cmd_sra;
-            when others =>
-                ret := cmd_add;
-        end case;
-        return ret;
-    end function;
-
 begin
-    overrideProgramCounter <= overrideProgramCounter_buf;
-    luiResult <= std_logic_vector(shift_left(unsigned(immidiate), 16));
-
-    determineExecResult : process(luiResult, aluResultRtype, aluResultImmidiate, shifterResult, executeControlWord, shifterActive)
+    determineExecResult : process(executeControlWord, shifterResult, aluResultRtype, aluResultImmidiate)
     begin
-        if executeControlWord.isLui then
-            execResult <= luiResult;
-        elsif shifterActive and executeControlWord.isRtype then
+        if executeControlWord.exec_directive = mips32_exec_alu then
+            if executeControlWord.use_immidiate then
+                execResult <= aluResultImmidiate;
+            else
+                execResult <= aluResultRtype;
+            end if;
+        elsif executeControlWord.exec_directive = mips32_exec_shift then
             execResult <= shifterResult;
-        elsif executeControlWord.isRtype then
-            execResult <= aluResultRtype;
         else
-            execResult <= aluResultImmidiate;
+            execResult <= (others => 'X');
         end if;
     end process;
 
-    determineBranchTarget : process(programCounterPlusFour, immidiate, rsData, aluFunction, executeControlWord)
+    determineBranchTarget : process(programCounterPlusFour, immidiate, rsData, executeControlWord)
     begin
-        if executeControlWord.isRtype and aluFunction = mips32_aluFunctionJumpReg then
+        if executeControlWord.branch_cmd = cmd_branch_jumpreg then
             newProgramCounter <= rsData;
         else
             newProgramCounter <= std_logic_vector(signed(programCounterPlusFour) + shift_left(signed(immidiate), 2));
         end if;
     end process;
 
-    determineOverridePC : process(executeControlWord, rsData, rtData, aluFunction)
+    determineOverridePC : process(executeControlWord, rsData, rtData)
     begin
-        overrideProgramCounter_buf <= false;
-        if executeControlWord.branchEq and rsData = rtData then
-            overrideProgramCounter_buf <= true;
-        elsif executeControlWord.branchNe and rsData /= rtData then
-            overrideProgramCounter_buf <= true;
-        elsif executeControlWord.isRtype and aluFunction = mips32_aluFunctionJumpReg then
-            overrideProgramCounter_buf <= true;
+        overrideProgramCounter <= false;
+        if executeControlWord.exec_directive = mips32_exec_branch then
+            if executeControlWord.branch_cmd = cmd_branch_eq and rsData = rtData then
+                overrideProgramCounter <= true;
+            elsif executeControlWord.branch_cmd = cmd_branch_ne and rsData /= rtData then
+                overrideProgramCounter <= true;
+            elsif executeControlWord.branch_cmd = cmd_branch_jumpreg then
+                overrideProgramCounter <= true;
+            end if;
         end if;
-    end process;
-
-    determineAluFunctionInput : process(executeControlWord, aluFunction)
-    begin
-        case executeControlWord.ALUOpDirective is
-            when exec_add =>
-                aluCmd <= cmd_add;
-            when others =>
-                aluCmd <= cmd_sub;
-        end case;
     end process;
 
     alu_immidiate : entity work.mips32_alu
     port map (
         inputA => rsData,
         inputB => immidiate,
-        cmd => aluCmd,
+        cmd => executeControlWord.alu_cmd,
         output => aluResultImmidiate
     );
 
@@ -127,16 +82,15 @@ begin
     port map (
         inputA => rsData,
         inputB => rtData,
-        cmd => translateAluFunc(aluFunction),
+        cmd => executeControlWord.alu_cmd,
         output => aluResultRtype
     );
 
     shifter : entity work.mips32_shifter
     port map (
         input => rtData,
-        cmd => translateAluFunc(aluFunction),
+        cmd => executeControlWord.shift_cmd,
         shamt => shamt,
-        output => shifterResult,
-        active => shifterActive
+        output => shifterResult
     );
 end architecture;

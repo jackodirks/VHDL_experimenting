@@ -24,7 +24,6 @@ entity mips32_pipeline_idexRegister is
         immidiateIn : in mips32_data_type;
         destinationRegIn : in mips32_registerFileAddress_type;
         rdAddressIn : in mips32_registerFileAddress_type;
-        aluFunctionIn : in mips32_aluFunction_type;
         shamtIn : in mips32_shamt_type;
         -- Pipeline control out
         executeControlWordOut : out mips32_ExecuteControlWord_type;
@@ -39,7 +38,6 @@ entity mips32_pipeline_idexRegister is
         immidiateOut : out mips32_data_type;
         destinationRegOut : out mips32_registerFileAddress_type;
         rdAddressOut : out mips32_registerFileAddress_type;
-        aluFunctionOut : out mips32_aluFunction_type;
         shamtOut : out mips32_shamt_type
     );
 end entity;
@@ -68,7 +66,6 @@ begin
                 immidiateOut <= immidiateIn;
                 destinationRegOut <= destinationRegIn;
                 rdAddressOut <= rdAddressIn;
-                aluFunctionOut <= aluFunctionIn;
                 shamtOut <= shamtIn;
             end if;
         end if;

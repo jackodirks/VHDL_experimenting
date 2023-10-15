@@ -16,39 +16,30 @@ end entity;
 
 architecture tb of mips32_shifter_tb is
     signal input : mips32_data_type := (others => '0');
-    signal cmd : mips32_alu_cmd := cmd_add;
+    signal cmd : mips32_shift_cmd := cmd_shift_sll;
     signal shamt : mips32_shamt_type := 0;
     signal output : mips32_data_type;
-    signal active : boolean;
 begin
     main : process
     begin
         test_runner_setup(runner, runner_cfg);
         while test_suite loop
-            if run("sll results in active") then
-                cmd <= cmd_sll;
-                wait for 1 ns;
-                check(active);
-            elsif run("sll works") then
+            if run("sll works") then
                 input <= X"0000000f";
                 shamt <= 4;
-                cmd <= cmd_sll;
+                cmd <= cmd_shift_sll;
                 wait for 1 ns;
                 check(X"000000f0" = output);
             elsif run("srl works") then
                 input <= X"000000f0";
                 shamt <= 4;
-                cmd <= cmd_srl;
+                cmd <= cmd_shift_srl;
                 wait for 1 ns;
                 check(X"0000000f" = output);
-            elsif run("cmd_add results in inactive") then
-                cmd <= cmd_add;
-                wait for 1 ns;
-                check(not active);
             elsif run("Sra works") then
                 input <= X"F0F0F0F0";
                 shamt <= 4;
-                cmd <= cmd_sra;
+                cmd <= cmd_shift_sra;
                 wait for 1 ns;
                 check(X"FF0F0F0F" = output);
             end if;
@@ -62,7 +53,6 @@ begin
         input => input,
         cmd => cmd,
         shamt => shamt,
-        output => output,
-        active => active
+        output => output
     );
 end architecture;

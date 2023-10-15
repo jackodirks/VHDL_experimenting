@@ -10,19 +10,21 @@ entity mips32_control is
     port (
         opcode : in mips32_opcode_type;
         mf : in mips32_mf_type;
+        func : in mips32_function_type;
 
         instructionDecodeControlWord : out mips32_InstructionDecodeControlWord_type;
         executeControlWord : out mips32_ExecuteControlWord_type;
         memoryControlWord : out mips32_MemoryControlWord_type;
         writeBackControlWord : out mips32_WriteBackControlWord_type;
-        invalidOpcode : out boolean
+        invalidOpcode : out boolean;
+        invalidFunction : out boolean
     );
 end entity;
 
 architecture behaviourial of mips32_control is
 begin
 
-    decodeOpcode : process(opcode, mf)
+    decodeOpcode : process(opcode, mf, func)
         variable instructionDecodeControlWord_buf : mips32_InstructionDecodeControlWord_type;
         variable executeControlWord_buf : mips32_ExecuteControlWord_type;
         variable memoryControlWord_buf : mips32_MemoryControlWord_type;
@@ -33,28 +35,73 @@ begin
         memoryControlWord_buf := mips32_memoryControlWordAllFalse;
         writeBackControlWord_buf := mips32_writeBackControlWordAllFalse;
         invalidOpcode <= false;
+        invalidFunction <= false;
         case opcode is
-            when mips32_opcodeRType =>
+            when mips32_opcode_special =>
                 instructionDecodeControlWord_buf.regDstIsRd := true;
                 writeBackControlWord_buf.regWrite := true;
-                executeControlWord_buf.isRtype := true;
-            when mips32_opcodeJ =>
+                case func is
+                    when mips32_function_sll =>
+                        executeControlWord_buf.exec_directive := mips32_exec_shift;
+                        executeControlWord_buf.shift_cmd := cmd_shift_sll;
+                    when mips32_function_srl =>
+                        executeControlWord_buf.exec_directive := mips32_exec_shift;
+                        executeControlWord_buf.shift_cmd := cmd_shift_srl;
+                    when mips32_function_sra =>
+                        executeControlWord_buf.exec_directive := mips32_exec_shift;
+                        executeControlWord_buf.shift_cmd := cmd_shift_sra;
+                    when mips32_function_JumpReg =>
+                        executeControlWord_buf.exec_directive := mips32_exec_branch;
+                        executeControlWord_buf.branch_cmd := cmd_branch_jumpreg;
+                    when mips32_function_add | mips32_function_AddUnsigned =>
+                        executeControlWord_buf.exec_directive := mips32_exec_alu;
+                        executeControlWord_buf.alu_cmd := cmd_alu_add;
+                    when mips32_function_Subtract | mips32_function_SubtractUnsigned =>
+                        executeControlWord_buf.exec_directive := mips32_exec_alu;
+                        executeControlWord_buf.alu_cmd := cmd_alu_sub;
+                    when mips32_function_And =>
+                        executeControlWord_buf.exec_directive := mips32_exec_alu;
+                        executeControlWord_buf.alu_cmd := cmd_alu_and;
+                    when mips32_function_Or =>
+                        executeControlWord_buf.exec_directive := mips32_exec_alu;
+                        executeControlWord_buf.alu_cmd := cmd_alu_or;
+                    when mips32_function_Nor =>
+                        executeControlWord_buf.exec_directive := mips32_exec_alu;
+                        executeControlWord_buf.alu_cmd := cmd_alu_nor;
+                    when mips32_function_SetLessThan =>
+                        executeControlWord_buf.exec_directive := mips32_exec_alu;
+                        executeControlWord_buf.alu_cmd := cmd_alu_slt;
+                    when mips32_function_SetLessThanUnsigned =>
+                        executeControlWord_buf.exec_directive := mips32_exec_alu;
+                        executeControlWord_buf.alu_cmd := cmd_alu_sltu;
+                    when others =>
+                        invalidFunction <= true;
+                end case;
+            when mips32_opcode_J =>
                 instructionDecodeControlWord_buf.jump := true;
-            when mips32_opcodeJal =>
+            when mips32_opcode_Jal =>
                 instructionDecodeControlWord_buf.jump := true;
                 writeBackControlWord_buf.regWrite := true;
-                executeControlWord_buf.ALUOpDirective := exec_add;
-            when mips32_opcodeBeq =>
-                executeControlWord_buf.branchEq := true;
-            when mips32_opcodeBne =>
-                executeControlWord_buf.branchNe := true;
-            when mips32_opcodeAddiu | mips32_opcodeAddi =>
-                executeControlWord_buf.ALUOpDirective := exec_add;
+                executeControlWord_buf.exec_directive := mips32_exec_alu;
+                executeControlWord_buf.alu_cmd := cmd_alu_add;
+                executeControlWord_buf.use_immidiate := true;
+            when mips32_opcode_Beq =>
+                executeControlWord_buf.exec_directive := mips32_exec_branch;
+                executeControlWord_buf.branch_cmd := cmd_branch_eq;
+            when mips32_opcode_Bne =>
+                executeControlWord_buf.exec_directive := mips32_exec_branch;
+                executeControlWord_buf.branch_cmd := cmd_branch_ne;
+            when mips32_opcode_Addiu | mips32_opcode_Addi =>
+                executeControlWord_buf.exec_directive := mips32_exec_alu;
+                executeControlWord_buf.alu_cmd := cmd_alu_add;
+                executeControlWord_buf.use_immidiate := true;
                 writeBackControlWord_buf.regWrite := true;
-            when mips32_opcodeLui =>
-                executeControlWord_buf.isLui := true;
+            when mips32_opcode_Lui =>
+                executeControlWord_buf.exec_directive := mips32_exec_alu;
+                executeControlWord_buf.alu_cmd := cmd_alu_lui;
+                executeControlWord_buf.use_immidiate := true;
                 writeBackControlWord_buf.regWrite := true;
-            when mips32_opcodeCOP0 =>
+            when mips32_opcode_COP0 =>
                 if mf = mips32_mf_mfc0 then
                     writeBackControlWord_buf.regWrite := true;
                     writeBackControlWord_buf.MemtoReg := true;
@@ -63,70 +110,94 @@ begin
                 else
                     invalidOpcode <= true;
                 end if;
-            when mips32_opcodeLb =>
-                executeControlWord_buf.ALUOpDirective := exec_add;
+            when mips32_opcode_Lb =>
+                executeControlWord_buf.exec_directive := mips32_exec_alu;
+                executeControlWord_buf.alu_cmd := cmd_alu_add;
+                executeControlWord_buf.use_immidiate := true;
                 writeBackControlWord_buf.MemtoReg := true;
                 writeBackControlWord_buf.regWrite := true;
                 memoryControlWord_buf.memOp := true;
                 memoryControlWord_buf.memReadSignExtend := true;
                 memoryControlWord_buf.loadStoreSize := ls_byte;
-            when mips32_opcodeLh =>
-                executeControlWord_buf.ALUOpDirective := exec_add;
+            when mips32_opcode_Lh =>
+                executeControlWord_buf.exec_directive := mips32_exec_alu;
+                executeControlWord_buf.alu_cmd := cmd_alu_add;
+                executeControlWord_buf.use_immidiate := true;
                 writeBackControlWord_buf.MemtoReg := true;
                 writeBackControlWord_buf.regWrite := true;
                 memoryControlWord_buf.memOp := true;
                 memoryControlWord_buf.memReadSignExtend := true;
                 memoryControlWord_buf.loadStoreSize := ls_halfword;
-            when mips32_opcodeLwl =>
-                executeControlWord_buf.ALUOpDirective := exec_add;
+            when mips32_opcode_Lwl =>
+                executeControlWord_buf.exec_directive := mips32_exec_alu;
+                executeControlWord_buf.alu_cmd := cmd_alu_add;
+                executeControlWord_buf.use_immidiate := true;
                 writeBackControlWord_buf.MemtoReg := true;
                 writeBackControlWord_buf.regWrite := true;
                 memoryControlWord_buf.memOp := true;
                 memoryControlWord_buf.wordLeft := true;
-            when mips32_opcodeLw =>
-                executeControlWord_buf.ALUOpDirective := exec_add;
+            when mips32_opcode_Lw =>
+                executeControlWord_buf.exec_directive := mips32_exec_alu;
+                executeControlWord_buf.alu_cmd := cmd_alu_add;
+                executeControlWord_buf.use_immidiate := true;
                 writeBackControlWord_buf.MemtoReg := true;
                 writeBackControlWord_buf.regWrite := true;
                 memoryControlWord_buf.memOp := true;
-            when mips32_opcodeLhu =>
-                executeControlWord_buf.ALUOpDirective := exec_add;
+            when mips32_opcode_Lhu =>
+                executeControlWord_buf.exec_directive := mips32_exec_alu;
+                executeControlWord_buf.alu_cmd := cmd_alu_add;
+                executeControlWord_buf.use_immidiate := true;
                 writeBackControlWord_buf.MemtoReg := true;
                 writeBackControlWord_buf.regWrite := true;
                 memoryControlWord_buf.memOp := true;
                 memoryControlWord_buf.loadStoreSize := ls_halfword;
-            when mips32_opcodeLwr =>
-                executeControlWord_buf.ALUOpDirective := exec_add;
+            when mips32_opcode_Lwr =>
+                executeControlWord_buf.exec_directive := mips32_exec_alu;
+                executeControlWord_buf.alu_cmd := cmd_alu_add;
+                executeControlWord_buf.use_immidiate := true;
                 writeBackControlWord_buf.MemtoReg := true;
                 writeBackControlWord_buf.regWrite := true;
                 memoryControlWord_buf.memOp := true;
                 memoryControlWord_buf.wordRight := true;
-            when mips32_opcodeLbu =>
-                executeControlWord_buf.ALUOpDirective := exec_add;
+            when mips32_opcode_Lbu =>
+                executeControlWord_buf.exec_directive := mips32_exec_alu;
+                executeControlWord_buf.alu_cmd := cmd_alu_add;
+                executeControlWord_buf.use_immidiate := true;
                 writeBackControlWord_buf.MemtoReg := true;
                 writeBackControlWord_buf.regWrite := true;
                 memoryControlWord_buf.memOp := true;
                 memoryControlWord_buf.loadStoreSize := ls_byte;
-            when mips32_opcodeSb =>
-                executeControlWord_buf.ALUOpDirective := exec_add;
+            when mips32_opcode_Sb =>
+                executeControlWord_buf.exec_directive := mips32_exec_alu;
+                executeControlWord_buf.alu_cmd := cmd_alu_add;
+                executeControlWord_buf.use_immidiate := true;
                 memoryControlWord_buf.MemOp := true;
                 memoryControlWord_buf.MemOpIsWrite := true;
                 memoryControlWord_buf.loadStoreSize := ls_byte;
-            when mips32_opcodeSh =>
-                executeControlWord_buf.ALUOpDirective := exec_add;
+            when mips32_opcode_Sh =>
+                executeControlWord_buf.exec_directive := mips32_exec_alu;
+                executeControlWord_buf.alu_cmd := cmd_alu_add;
+                executeControlWord_buf.use_immidiate := true;
                 memoryControlWord_buf.MemOp := true;
                 memoryControlWord_buf.MemOpIsWrite := true;
                 memoryControlWord_buf.loadStoreSize := ls_halfword;
-            when mips32_opcodeSwl =>
-                executeControlWord_buf.ALUOpDirective := exec_add;
+            when mips32_opcode_Swl =>
+                executeControlWord_buf.exec_directive := mips32_exec_alu;
+                executeControlWord_buf.alu_cmd := cmd_alu_add;
+                executeControlWord_buf.use_immidiate := true;
                 memoryControlWord_buf.MemOp := true;
                 memoryControlWord_buf.MemOpIsWrite := true;
                 memoryControlWord_buf.wordLeft := true;
-            when mips32_opcodeSw =>
-                executeControlWord_buf.ALUOpDirective := exec_add;
+            when mips32_opcode_Sw =>
+                executeControlWord_buf.exec_directive := mips32_exec_alu;
+                executeControlWord_buf.alu_cmd := cmd_alu_add;
+                executeControlWord_buf.use_immidiate := true;
                 memoryControlWord_buf.MemOp := true;
                 memoryControlWord_buf.MemOpIsWrite := true;
-            when mips32_opcodeSwr =>
-                executeControlWord_buf.ALUOpDirective := exec_add;
+            when mips32_opcode_Swr =>
+                executeControlWord_buf.exec_directive := mips32_exec_alu;
+                executeControlWord_buf.alu_cmd := cmd_alu_add;
+                executeControlWord_buf.use_immidiate := true;
                 memoryControlWord_buf.MemOp := true;
                 memoryControlWord_buf.MemOpIsWrite := true;
                 memoryControlWord_buf.wordRight := true;

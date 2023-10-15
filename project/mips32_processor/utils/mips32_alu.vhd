@@ -26,6 +26,7 @@ begin
         variable andResult : mips32_data_type;
         variable orResult : mips32_data_type;
         variable norResult : mips32_data_type;
+        variable luiResult : mips32_data_type;
         variable setLessThanResult : std_logic;
         variable setLessThanUnsignedResult : std_logic;
     begin
@@ -36,6 +37,7 @@ begin
         andResult := inputA and inputB;
         orResult := inputA or inputB;
         norResult := inputA nor inputB;
+        luiResult := std_logic_vector(shift_left(unsigned(inputB), 16));
         if signed(inputA) < signed(inputB) then
             setLessThanResult := '1';
         else
@@ -48,33 +50,33 @@ begin
             setLessThanUnsignedResult := '0';
         end if;
 
-        if cmd = cmd_add then
+        if cmd = cmd_alu_add then
             overflow <= additionOverflow;
-        elsif cmd = cmd_sub then
+        elsif cmd = cmd_alu_sub then
             overflow <= subtractionOverflow;
         else
             overflow <= false;
         end if;
 
         case cmd is
-            when cmd_add =>
+            when cmd_alu_add =>
                 output <= additionResult;
-            when cmd_sub =>
+            when cmd_alu_sub =>
                 output <= subtractionResult;
-            when cmd_and =>
+            when cmd_alu_and =>
                 output <= andResult;
-            when cmd_or =>
+            when cmd_alu_or =>
                 output <= orResult;
-            when cmd_nor =>
+            when cmd_alu_nor =>
                 output <= norResult;
-            when cmd_slt =>
+            when cmd_alu_slt =>
                 output(output'high downto 1) <= (others => '0');
                 output(0) <= setLessThanResult;
-            when cmd_sltu =>
+            when cmd_alu_sltu =>
                 output(output'high downto 1) <= (others => '0');
                 output(0) <= setLessThanUnsignedResult;
-            when others =>
-                output <= (others => 'X');
+            when cmd_alu_lui =>
+                output <= luiResult;
         end case;
     end process;
 

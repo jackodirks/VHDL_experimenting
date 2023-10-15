@@ -8,11 +8,10 @@ use work.mips32_pkg.all;
 entity mips32_shifter is
     port (
         input : in mips32_data_type;
-        cmd : in mips32_alu_cmd;
+        cmd : in mips32_shift_cmd;
         shamt : in mips32_shamt_type;
 
-        output : out mips32_data_type;
-        active : out boolean
+        output : out mips32_data_type
     );
 end entity;
 
@@ -22,19 +21,12 @@ begin
     process(input, cmd, shamt)
     begin
         case cmd is
-            when cmd_sll =>
+            when cmd_shift_sll =>
                 output <= std_logic_vector(shift_left(unsigned(input), shamt));
-                active <= true;
-            when cmd_srl =>
+            when cmd_shift_srl =>
                 output <= std_logic_vector(shift_right(unsigned(input), shamt));
-                active <= true;
-            when cmd_sra =>
+            when cmd_shift_sra =>
                 output <= std_logic_vector(shift_right(signed(input), shamt));
-                active <= true;
-            when others =>
-                output <= (others => 'X');
-                active <= false;
         end case;
     end process;
-    
 end architecture;

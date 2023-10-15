@@ -31,7 +31,6 @@ entity mips32_pipeline_instructionDecode is
         immidiate : out mips32_data_type;
         destinationReg : out mips32_registerFileAddress_type;
         rdAddress : out mips32_registerFileAddress_type;
-        aluFunction : out mips32_aluFunction_type;
         shamt : out mips32_shamt_type;
 
         -- From load hazard detected
@@ -71,7 +70,6 @@ begin
     immidiate <= immidiate_buf;
     destinationReg <= destinationReg_buf;
     rdAddress <= rdAddress_buf;
-    aluFunction <= to_integer(unsigned(instructionFromInstructionFetch(5 downto 0)));
     shamt <= to_integer(unsigned(instructionFromInstructionFetch(10 downto 6)));
 
     determineDestinationReg : process(rtAddress_buf, rdAddress_buf, decodedInstructionDecodeControlWord)
@@ -107,6 +105,7 @@ begin
     port map (
         opcode => to_integer(unsigned(instructionFromInstructionFetch(31 downto 26))),
         mf => to_integer(unsigned(instructionFromInstructionFetch(25 downto 21))),
+        func => to_integer(unsigned(instructionFromInstructionFetch(5 downto 0))),
         instructionDecodeControlWord => decodedInstructionDecodeControlWord,
         executeControlWord => decodedExecuteControlWord,
         memoryControlWord => decodedMemoryControlWord,

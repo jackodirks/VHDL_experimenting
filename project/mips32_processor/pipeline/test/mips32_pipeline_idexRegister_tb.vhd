@@ -33,7 +33,6 @@ architecture tb of mips32_pipeline_idexRegister_tb is
     signal immidiateIn : mips32_data_type := (others => '0');
     signal destinationRegIn : mips32_registerFileAddress_type := 0;
     signal rdAddressIn : mips32_registerFileAddress_type := 0;
-    signal aluFunctionIn : mips32_aluFunction_type := 0;
     signal shamtIn : mips32_shamt_type := 0;
     -- Pipeline control out
     signal executeControlWordOut : mips32_ExecuteControlWord_type;
@@ -48,7 +47,6 @@ architecture tb of mips32_pipeline_idexRegister_tb is
     signal immidiateOut : mips32_data_type;
     signal destinationRegOut : mips32_registerFileAddress_type;
     signal rdAddressOut : mips32_registerFileAddress_type;
-    signal aluFunctionOut : mips32_aluFunction_type;
     signal shamtOut : mips32_shamt_type;
 begin
     clk <= not clk after (clk_period/2);
@@ -126,7 +124,6 @@ begin
         immidiateIn => immidiateIn,
         destinationRegIn => destinationRegIn,
         rdAddressIn => rdAddressIn,
-        aluFunctionIn => aluFunctionIn,
         shamtIn => shamtIn,
         -- Pipeline control out
         executeControlWordOut => executeControlWordOut,
@@ -141,7 +138,6 @@ begin
         immidiateOut => immidiateOut,
         destinationRegOut => destinationRegOut,
         rdAddressOut => rdAddressOut,
-        aluFunctionOut => aluFunctionOut,
         shamtOut => shamtOut
     );
 end architecture;

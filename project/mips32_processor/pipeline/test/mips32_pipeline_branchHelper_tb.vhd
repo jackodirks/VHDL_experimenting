@@ -16,37 +16,32 @@ end entity;
 
 architecture tb of mips32_pipeline_branchHelper_tb is
     signal executeControlWord : mips32_ExecuteControlWord_type := mips32_executeControlWordAllFalse;
-    signal aluFunction : mips32_aluFunction_type := mips32_aluFunctionSll;
     signal injectBubble : boolean;
 
-    signal opcode : mips32_opcode_type := mips32_opcodeRType;
+    signal opcode : mips32_opcode_type := mips32_opcode_Special;
+    signal func : mips32_function_type := mips32_function_Sll;
 begin
     main : process
     begin
         test_runner_setup(runner, runner_cfg);
         while test_suite loop
             if run("On bne, bubble is true") then
-                opcode <= mips32_opcodeBne;
+                opcode <= mips32_opcode_Bne;
                 wait for 10 ns;
                 check(injectBubble);
             elsif run("On j, bubble is false") then
-                opcode <= mips32_opcodeJ;
+                opcode <= mips32_opcode_J;
                 wait for 10 ns;
                 check(not injectBubble);
             elsif run("On beq, bubble is true") then
-                opcode <= mips32_opcodeBeq;
+                opcode <= mips32_opcode_Beq;
                 wait for 10 ns;
                 check(injectBubble);
             elsif run("On jr, bubble is true") then
-                opcode <= mips32_opcodeRType;
-                aluFunction <= mips32_aluFunctionJumpReg;
+                opcode <= mips32_opcode_Special;
+                func <= mips32_function_JumpReg;
                 wait for 10 ns;
                 check(injectBubble);
-            elsif run("If aluFunctionJumpReg, but not r-type, bubble is false") then
-                opcode <= mips32_opcodeAddiu;
-                aluFunction <= mips32_aluFunctionJumpReg;
-                wait for 10 ns;
-                check(not injectBubble);
             end if;
         end loop;
         test_runner_cleanup(runner);
@@ -58,7 +53,6 @@ begin
     branchHelper : entity src.mips32_pipeline_branchHelper
     port map (
         executeControlWord => executeControlWord,
-        aluFunction => aluFunction,
         injectBubble => injectBubble
     );
 
@@ -66,6 +60,7 @@ begin
     port map (
         opcode => opcode,
         mf => 0,
+        func => func,
         executeControlWord => executeControlWord
     );
 end architecture;

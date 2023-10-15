@@ -18,7 +18,7 @@ package mips32_pkg is
     subtype mips32_byte_type is std_logic_vector(2**mips32_byte_width_log2b - 1 downto 0);
     subtype mips32_opcode_type is natural range 0 to 63;
     subtype mips32_registerFileAddress_type is natural range 0 to 31;
-    subtype mips32_aluFunction_type is natural range 0 to 63;
+    subtype mips32_function_type is natural range 0 to 63;
     subtype mips32_shamt_type is natural range 0 to 31;
     subtype mips32_mf_type is natural range 0 to 31;
     subtype mips32_byte_mask_type is std_logic_vector(mips32_bytes_per_data_word - 1 downto 0);
@@ -26,9 +26,12 @@ package mips32_pkg is
     type mips32_data_array is array (natural range <>) of mips32_data_type;
     type mips32_instruction_array is array (natural range <>) of mips32_instruction_type;
     type mips32_byte_array is array (natural range <>) of mips32_byte_type;
-    type mips32_exec_directive is (exec_add, exec_sub);
-    type mips32_alu_cmd is (cmd_add, cmd_sub, cmd_and, cmd_or, cmd_nor, cmd_sltu, cmd_slt, cmd_sll, cmd_srl, cmd_sra);
     type mips32_load_store_size is (ls_word, ls_halfword, ls_byte);
+
+    type mips32_exec_type is (mips32_exec_alu, mips32_exec_shift, mips32_exec_branch);
+    type mips32_alu_cmd is (cmd_alu_add, cmd_alu_sub, cmd_alu_and, cmd_alu_or, cmd_alu_nor, cmd_alu_lui, cmd_alu_sltu, cmd_alu_slt);
+    type mips32_shift_cmd is (cmd_shift_sll, cmd_shift_srl, cmd_shift_sra);
+    type mips32_branch_cmd is (cmd_branch_ne, cmd_branch_eq, cmd_branch_jumpreg);
 
     type mips32_InstructionDecodeControlWord_type is record
         jump : boolean;
@@ -37,11 +40,11 @@ package mips32_pkg is
     end record;
 
     type mips32_ExecuteControlWord_type is record
-        ALUOpDirective : mips32_exec_directive;
-        branchEq : boolean;
-        branchNe : boolean;
-        isLui : boolean;
-        isRtype : boolean;
+        exec_directive : mips32_exec_type;
+        alu_cmd : mips32_alu_cmd;
+        shift_cmd : mips32_shift_cmd;
+        branch_cmd : mips32_branch_cmd;
+        use_immidiate : boolean;
     end record;
 
     type mips32_MemoryControlWord_type is record
@@ -66,11 +69,11 @@ package mips32_pkg is
     );
 
     constant mips32_executeControlWordAllFalse : mips32_ExecuteControlWord_type := (
-        ALUOpDirective => exec_add,
-        branchEq => false,
-        branchNe => false,
-        isLui => false,
-        isRtype => false
+        exec_directive => mips32_exec_alu,
+        alu_cmd => cmd_alu_add,
+        shift_cmd => cmd_shift_sll,
+        branch_cmd => cmd_branch_ne,
+        use_immidiate => false
     );
 
     constant mips32_memoryControlWordAllFalse : mips32_MemoryControlWord_type := (
@@ -93,41 +96,41 @@ package mips32_pkg is
     -- The nop is sll $0,$0,$0
     constant mips32_instructionNop : mips32_instruction_type := X"00000000";
 
-    constant mips32_opcodeRType : mips32_opcode_type := 16#0#;
-    constant mips32_opcodeJ : mips32_opcode_type := 16#2#;
-    constant mips32_opcodeJal : mips32_opcode_type := 16#3#;
-    constant mips32_opcodeBeq : mips32_opcode_type := 16#4#;
-    constant mips32_opcodeBne : mips32_opcode_type := 16#5#;
-    constant mips32_opcodeAddi : mips32_opcode_type := 16#8#;
-    constant mips32_opcodeAddiu : mips32_opcode_type := 16#9#;
-    constant mips32_opcodeLui : mips32_opcode_type := 16#f#;
-    constant mips32_opcodeCOP0 : mips32_opcode_type := 16#10#;
-    constant mips32_opcodeLb : mips32_opcode_type := 16#20#;
-    constant mips32_opcodeLh : mips32_opcode_type := 16#21#;
-    constant mips32_opcodeLwl : mips32_opcode_type := 16#22#;
-    constant mips32_opcodeLw : mips32_opcode_type := 16#23#;
-    constant mips32_opcodeLbu : mips32_opcode_type := 16#24#;
-    constant mips32_opcodeLhu : mips32_opcode_type := 16#25#;
-    constant mips32_opcodeLwr : mips32_opcode_type := 16#26#;
-    constant mips32_opcodeSb : mips32_opcode_type := 16#28#;
-    constant mips32_opcodeSh : mips32_opcode_type := 16#29#;
-    constant mips32_opcodeSwl : mips32_opcode_type := 16#2a#;
-    constant mips32_opcodeSw : mips32_opcode_type := 16#2b#;
-    constant mips32_opcodeSwr : mips32_opcode_type := 16#2e#;
+    constant mips32_opcode_Special : mips32_opcode_type := 16#0#;
+    constant mips32_opcode_J : mips32_opcode_type := 16#2#;
+    constant mips32_opcode_Jal : mips32_opcode_type := 16#3#;
+    constant mips32_opcode_Beq : mips32_opcode_type := 16#4#;
+    constant mips32_opcode_Bne : mips32_opcode_type := 16#5#;
+    constant mips32_opcode_Addi : mips32_opcode_type := 16#8#;
+    constant mips32_opcode_Addiu : mips32_opcode_type := 16#9#;
+    constant mips32_opcode_Lui : mips32_opcode_type := 16#f#;
+    constant mips32_opcode_COP0 : mips32_opcode_type := 16#10#;
+    constant mips32_opcode_Lb : mips32_opcode_type := 16#20#;
+    constant mips32_opcode_Lh : mips32_opcode_type := 16#21#;
+    constant mips32_opcode_Lwl : mips32_opcode_type := 16#22#;
+    constant mips32_opcode_Lw : mips32_opcode_type := 16#23#;
+    constant mips32_opcode_Lbu : mips32_opcode_type := 16#24#;
+    constant mips32_opcode_Lhu : mips32_opcode_type := 16#25#;
+    constant mips32_opcode_Lwr : mips32_opcode_type := 16#26#;
+    constant mips32_opcode_Sb : mips32_opcode_type := 16#28#;
+    constant mips32_opcode_Sh : mips32_opcode_type := 16#29#;
+    constant mips32_opcode_Swl : mips32_opcode_type := 16#2a#;
+    constant mips32_opcode_Sw : mips32_opcode_type := 16#2b#;
+    constant mips32_opcode_Swr : mips32_opcode_type := 16#2e#;
 
-    constant mips32_aluFunctionSll : mips32_aluFunction_type := 16#00#;
-    constant mips32_aluFunctionSrl : mips32_aluFunction_type := 16#02#;
-    constant mips32_aluFunctionSra : mips32_aluFunction_type := 16#03#;
-    constant mips32_aluFunctionJumpReg : mips32_aluFunction_type := 16#08#;
-    constant mips32_aluFunctionAdd : mips32_aluFunction_type := 16#20#;
-    constant mips32_aluFunctionAddUnsigned : mips32_aluFunction_type := 16#21#;
-    constant mips32_aluFunctionSubtract : mips32_aluFunction_type := 16#22#;
-    constant mips32_aluFunctionSubtractUnsigned : mips32_aluFunction_type := 16#23#;
-    constant mips32_aluFunctionAnd : mips32_aluFunction_type := 16#24#;
-    constant mips32_aluFunctionOr : mips32_aluFunction_type := 16#25#;
-    constant mips32_aluFunctionNor : mips32_aluFunction_type := 16#27#;
-    constant mips32_aluFunctionSetLessThan : mips32_aluFunction_type := 16#2a#;
-    constant mips32_aluFunctionSetLessThanUnsigned : mips32_aluFunction_type := 16#2b#;
+    constant mips32_function_Sll : mips32_function_type := 16#00#;
+    constant mips32_function_Srl : mips32_function_type := 16#02#;
+    constant mips32_function_Sra : mips32_function_type := 16#03#;
+    constant mips32_function_JumpReg : mips32_function_type := 16#08#;
+    constant mips32_function_Add : mips32_function_type := 16#20#;
+    constant mips32_function_AddUnsigned : mips32_function_type := 16#21#;
+    constant mips32_function_Subtract : mips32_function_type := 16#22#;
+    constant mips32_function_SubtractUnsigned : mips32_function_type := 16#23#;
+    constant mips32_function_And : mips32_function_type := 16#24#;
+    constant mips32_function_Or : mips32_function_type := 16#25#;
+    constant mips32_function_Nor : mips32_function_type := 16#27#;
+    constant mips32_function_SetLessThan : mips32_function_type := 16#2a#;
+    constant mips32_function_SetLessThanUnsigned : mips32_function_type := 16#2b#;
 
     constant mips32_mf_mfc0 : mips32_mf_type := 16#0#;
     constant mips32_mf_mtc0 : mips32_mf_type := 16#4#;

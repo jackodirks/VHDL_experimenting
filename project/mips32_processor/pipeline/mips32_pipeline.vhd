@@ -58,7 +58,6 @@ architecture behaviourial of mips32_pipeline is
     signal immidiateFromId : mips32_data_type;
     signal destRegFromId : mips32_registerFileAddress_type;
     signal rdAddressFromId : mips32_registerFileAddress_type;
-    signal aluFuncFromId : mips32_aluFunction_type;
     signal shamtFromId : mips32_shamt_type;
     -- Registerfile to id/ex
     signal rsDataFromRegFile : mips32_data_type;
@@ -74,7 +73,6 @@ architecture behaviourial of mips32_pipeline is
     signal rtAddressFromIdEx : mips32_registerFileAddress_type;
     signal immidiateFromIdEx : mips32_data_type;
     signal destRegFromIdEx : mips32_registerFileAddress_type;
-    signal aluFuncFromIdEx : mips32_aluFunction_type;
     signal shamtFromIdEx : mips32_shamt_type;
     signal rdAddrFromIdEx : mips32_registerFileAddress_type;
     -- Instruction decode to forwarding
@@ -162,7 +160,6 @@ begin
         immidiate => immidiateFromId,
         destinationReg => destRegFromId,
         rdAddress => rdAddressFromId,
-        aluFunction => aluFuncFromId,
         shamt => shamtFromId,
 
         loadHazardDetected => loadHazardDetected
@@ -187,7 +184,6 @@ begin
         immidiateIn => immidiateFromId,
         destinationRegIn => destRegFromId,
         rdAddressIn => rdAddressFromId,
-        aluFunctionIn => aluFuncFromId,
         shamtIn => shamtFromId,
         -- Pipeline control out
         executeControlWordOut => exControlWordFromIdEx,
@@ -202,7 +198,6 @@ begin
         immidiateOut => immidiateFromIdEx,
         destinationRegOut => destRegFromIdEx,
         rdAddressOut => rdAddrFromIdEx,
-        aluFunctionOut => aluFuncFromIdEx,
         shamtOut => shamtFromIdEx
     );
 
@@ -212,7 +207,6 @@ begin
         rsData => rsDataFromFwu,
         rtData => rtDataFromFwu,
         immidiate => immidiateFromIdEx,
-        aluFunction => aluFuncFromIdEx,
         shamt => shamtFromIdEx,
         programCounterPlusFour => pcPlusFourFromIdEx,
 
@@ -342,7 +336,6 @@ begin
     branchHelper : entity work.mips32_pipeline_branchHelper
     port map (
         executeControlWord => exControlWordFromId,
-        aluFunction => aluFuncFromId,
         injectBubble => injectBubbleFromBranchHelper
     );
 

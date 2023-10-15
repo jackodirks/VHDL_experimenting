@@ -38,14 +38,14 @@ begin
             if run("Addition works") then
                 inputA <= std_logic_vector(to_signed(-4, inputA'length));
                 inputB <= std_logic_vector(to_signed(-6, inputB'length));
-                cmd <= cmd_add;
+                cmd <= cmd_alu_add;
                 expectedOutput := std_logic_vector(to_signed(-10, expectedOutput'length));
                 wait for clk_period;
                 check_equal(output, expectedOutput);
             elsif run("Addition can overflow") then
                 inputA <= std_logic_vector(to_signed(-2147483648, inputA'length));
                 inputB <= std_logic_vector(to_signed(-1, inputB'length));
-                cmd <= cmd_add;
+                cmd <= cmd_alu_add;
                 expectedOutput := std_logic_vector(to_signed(2147483647, expectedOutput'length));
                 wait for clk_period;
                 check_equal(output, expectedOutput);
@@ -53,48 +53,48 @@ begin
             elsif run("Subtraction works") then
                 inputA <= std_logic_vector(to_signed(-2147483648, inputA'length));
                 inputB <= std_logic_vector(to_signed(1, inputB'length));
-                cmd <= cmd_sub;
+                cmd <= cmd_alu_sub;
                 expectedOutput := std_logic_vector(to_signed(2147483647, expectedOutput'length));
                 wait for clk_period;
                 check_equal(output, expectedOutput);
             elsif run("Subtraction overflows") then
                 inputA <= std_logic_vector(to_signed(-2147483648, inputA'length));
                 inputB <= std_logic_vector(to_signed(1, inputB'length));
-                cmd <= cmd_sub;
+                cmd <= cmd_alu_sub;
                 expectedOutput := std_logic_vector(to_signed(2147483647, expectedOutput'length));
                 wait for clk_period;
                 check(overflow);
             elsif run("And function works") then
                 inputA <= X"F0F0FFFF";
                 inputB <= X"0A0ABCDE";
-                cmd <= cmd_and;
+                cmd <= cmd_alu_and;
                 expectedOutput := X"0000BCDE";
                 wait for clk_period;
                 check_equal(output, expectedOutput);
             elsif run("Or function works") then
                 inputA <= X"A0B0C0D0";
                 inputB <= X"0E0F0102";
-                cmd <= cmd_or;
+                cmd <= cmd_alu_or;
                 expectedOutput := X"AEBFC1D2";
                 wait for clk_period;
                 check_equal(output, expectedOutput);
             elsif run("Nor function works") then
                 inputA <= X"F0F0F0F0";
                 inputB <= X"0F0F0F00";
-                cmd <= cmd_nor;
+                cmd <= cmd_alu_nor;
                 expectedOutput := X"0000000F";
                 wait for clk_period;
                 check_equal(output, expectedOutput);
             elsif run("set less than function works") then
                 inputA <= std_logic_vector(to_signed(1, inputA'length));
                 inputB <= std_logic_vector(to_signed(-1, inputA'length));
-                cmd <= cmd_slt;
+                cmd <= cmd_alu_slt;
                 expectedOutput := (others => '0');
                 wait for clk_period;
                 check_equal(output, expectedOutput);
                 inputA <= std_logic_vector(to_signed(-1, inputA'length));
                 inputB <= std_logic_vector(to_signed(1, inputA'length));
-                cmd <= cmd_slt;
+                cmd <= cmd_alu_slt;
                 expectedOutput := (others => '0');
                 expectedOutput(0) := '1';
                 wait for clk_period;
@@ -102,7 +102,7 @@ begin
             elsif run("set less than unsigned function works") then
                 inputA <= std_logic_vector(to_signed(2, inputA'length));
                 inputB <= std_logic_vector(to_signed(-1, inputA'length));
-                cmd <= cmd_sltu;
+                cmd <= cmd_alu_sltu;
                 expectedOutput := (others => '0');
                 expectedOutput(0) := '1';
                 wait for clk_period;

@@ -38,9 +38,9 @@ architecture tb of mips32_pipeline_memory_tb is
     signal data_to_cpz : mips32_data_type;
     signal data_from_cpz : mips32_data_type := (others => '0');
 
-    signal decodedMemoryControlWord : mips32_MemoryControlWord_type := mips32_memoryControlWordAllFalse;
-    signal opcode : mips32_opcode_type;
-    signal mf : mips32_mf_type;
+    signal opcode : mips32_opcode_type := 0;
+    signal mf : mips32_mf_type := 0;
+    signal func : mips32_function_type := 0;
 begin
     main : process
         variable expectedMemAddress : mips32_address_type;
@@ -52,8 +52,7 @@ begin
         test_runner_setup(runner, runner_cfg);
         while test_suite loop
             if run("Requesting a memory write works") then
-                memoryControlWord.MemOp <= true;
-                memoryControlWord.MemOpIsWrite <= true;
+                opcode <= mips32_opcode_Sw;
                 expectedMemAddress := X"0000FFF0";
                 expectedDataToMem := X"FFFF0000";
                 execResult <= expectedMemAddress;
@@ -64,14 +63,13 @@ begin
                 check(doMemWrite);
                 check(not doMemRead);
             elsif run("Not requesting any MemOp works") then
-                memoryControlWord.MemOp <= false;
-                memoryControlWord.MemOpIsWrite <= false;
+                opcode <= mips32_opcode_special;
+                func <= mips32_function_sll;
                 wait for 10 ns;
                 check(not doMemWrite);
                 check(not doMemRead);
             elsif run("Requesting a memory read works") then
-                memoryControlWord.MemOp <= true;
-                memoryControlWord.MemOpIsWrite <= false;
+                opcode <= mips32_opcode_Lw;
                 expectedMemAddress := X"0000FFF0";
                 execResult <= expectedMemAddress;
                 dataFromMem <= X"F1020304";
@@ -81,185 +79,135 @@ begin
                 check(doMemRead);
                 check_equal(memDataRead, dataFromMem);
             elsif run("mtc0 causes write to coprocessor 0") then
-                opcode <= mips32_opcodeCOP0;
-                mf <= 4;
+                opcode <= mips32_opcode_COP0;
+                mf <= mips32_mf_mtc0;
                 rdAddress <= 5;
                 regDataRead <= X"FAFBFCFD";
-                wait for 1 fs;
-                memoryControlWord <= decodedMemoryControlWord;
                 wait for 1 fs;
                 check(write_to_cpz);
                 check(address_to_cpz = rdAddress);
                 check(data_to_cpz = regDataRead);
             elsif run("Rtype does not cause write to coprocessor 0") then
-                opcode <= mips32_opcodeRType;
-                mf <= 0;
-                wait for 1 fs;
-                memoryControlWord <= decodedMemoryControlWord;
+                opcode <= mips32_opcode_special;
+                func <= mips32_function_sll;
                 wait for 1 fs;
                 check(not write_to_cpz);
             elsif run("mtc0 does not write during a stall") then
-                opcode <= mips32_opcodeCOP0;
-                mf <= 4;
-                wait for 1 fs;
-                memoryControlWord <= decodedMemoryControlWord;
+                opcode <= mips32_opcode_COP0;
+                mf <= mips32_mf_mtc0;
                 stall <= true;
                 wait for 1 fs;
                 check(not write_to_cpz);
             elsif run("Mem stage forwards cpz data") then
-                opcode <= mips32_opcodeCOP0;
-                mf <= 0;
-                wait for 1 fs;
-                memoryControlWord <= decodedMemoryControlWord;
+                opcode <= mips32_opcode_COP0;
+                mf <= mips32_mf_mfc0;
                 data_from_cpz <= X"F1F2F3F4";
                 wait for 10 ns;
                 check(memDataRead = data_from_cpz);
             elsif run("lhu sets correct bytemask 0011") then
-                opcode <= mips32_opcodeLhu;
-                wait for 1 fs;
-                memoryControlWord <= decodedMemoryControlWord;
+                opcode <= mips32_opcode_Lhu;
                 wait for 1 fs;
                 check_equal(memByteMask, std_logic_vector'("0011"));
             elsif run("lhu zeros the upper 2 byte") then
-                opcode <= mips32_opcodeLhu;
-                wait for 1 fs;
-                memoryControlWord <= decodedMemoryControlWord;
+                opcode <= mips32_opcode_Lhu;
                 dataFromMem <= X"01020304";
                 wait for 1 fs;
                 check_equal(memDataRead, X"0000" & dataFromMem(15 downto 0));
             elsif run("lbu sets correct bytemask 0001") then
-                opcode <= mips32_opcodeLbu;
-                wait for 1 fs;
-                memoryControlWord <= decodedMemoryControlWord;
+                opcode <= mips32_opcode_Lbu;
                 wait for 1 fs;
                 check_equal(memByteMask, std_logic_vector'("0001"));
             elsif run("lbu zeros the upper 3 byte") then
-                opcode <= mips32_opcodeLbu;
-                wait for 1 fs;
-                memoryControlWord <= decodedMemoryControlWord;
+                opcode <= mips32_opcode_Lbu;
                 dataFromMem <= X"01020304";
                 wait for 1 fs;
                 check_equal(memDataRead, X"000000" & dataFromMem(7 downto 0));
             elsif run("lb sets bytemask 0001") then
-                opcode <= mips32_opcodeLb;
-                wait for 1 fs;
-                memoryControlWord <= decodedMemoryControlWord;
+                opcode <= mips32_opcode_Lb;
                 wait for 1 fs;
                 check_equal(memByteMask, std_logic_vector'("0001"));
             elsif run("lb sign-extends") then
-                opcode <= mips32_opcodeLb;
-                wait for 1 fs;
-                memoryControlWord <= decodedMemoryControlWord;
+                opcode <= mips32_opcode_Lb;
                 dataFromMem <= X"01020384";
                 wait for 1 fs;
                 check_equal(memDataRead, X"ffffff" & dataFromMem(7 downto 0));
             elsif run("lh sets bytemask 0011") then
-                opcode <= mips32_opcodeLh;
-                wait for 1 fs;
-                memoryControlWord <= decodedMemoryControlWord;
+                opcode <= mips32_opcode_Lh;
                 wait for 1 fs;
                 check_equal(memByteMask, std_logic_vector'("0011"));
             elsif run("lh sign-extends") then
-                opcode <= mips32_opcodeLh;
-                wait for 1 fs;
-                memoryControlWord <= decodedMemoryControlWord;
+                opcode <= mips32_opcode_Lh;
                 dataFromMem <= X"01028384";
                 wait for 1 fs;
                 check_equal(memDataRead, X"ffff" & dataFromMem(15 downto 0));
             elsif run("sb sets bytemask 0001") then
-                opcode <= mips32_opcodeSb;
-                wait for 1 fs;
-                memoryControlWord <= decodedMemoryControlWord;
+                opcode <= mips32_opcode_Sb;
                 wait for 1 fs;
                 check_equal(memByteMask, std_logic_vector'("0001"));
             elsif run("sh sets bytemask 0011") then
-                opcode <= mips32_opcodeSh;
-                wait for 1 fs;
-                memoryControlWord <= decodedMemoryControlWord;
+                opcode <= mips32_opcode_Sh;
                 wait for 1 fs;
                 check_equal(memByteMask, std_logic_vector'("0011"));
             elsif run("lwl results in an aligned address") then
-                opcode <= mips32_opcodeLwl;
+                opcode <= mips32_opcode_Lwl;
                 execResult <= X"00000006";
-                wait for 1 fs;
-                memoryControlWord <= decodedMemoryControlWord;
                 wait for 1 fs;
                 check_equal(memAddress, std_logic_vector'(X"00000004"));
             elsif run("lwl 6 results in a bytemask of 0111") then
-                opcode <= mips32_opcodeLwl;
+                opcode <= mips32_opcode_Lwl;
                 execResult <= X"00000006";
-                wait for 1 fs;
-                memoryControlWord <= decodedMemoryControlWord;
                 wait for 1 fs;
                 check_equal(memByteMask, std_logic_vector'("0111"));
             elsif run("lwl merges incoming word and word from memory") then
-                opcode <= mips32_opcodeLwl;
+                opcode <= mips32_opcode_Lwl;
                 execResult <= X"00000006";
                 regDataRead <= X"f1f2f3f4";
-                wait for 1 fs;
-                memoryControlWord <= decodedMemoryControlWord;
                 dataFromMem <= X"01020304";
                 wait for 1 fs;
                 check_equal(memDataRead, dataFromMem(23 downto 0) & regDataRead(7 downto 0));
             elsif run("lwr results in an aligned address") then
-                opcode <= mips32_opcodeLwr;
+                opcode <= mips32_opcode_Lwr;
                 execResult <= X"00000003";
-                wait for 1 fs;
-                memoryControlWord <= decodedMemoryControlWord;
                 wait for 1 fs;
                 check_equal(memAddress, std_logic_vector'(X"00000000"));
             elsif run("lwr 3 results in a bytemask of 1000") then
-                opcode <= mips32_opcodeLwr;
+                opcode <= mips32_opcode_Lwr;
                 execResult <= X"00000003";
-                wait for 1 fs;
-                memoryControlWord <= decodedMemoryControlWord;
                 wait for 1 fs;
                 check_equal(memByteMask, std_logic_vector'("1000"));
             elsif run("lwr merges incoming word and word from memory") then
-                opcode <= mips32_opcodeLwr;
+                opcode <= mips32_opcode_Lwr;
                 execResult <= X"00000003";
                 regDataRead <= X"f1f2f3f4";
-                wait for 1 fs;
-                memoryControlWord <= decodedMemoryControlWord;
                 dataFromMem <= X"01020304";
                 wait for 1 fs;
                 check_equal(memDataRead, regDataRead(31 downto 8) & dataFromMem(31 downto 24));
             elsif run("swl results in an aligned address") then
-                opcode <= mips32_opcodeSwl;
+                opcode <= mips32_opcode_Swl;
                 execResult <= X"00000006";
-                wait for 1 fs;
-                memoryControlWord <= decodedMemoryControlWord;
                 wait for 1 fs;
                 check_equal(memAddress, std_logic_vector'(X"00000004"));
             elsif run("swl correctly right shifts outgoing data") then
-                opcode <= mips32_opcodeSwl;
+                opcode <= mips32_opcode_Swl;
                 execResult <= X"00000006";
                 regDataRead <= X"ffffff00";
                 wait for 1 fs;
-                memoryControlWord <= decodedMemoryControlWord;
-                wait for 1 fs;
                 check_equal(dataToMem, std_logic_vector'(X"00ffffff"));
             elsif run("swl on address ending in 3 does not shift") then
-                opcode <= mips32_opcodeSwl;
+                opcode <= mips32_opcode_Swl;
                 execResult <= X"000000f3";
                 regDataRead <= X"ffffff00";
                 wait for 1 fs;
-                memoryControlWord <= decodedMemoryControlWord;
-                wait for 1 fs;
                 check_equal(dataToMem, std_logic_vector'(X"ffffff00"));
             elsif run("swr results in an aligned address") then
-                opcode <= mips32_opcodeSwr;
+                opcode <= mips32_opcode_Swr;
                 execResult <= X"00000003";
-                wait for 1 fs;
-                memoryControlWord <= decodedMemoryControlWord;
                 wait for 1 fs;
                 check_equal(memAddress, std_logic_vector'(X"00000000"));
             elsif run("swr correctly left-shifts outgoing data") then
-                opcode <= mips32_opcodeSwr;
+                opcode <= mips32_opcode_Swr;
                 execResult <= X"00000003";
                 regDataRead <= X"ffffffee";
-                wait for 1 fs;
-                memoryControlWord <= decodedMemoryControlWord;
                 wait for 1 fs;
                 check_equal(dataToMem, std_logic_vector'(X"ee000000"));
             end if;
@@ -294,7 +242,8 @@ begin
     port map (
         opcode => opcode,
         mf => mf,
-        memoryControlWord => decodedMemoryControlWord
+        func => func,
+        memoryControlWord => memoryControlWord
     );
 
 end architecture;
