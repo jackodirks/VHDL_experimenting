@@ -42,7 +42,6 @@ architecture behaviourial of mips32_if2bus is
     signal icache_write : boolean := false;
     signal icache_miss : boolean;
     signal icache_fault : boolean;
-    signal icache_flush : boolean;
     signal icache_reset : std_logic;
 
 begin
@@ -59,7 +58,6 @@ begin
     begin
         if rising_edge(clk) then
             transactionFinished_buf := false;
-            icache_flush <= false;
             if rst = '1' then
                 mst2slv_buf := BUS_MST2SLV_IDLE;
                 hasFault_buf := false;
