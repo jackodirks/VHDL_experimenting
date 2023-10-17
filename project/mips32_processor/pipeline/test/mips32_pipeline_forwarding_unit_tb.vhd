@@ -46,7 +46,9 @@ begin
                 expectedRsData := X"0000000A";
                 expectedRtData := X"0000000B";
                 rsDataFromID <= expectedRsData;
+                rsAddressFromID <= 1;
                 rtDataFromID <= expectedRtData;
+                rtAddressFromID <= 1;
                 wait until rising_edge(clk);
                 check_equal(rsData, expectedRsData);
                 check_equal(rtData, expectedRtData);
@@ -100,10 +102,10 @@ begin
                 check_equal(rsData, expectedRsData);
                 check_equal(rtData, expectedRtData);
             elsif run("RegData is not forwarded for address 0") then
-                expectedRsData := X"0000000A";
+                expectedRsData := X"00000000";
                 expectedRtData := expectedRsData;
-                rsDataFromID <= expectedRsData;
-                rtDataFromID <= expectedRtData;
+                regDataFromMem <= (others => '1');
+                regDataFromEx <= (others => '1');
                 rsAddressFromID <= 0;
                 rtAddressFromID <= 0;
                 regAddressFromMem <= 0;

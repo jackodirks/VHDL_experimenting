@@ -32,7 +32,7 @@ begin
                                 regDataFromMem, regAddressFromMem, regWriteFromMem)
     begin
         if rsAddressFromID = 0 then
-            rsData <= rsDataFromID;
+            rsData <= (others => '0');
         elsif regWriteFromEx and rsAddressFromID = regAddressFromEx then
             rsData <= regDataFromEx;
         elsif regWriteFromMem and rsAddressFromID = regAddressFromMem then
@@ -46,7 +46,7 @@ begin
                                 regDataFromMem, regAddressFromMem, regWriteFromMem)
     begin
         if rtAddressFromID = 0 then
-            rtData <= rtDataFromID;
+            rtData <= (others => '0');
         elsif regWriteFromEx and rtAddressFromID = regAddressFromEx then
             rtData <= regDataFromEx;
         elsif regWriteFromMem and rtAddressFromID = regAddressFromMem then
