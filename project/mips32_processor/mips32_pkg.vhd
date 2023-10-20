@@ -32,7 +32,8 @@ package mips32_pkg is
     type mips32_exec_type is (mips32_exec_alu, mips32_exec_shift, mips32_exec_calcReturn);
     type mips32_alu_cmd is (cmd_alu_add, cmd_alu_sub, cmd_alu_and, cmd_alu_or, cmd_alu_nor, cmd_alu_lui, cmd_alu_sltu, cmd_alu_slt);
     type mips32_shift_cmd is (cmd_shift_sll, cmd_shift_srl, cmd_shift_sra);
-    type mips32_branch_cmd is (cmd_branch_ne, cmd_branch_eq, cmd_branch_bgez, cmd_branch_jumpreg, cmd_branch_blez, cmd_branch_bgtz);
+    type mips32_branch_cmd is (cmd_branch_ne, cmd_branch_eq, cmd_branch_bgez, cmd_branch_jumpreg, cmd_branch_blez, cmd_branch_bgtz,
+                               cmd_branch_bltz);
 
     type mips32_InstructionDecodeControlWord_type is record
         jump : boolean;
@@ -149,6 +150,7 @@ package mips32_pkg is
     constant mips32_mf_mfc0 : mips32_mf_type := 16#0#;
     constant mips32_mf_mtc0 : mips32_mf_type := 16#4#;
 
+    constant mips32_regimm_bltz : mips32_regimm_type := 16#0#;
     constant mips32_regimm_bgez : mips32_regimm_type := 16#1#;
     constant mips32_regimm_bgezl : mips32_regimm_type := 16#3#;
     constant mips32_regimm_bgezal : mips32_regimm_type := 16#11#;

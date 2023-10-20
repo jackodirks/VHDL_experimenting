@@ -82,6 +82,9 @@ begin
                 end case;
             when mips32_opcode_regimm =>
                 case regimm is
+                    when mips32_regimm_bltz =>
+                        executeControlWord_buf.is_branch_op := true;
+                        executeControlWord_buf.branch_cmd := cmd_branch_bltz;
                     when mips32_regimm_bgez|mips32_regimm_bgezl =>
                         executeControlWord_buf.is_branch_op := true;
                         executeControlWord_buf.branch_cmd := cmd_branch_bgez;
