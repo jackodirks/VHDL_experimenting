@@ -70,6 +70,8 @@ begin
                     overrideProgramCounter <= signed(rsData) >= 0;
                 when cmd_branch_blez =>
                     overrideProgramCounter <= signed(rsData) <= 0;
+                when cmd_branch_bgtz =>
+                    overrideProgramCounter <= signed(rsData) > 0;
                 when cmd_branch_jumpreg =>
                     overrideProgramCounter <= true;
             end case;

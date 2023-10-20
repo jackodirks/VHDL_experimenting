@@ -160,6 +160,31 @@ begin
                 wait for 10 ns;
                 check(overrideProgramCounter);
                 check_equal(newProgramCounter, expectedBranchTarget);
+            elsif run("bgtz branches on 5") then
+                rsData <= std_logic_vector(to_signed(5, rsData'length));
+                immidiate <= std_logic_vector(to_signed(-1, immidiate'length));
+                programCounterPlusFour <= std_logic_vector(to_unsigned(16, programCounterPlusFour'length));
+                opcode <= mips32_opcode_bgtz;
+                expectedBranchTarget := std_logic_vector(to_unsigned(12, expectedBranchTarget'length));
+                wait for 10 ns;
+                check(overrideProgramCounter);
+                check_equal(newProgramCounter, expectedBranchTarget);
+            elsif run("bgtz does not branch on 0") then
+                rsData <= std_logic_vector(to_signed(0, rsData'length));
+                immidiate <= std_logic_vector(to_signed(-1, immidiate'length));
+                programCounterPlusFour <= std_logic_vector(to_unsigned(16, programCounterPlusFour'length));
+                opcode <= mips32_opcode_bgtz;
+                expectedBranchTarget := std_logic_vector(to_unsigned(12, expectedBranchTarget'length));
+                wait for 10 ns;
+                check(not overrideProgramCounter);
+            elsif run("bgtz does not branch on -1") then
+                rsData <= std_logic_vector(to_signed(-1, rsData'length));
+                immidiate <= std_logic_vector(to_signed(-1, immidiate'length));
+                programCounterPlusFour <= std_logic_vector(to_unsigned(16, programCounterPlusFour'length));
+                opcode <= mips32_opcode_bgtz;
+                expectedBranchTarget := std_logic_vector(to_unsigned(12, expectedBranchTarget'length));
+                wait for 10 ns;
+                check(not overrideProgramCounter);
             end if;
         end loop;
         test_runner_cleanup(runner);

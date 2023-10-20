@@ -111,6 +111,9 @@ begin
             when mips32_opcode_blez|mips32_opcode_blezl =>
                 executeControlWord_buf.is_branch_op := true;
                 executeControlWord_buf.branch_cmd := cmd_branch_blez;
+            when mips32_opcode_bgtz =>
+                executeControlWord_buf.is_branch_op := true;
+                executeControlWord_buf.branch_cmd := cmd_branch_bgtz;
             when mips32_opcode_Addiu | mips32_opcode_Addi =>
                 executeControlWord_buf.exec_directive := mips32_exec_alu;
                 executeControlWord_buf.alu_cmd := cmd_alu_add;
