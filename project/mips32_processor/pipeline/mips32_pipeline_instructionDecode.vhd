@@ -46,9 +46,6 @@ architecture behaviourial of mips32_pipeline_instructionDecode is
     signal decodedWriteBackControlWord : mips32_WriteBackControlWord_type;
 
     signal jumpTarget : mips32_address_type;
-    signal immidiate_buf : mips32_data_type;
-    signal destinationReg_buf : mips32_registerFileAddress_type;
-
     signal overrideProgramCounter_buf : boolean := false;
 
     signal rtAddress_buf : mips32_registerFileAddress_type;
@@ -66,37 +63,19 @@ begin
     memoryControlWord <= decodedMemoryControlWord;
     executeControlWord <= decodedExecuteControlWord;
     rtAddress <= rtAddress_buf;
-    immidiate <= immidiate_buf;
-    destinationReg <= destinationReg_buf;
     rdAddress <= rdAddress_buf;
     shamt <= to_integer(unsigned(instructionFromInstructionFetch(10 downto 6)));
-
-    determineRs : process(instructionFromInstructionFetch, decodedInstructionDecodeControlWord)
-    begin
-        if decodedInstructionDecodeControlWord.jump then
-            rsAddress <= 0;
-        else
-            rsAddress <= to_integer(unsigned(instructionFromInstructionFetch(25 downto 21)));
-        end if;
-    end process;
+    immidiate <= std_logic_vector(resize(signed(instructionFromInstructionFetch(15 downto 0)), immidiate'length));
+    rsAddress <= to_integer(unsigned(instructionFromInstructionFetch(25 downto 21)));
 
     determineDestinationReg : process(rtAddress_buf, rdAddress_buf, decodedInstructionDecodeControlWord)
     begin
-        if decodedInstructionDecodeControlWord.jump then
-            destinationReg_buf <= 31;
+        if decodedInstructionDecodeControlWord.regDstIsRetReg then
+            destinationReg <= 31;
         elsif decodedInstructionDecodeControlWord.regDstIsRd then
-            destinationReg_buf <= rdAddress_buf;
+            destinationReg <= rdAddress_buf;
         else
-            destinationReg_buf <= rtAddress_buf;
-        end if;
-    end process;
-
-    determineImmidiate : process(instructionFromInstructionFetch, decodedInstructionDecodeControlWord, programCounterPlusFour)
-    begin
-        if decodedInstructionDecodeControlWord.jump then
-            immidiate_buf <= std_logic_vector(unsigned(programCounterPlusFour) + 4);
-        else
-            immidiate_buf <= std_logic_vector(resize(signed(instructionFromInstructionFetch(15 downto 0)), immidiate'length));
+            destinationReg <= rtAddress_buf;
         end if;
     end process;
 

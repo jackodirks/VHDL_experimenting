@@ -29,7 +29,7 @@ package mips32_pkg is
     type mips32_byte_array is array (natural range <>) of mips32_byte_type;
     type mips32_load_store_size is (ls_word, ls_halfword, ls_byte);
 
-    type mips32_exec_type is (mips32_exec_alu, mips32_exec_shift, mips32_exec_branch);
+    type mips32_exec_type is (mips32_exec_alu, mips32_exec_shift, mips32_exec_calcReturn);
     type mips32_alu_cmd is (cmd_alu_add, cmd_alu_sub, cmd_alu_and, cmd_alu_or, cmd_alu_nor, cmd_alu_lui, cmd_alu_sltu, cmd_alu_slt);
     type mips32_shift_cmd is (cmd_shift_sll, cmd_shift_srl, cmd_shift_sra);
     type mips32_branch_cmd is (cmd_branch_ne, cmd_branch_eq, cmd_branch_bgez, cmd_branch_jumpreg);
@@ -38,10 +38,12 @@ package mips32_pkg is
         jump : boolean;
         PCSrc : boolean;
         regDstIsRd : boolean;
+        regDstIsRetReg : boolean;
     end record;
 
     type mips32_ExecuteControlWord_type is record
         exec_directive : mips32_exec_type;
+        is_branch_op : boolean;
         alu_cmd : mips32_alu_cmd;
         shift_cmd : mips32_shift_cmd;
         branch_cmd : mips32_branch_cmd;
@@ -61,16 +63,19 @@ package mips32_pkg is
     type mips32_WriteBackControlWord_type is record
         regWrite : boolean;
         MemtoReg : boolean;
+        write_on_branch : boolean;
     end record;
 
     constant mips32_instructionDecodeControlWordAllFalse : mips32_InstructionDecodeControlWord_type := (
         jump => false,
         PCSrc => false,
-        regDstIsRd => false
+        regDstIsRd => false,
+        regDstIsRetReg => false
     );
 
     constant mips32_executeControlWordAllFalse : mips32_ExecuteControlWord_type := (
         exec_directive => mips32_exec_alu,
+        is_branch_op => false,
         alu_cmd => cmd_alu_add,
         shift_cmd => cmd_shift_sll,
         branch_cmd => cmd_branch_ne,
@@ -89,7 +94,8 @@ package mips32_pkg is
 
     constant mips32_writeBackControlWordAllFalse : mips32_WriteBackControlWord_type := (
         regWrite => false,
-        MemtoReg => false
+        MemtoReg => false,
+        write_on_branch => false
     );
 
     -- To begin, this processor will support the following instructions:
@@ -140,4 +146,5 @@ package mips32_pkg is
     constant mips32_mf_mtc0 : mips32_mf_type := 16#4#;
 
     constant mips32_regimm_bgez : mips32_regimm_type := 16#1#;
+    constant mips32_regimm_bgezal : mips32_regimm_type := 16#11#;
 end package;

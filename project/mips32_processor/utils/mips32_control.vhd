@@ -54,7 +54,7 @@ begin
                         executeControlWord_buf.exec_directive := mips32_exec_shift;
                         executeControlWord_buf.shift_cmd := cmd_shift_sra;
                     when mips32_function_JumpReg =>
-                        executeControlWord_buf.exec_directive := mips32_exec_branch;
+                        executeControlWord_buf.is_branch_op := true;
                         executeControlWord_buf.branch_cmd := cmd_branch_jumpreg;
                     when mips32_function_add | mips32_function_AddUnsigned =>
                         executeControlWord_buf.exec_directive := mips32_exec_alu;
@@ -83,8 +83,14 @@ begin
             when mips32_opcode_regimm =>
                 case regimm is
                     when mips32_regimm_bgez =>
-                        executeControlWord_buf.exec_directive := mips32_exec_branch;
+                        executeControlWord_buf.is_branch_op := true;
                         executeControlWord_buf.branch_cmd := cmd_branch_bgez;
+                    when mips32_regimm_bgezal =>
+                        instructionDecodeControlWord_buf.regDstIsRetReg := true;
+                        executeControlWord_buf.is_branch_op := true;
+                        executeControlWord_buf.branch_cmd := cmd_branch_bgez;
+                        executeControlWord_buf.exec_directive := mips32_exec_calcReturn;
+                        writeBackControlWord_buf.write_on_branch := true;
                     when others =>
                         invalidRegimm <= true;
                 end case;
@@ -92,15 +98,15 @@ begin
                 instructionDecodeControlWord_buf.jump := true;
             when mips32_opcode_Jal =>
                 instructionDecodeControlWord_buf.jump := true;
+                instructionDecodeControlWord_buf.regDstIsRetReg := true;
                 writeBackControlWord_buf.regWrite := true;
-                executeControlWord_buf.exec_directive := mips32_exec_alu;
-                executeControlWord_buf.alu_cmd := cmd_alu_add;
-                executeControlWord_buf.use_immidiate := true;
+                executeControlWord_buf.exec_directive := mips32_exec_calcReturn;
+                writeBackControlWord_buf.regWrite := true;
             when mips32_opcode_Beq | mips32_opcode_Beql =>
-                executeControlWord_buf.exec_directive := mips32_exec_branch;
+                executeControlWord_buf.is_branch_op := true;
                 executeControlWord_buf.branch_cmd := cmd_branch_eq;
             when mips32_opcode_Bne =>
-                executeControlWord_buf.exec_directive := mips32_exec_branch;
+                executeControlWord_buf.is_branch_op := true;
                 executeControlWord_buf.branch_cmd := cmd_branch_ne;
             when mips32_opcode_Addiu | mips32_opcode_Addi =>
                 executeControlWord_buf.exec_directive := mips32_exec_alu;

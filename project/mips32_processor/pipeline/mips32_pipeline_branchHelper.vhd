@@ -15,5 +15,5 @@ end entity;
 
 architecture behaviourial of mips32_pipeline_branchHelper is
 begin
-    injectBubble <= executeControlWord.exec_directive = mips32_exec_branch;
+    injectBubble <= executeControlWord.is_branch_op;
 end architecture;

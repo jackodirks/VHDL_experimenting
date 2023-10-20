@@ -22,9 +22,10 @@ architecture tb of mips32_pipeline_writeBack_tb is
 
     signal writeBackControlWord : mips32_WriteBackControlWord_type;
 
-    signal execResult : mips32_data_type;
-    signal memDataRead : mips32_data_type;
-    signal destinationReg : mips32_registerFileAddress_type;
+    signal execResult : mips32_data_type := (others => '0');
+    signal memDataRead : mips32_data_type := (others => '0');
+    signal destinationReg : mips32_registerFileAddress_type := 0;
+    signal has_branched : boolean := false;
 
     signal regWrite : boolean;
     signal regWriteAddress : mips32_registerFileAddress_type;
@@ -67,6 +68,16 @@ begin
                 writeBackControlWord.MemtoReg <= true;
                 wait until rising_edge(clk);
                 check(not regWrite);
+            elsif run("Conditional write writes on branch") then
+                writeBackControlWord.write_on_branch <= true;
+                has_branched <= true;
+                wait until rising_edge(clk);
+                check(regWrite);
+            elsif run("Conditional write does not write when no branch") then
+                writeBackControlWord.write_on_branch <= true;
+                has_branched <= false;
+                wait until rising_edge(clk);
+                check(not regWrite);
             end if;
         end loop;
         wait until rising_edge(clk);
@@ -82,6 +93,7 @@ begin
         execResult => execResult,
         memDataRead => memDataRead,
         destinationReg => destinationReg,
+        has_branched => has_branched,
         regWrite => regWrite,
         regWriteAddress => regWriteAddress,
         regWriteData => regWriteData

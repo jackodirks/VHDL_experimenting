@@ -155,24 +155,12 @@ begin
                 loadHazardDetected <= true;
                 wait for 1 ns;
                 check(repeatInstruction);
-            elsif run("Test jal") then
-                instructionIn := X"0c04000b";
-                programCounterPlusFour <= X"00100020";
-                instructionFromInstructionFetch <= instructionIn;
-                expectedExecuteControlword := mips32_executeControlWordAllFalse;
-                expectedExecuteControlword.exec_directive := mips32_exec_alu;
-                expectedExecuteControlword.alu_cmd := cmd_alu_add;
-                expectedExecuteControlword.use_immidiate := true;
-                wait until rising_edge(clk);
-                wait until falling_edge(clk);
-                check(executeControlWord = expectedExecuteControlword);
-                check(immidiate =  X"00100024");
-            elsif run("Jal always has rs address 0") then
+            elsif run("Jal always has destinationReg address 31") then
                 instructionIn := X"0cf4000b";
                 programCounterPlusFour <= X"00100020";
                 instructionFromInstructionFetch <= instructionIn;
                 wait for 1 ns;
-                check_equal(rsAddress, 0);
+                check_equal(destinationReg, 31);
             end if;
         end loop;
         wait until rising_edge(clk);

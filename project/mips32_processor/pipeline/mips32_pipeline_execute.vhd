@@ -32,19 +32,20 @@ architecture behaviourial of mips32_pipeline_execute is
     signal aluResultRtype : mips32_data_type;
     signal shifterResult : mips32_data_type;
 begin
-    determineExecResult : process(executeControlWord, shifterResult, aluResultRtype, aluResultImmidiate)
+    determineExecResult : process(executeControlWord, shifterResult, aluResultRtype, aluResultImmidiate, programCounterPlusFour)
     begin
-        if executeControlWord.exec_directive = mips32_exec_alu then
-            if executeControlWord.use_immidiate then
-                execResult <= aluResultImmidiate;
-            else
-                execResult <= aluResultRtype;
-            end if;
-        elsif executeControlWord.exec_directive = mips32_exec_shift then
-            execResult <= shifterResult;
-        else
-            execResult <= (others => 'X');
-        end if;
+        case executeControlWord.exec_directive is
+            when mips32_exec_alu =>
+                if executeControlWord.use_immidiate then
+                    execResult <= aluResultImmidiate;
+                else
+                    execResult <= aluResultRtype;
+                end if;
+            when mips32_exec_shift =>
+                execResult <= shifterResult;
+            when mips32_exec_calcReturn =>
+                execResult <= std_logic_vector(unsigned(programCounterPlusFour) + 4);
+        end case;
     end process;
 
     determineBranchTarget : process(programCounterPlusFour, immidiate, rsData, executeControlWord)
@@ -59,7 +60,7 @@ begin
     determineOverridePC : process(executeControlWord, rsData, rtData)
     begin
         overrideProgramCounter <= false;
-        if executeControlWord.exec_directive = mips32_exec_branch then
+        if executeControlWord.is_branch_op then
             case executeControlWord.branch_cmd is
                 when cmd_branch_eq =>
                     overrideProgramCounter <= rsData = rtData;

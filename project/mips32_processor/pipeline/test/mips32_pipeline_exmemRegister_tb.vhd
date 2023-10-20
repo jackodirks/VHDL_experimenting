@@ -27,7 +27,8 @@ architecture tb of mips32_pipeline_exmemRegister_tb is
     signal execResultIn : mips32_data_type := (others => '0');
     signal regDataReadIn : mips32_data_type := (others => '0');
     signal destinationRegIn : mips32_registerFileAddress_type := 0;
-    signal rdAddressIn : mips32_registerFileAddress_type;
+    signal rdAddressIn : mips32_registerFileAddress_type := 0;
+    signal has_branched_in : boolean := false;
     -- Pipeline control out
     signal memoryControlWordOut : mips32_MemoryControlWord_type;
     signal writeBackControlWordOut : mips32_WriteBackControlWord_type;
@@ -36,6 +37,7 @@ architecture tb of mips32_pipeline_exmemRegister_tb is
     signal regDataReadOut : mips32_data_type;
     signal destinationRegOut : mips32_registerFileAddress_type;
     signal rdAddressOut : mips32_registerFileAddress_type;
+    signal has_branched_out : boolean;
 begin
     clk <= not clk after (clk_period/2);
 
@@ -106,6 +108,7 @@ begin
         regDataReadIn => regDataReadIn,
         destinationRegIn => destinationRegIn,
         rdAddressIn => rdAddressIn,
+        has_branched_in => has_branched_in,
         -- Pipeline control out
         memoryControlWordOut => memoryControlWordOut,
         writeBackControlWordOut => writeBackControlWordOut,
@@ -113,6 +116,7 @@ begin
         execResultOut => execResultOut,
         regDataReadOut => regDataReadOut,
         destinationRegOut => destinationRegOut,
-        rdAddressOut => rdAddressOut
+        rdAddressOut => rdAddressOut,
+        has_branched_out => has_branched_out
     );
 end architecture;

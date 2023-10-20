@@ -1,3 +1,5 @@
+ENTRY(__start)
+
 MEMORY
 {
     SRAM (rwx) : ORIGIN = 0x100000, LENGTH = 0x60000
