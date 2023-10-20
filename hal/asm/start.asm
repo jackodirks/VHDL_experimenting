@@ -1,29 +1,27 @@
 .global __start
 
 __start:
-        j actual_start
-dont_hit:
-        j dont_hit
-hit:
-        addiu $5, $0, 14
-        sw $5, 8($4)
-        jr $31
-actual_start:
-        addiu $31, $0, 0
         lui $4,%hi(array)
         addiu $4, $4,%lo(array)
         lw $5, 0($4)
-        bgezal $5, dont_hit
-        sw $31, 16($4)
+        blez $5, epilogue
         lw $5, 4($4)
-        bgezall $5, hit
-        addiu $5, $0, 14
-        sw $5, 12($4)
+        blez $5, L1
+        j epilogue
+L1:
+        li $6, 14
+        sw $6, 12($4)
+        lw $5, 8($4)
+        blez $5, L2
+        j epilogue
+L2:
+        li $6, 14
+        sw $6, 16($4)
 epilogue:
         j epilogue
 array:
-    .word -4
-    .word 5
+    .word 1
     .word 0
+    .word -1
     .word 0
     .word 0

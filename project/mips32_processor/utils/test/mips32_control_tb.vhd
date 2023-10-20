@@ -18,7 +18,7 @@ end entity;
 
 architecture tb of mips32_control_tb is
     constant clk_period : time := 20 ns;
-    constant illegalOpcode : mips32_opcode_type := 16#6#;
+    constant illegalOpcode : mips32_opcode_type := 16#a#;
 
     signal clk : std_logic := '0';
 

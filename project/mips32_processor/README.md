@@ -14,8 +14,10 @@ This is a mips32 revision 5 processor without a floating point coprocessor. More
 | BGEZ        | X                       |
 | BGEZAL      | X                       |
 | BGEZALL     | X                       |
-| BGEZL       |                         |
-| BLEZ        |                         |
+| BGEZL       | X                       |
+| BGTZ        |                         |
+| BGTZL       |                         |
+| BLEZ        | X                       |
 | BLEZL       |                         |
 | BLTZ        |                         |
 | BLTZAL      |                         |

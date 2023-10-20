@@ -134,6 +134,32 @@ begin
                 wait for 10 ns;
                 check(overrideProgramCounter);
                 check_equal(newProgramCounter, expectedBranchTarget);
+            elsif run("blez branches on 0") then
+                rsData <= std_logic_vector(to_signed(0, rsData'length));
+                immidiate <= std_logic_vector(to_signed(-1, immidiate'length));
+                programCounterPlusFour <= std_logic_vector(to_unsigned(16, programCounterPlusFour'length));
+                opcode <= mips32_opcode_blez;
+                expectedBranchTarget := std_logic_vector(to_unsigned(12, expectedBranchTarget'length));
+                wait for 10 ns;
+                check(overrideProgramCounter);
+                check_equal(newProgramCounter, expectedBranchTarget);
+            elsif run("blez does not branch on 1") then
+                rsData <= std_logic_vector(to_signed(1, rsData'length));
+                immidiate <= std_logic_vector(to_signed(-1, immidiate'length));
+                programCounterPlusFour <= std_logic_vector(to_unsigned(16, programCounterPlusFour'length));
+                opcode <= mips32_opcode_blez;
+                expectedBranchTarget := std_logic_vector(to_unsigned(12, expectedBranchTarget'length));
+                wait for 10 ns;
+                check(not overrideProgramCounter);
+            elsif run("blez branches on -1") then
+                rsData <= std_logic_vector(to_signed(-1, rsData'length));
+                immidiate <= std_logic_vector(to_signed(-1, immidiate'length));
+                programCounterPlusFour <= std_logic_vector(to_unsigned(16, programCounterPlusFour'length));
+                opcode <= mips32_opcode_blez;
+                expectedBranchTarget := std_logic_vector(to_unsigned(12, expectedBranchTarget'length));
+                wait for 10 ns;
+                check(overrideProgramCounter);
+                check_equal(newProgramCounter, expectedBranchTarget);
             end if;
         end loop;
         test_runner_cleanup(runner);

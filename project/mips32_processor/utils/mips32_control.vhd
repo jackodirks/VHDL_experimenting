@@ -82,7 +82,7 @@ begin
                 end case;
             when mips32_opcode_regimm =>
                 case regimm is
-                    when mips32_regimm_bgez =>
+                    when mips32_regimm_bgez|mips32_regimm_bgezl =>
                         executeControlWord_buf.is_branch_op := true;
                         executeControlWord_buf.branch_cmd := cmd_branch_bgez;
                     when mips32_regimm_bgezal|mips32_regimm_bgezall =>
@@ -108,6 +108,9 @@ begin
             when mips32_opcode_Bne =>
                 executeControlWord_buf.is_branch_op := true;
                 executeControlWord_buf.branch_cmd := cmd_branch_ne;
+            when mips32_opcode_blez =>
+                executeControlWord_buf.is_branch_op := true;
+                executeControlWord_buf.branch_cmd := cmd_branch_blez;
             when mips32_opcode_Addiu | mips32_opcode_Addi =>
                 executeControlWord_buf.exec_directive := mips32_exec_alu;
                 executeControlWord_buf.alu_cmd := cmd_alu_add;
