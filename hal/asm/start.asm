@@ -16,7 +16,7 @@ actual_start:
         bgezal $5, dont_hit
         sw $31, 16($4)
         lw $5, 4($4)
-        bgezal $5, hit
+        bgezall $5, hit
         addiu $5, $0, 14
         sw $5, 12($4)
 epilogue:

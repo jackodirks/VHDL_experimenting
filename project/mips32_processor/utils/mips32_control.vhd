@@ -85,7 +85,7 @@ begin
                     when mips32_regimm_bgez =>
                         executeControlWord_buf.is_branch_op := true;
                         executeControlWord_buf.branch_cmd := cmd_branch_bgez;
-                    when mips32_regimm_bgezal =>
+                    when mips32_regimm_bgezal|mips32_regimm_bgezall =>
                         instructionDecodeControlWord_buf.regDstIsRetReg := true;
                         executeControlWord_buf.is_branch_op := true;
                         executeControlWord_buf.branch_cmd := cmd_branch_bgez;
