@@ -6,7 +6,7 @@ __start:
         lw $5, 0($4)
         blez $5, epilogue
         lw $5, 4($4)
-        blez $5, L1
+        blezl $5, L1
         j epilogue
 L1:
         li $6, 14

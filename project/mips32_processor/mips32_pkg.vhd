@@ -116,6 +116,7 @@ package mips32_pkg is
     constant mips32_opcode_Lui : mips32_opcode_type := 16#f#;
     constant mips32_opcode_COP0 : mips32_opcode_type := 16#10#;
     constant mips32_opcode_Beql : mips32_opcode_type := 16#14#;
+    constant mips32_opcode_blezl : mips32_opcode_type := 16#16#;
     constant mips32_opcode_Lb : mips32_opcode_type := 16#20#;
     constant mips32_opcode_Lh : mips32_opcode_type := 16#21#;
     constant mips32_opcode_Lwl : mips32_opcode_type := 16#22#;

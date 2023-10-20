@@ -108,7 +108,7 @@ begin
             when mips32_opcode_Bne =>
                 executeControlWord_buf.is_branch_op := true;
                 executeControlWord_buf.branch_cmd := cmd_branch_ne;
-            when mips32_opcode_blez =>
+            when mips32_opcode_blez|mips32_opcode_blezl =>
                 executeControlWord_buf.is_branch_op := true;
                 executeControlWord_buf.branch_cmd := cmd_branch_blez;
             when mips32_opcode_Addiu | mips32_opcode_Addi =>
