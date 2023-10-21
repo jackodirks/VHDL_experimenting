@@ -1,4 +1,4 @@
-proc run_phys_opt {output_dir design_stage_name} {
+proc run_phys_opt {output_dir design_stage_name dont_repeat} {
     set phys_opt_directives "AddRetime \
                             AggressiveExplore \
                             AggressiveFanoutOpt \
@@ -14,6 +14,9 @@ proc run_phys_opt {output_dir design_stage_name} {
             phys_opt_design -directive $directive >> $output_dir/physOpt.log
         }
         set WNS [ get_property SLACK [get_timing_paths -max_paths 1 -nworst 1 -setup] ]
+        if {$dont_repeat} {
+            break
+        }
     }
     puts "phys_opt $design_stage_name final WNS: $WNS"
 }
@@ -85,12 +88,11 @@ set SYNTH_ARGS ""
 append SYNTH_ARGS " " -flatten_hierarchy " " none " "
 append SYNTH_ARGS " " -gated_clock_conversion " " off " "
 append SYNTH_ARGS " " -bufg " {" 12 "} "
-append SYNTH_ARGS " " -fanout_limit " {" 10000 "} "
 append SYNTH_ARGS " " -directive " " AlternateRoutability " "
 append SYNTH_ARGS " " -keep_equivalent_registers " "
 append SYNTH_ARGS " " -fsm_extraction " " auto " "
 append SYNTH_ARGS " " -resource_sharing " " off " "
-append SYNTH_ARGS " " -control_set_opt_threshold " " 4 " "
+append SYNTH_ARGS " " -control_set_opt_threshold " " 16 " "
 append SYNTH_ARGS " " -no_lc " "
 append SYNTH_ARGS " " -shreg_min_size " {" 5 "} "
 append SYNTH_ARGS " " -max_bram " {" -1 "} "
@@ -105,16 +107,29 @@ synth_design -top toplevel -generic clk_freq_mhz=$sysclk_freq_mhz {*}$SYNTH_ARGS
 
 # Optimize design
 puts "Step 3/5: Optimize design"
-opt_design -directive ExploreSequentialArea > $optDesignDir/log
+set OPT_ARGS ""
+append OPT_ARGS " " -retarget " "
+append OPT_ARGS " " -propconst " "
+append OPT_ARGS " " -sweep " "
+append OPT_ARGS " " -aggressive_remap " "
+append OPT_ARGS " " -resynth_remap " "
+append OPT_ARGS " " -muxf_remap " "
+append OPT_ARGS " " -hier_fanout_limit " " 512 " "
+append OPT_ARGS " " -bufg_opt " "
+append OPT_ARGS " " -mbufg_opt " "
+append OPT_ARGS " " -shift_register_opt " "
+append OPT_ARGS " " -dsp_register_opt " "
+append OPT_ARGS " " -control_set_opt " "
+opt_design {*}$OPT_ARGS > $optDesignDir/log
 
 #Place design
 puts "Step 4/5: Place design"
-set_clock_uncertainty 0.500 [get_clocks CLKSYS_main_clock_gen]
+set_clock_uncertainty 0.600 [get_clocks CLKSYS_main_clock_gen]
 place_design -directive ExtraNetDelay_high > $placeDesignDir/log
 set WNS -1
 set iteration 0
 while { $WNS < 0} {
-    run_phys_opt $placeDesignDir place_design
+    run_phys_opt $placeDesignDir place_design 0
     set WNS [ get_property SLACK [get_timing_paths -max_paths 1 -nworst 1 -setup] ]
     report_timing_summary -file $placeDesignDir/timing_summary_$iteration.rpt -delay_type max -max_paths 50 -quiet
     incr iteration
@@ -131,7 +146,7 @@ set WNS -1
 set iteration 0
 while { $WNS < 0} {
     route_design -directive MoreGlobalIterations -tns_cleanup >> $routeDesignDir/log
-    run_phys_opt $routeDesignDir route_design
+    run_phys_opt $routeDesignDir route_design 1
     set WNS [ get_property SLACK [get_timing_paths -max_paths 1 -nworst 1 -setup] ]
     report_timing_summary -file $routeDesignDir/timing_summary_$iteration.rpt -delay_type max -max_paths 50 -quiet
     incr iteration
