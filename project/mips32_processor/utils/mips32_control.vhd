@@ -114,7 +114,7 @@ begin
             when mips32_opcode_Beq | mips32_opcode_Beql =>
                 executeControlWord_buf.is_branch_op := true;
                 executeControlWord_buf.branch_cmd := cmd_branch_eq;
-            when mips32_opcode_Bne =>
+            when mips32_opcode_Bne | mips32_opcode_bnel =>
                 executeControlWord_buf.is_branch_op := true;
                 executeControlWord_buf.branch_cmd := cmd_branch_ne;
             when mips32_opcode_blez|mips32_opcode_blezl =>
