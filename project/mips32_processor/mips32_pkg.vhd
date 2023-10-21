@@ -152,6 +152,7 @@ package mips32_pkg is
 
     constant mips32_regimm_bltz : mips32_regimm_type := 16#0#;
     constant mips32_regimm_bgez : mips32_regimm_type := 16#1#;
+    constant mips32_regimm_bltzl : mips32_regimm_type := 16#2#;
     constant mips32_regimm_bgezl : mips32_regimm_type := 16#3#;
     constant mips32_regimm_bgezal : mips32_regimm_type := 16#11#;
     constant mips32_regimm_bgezall : mips32_regimm_type := 16#13#;

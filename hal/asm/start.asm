@@ -10,7 +10,7 @@ __start:
         li $6, 14
         sw $6, 12($4)
         lw $5, 8($4)
-        bltz $5, L2
+        bltzl $5, L2
         j epilogue
 L2:
         li $6, 14

@@ -22,7 +22,7 @@ This is a mips32 revision 5 processor without a floating point coprocessor. More
 | BLTZ        | X                       |
 | BLTZAL      |                         |
 | BLTZALL     |                         |
-| BLTZL       |                         |
+| BLTZL       | X                       |
 | BNE         | X                       |
 | BNEL        |                         |
 | CLO         |                         |
