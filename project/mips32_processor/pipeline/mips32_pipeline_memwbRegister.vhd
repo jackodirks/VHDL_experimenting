@@ -17,14 +17,14 @@ entity mips32_pipeline_memwbRegister is
         execResultIn : in mips32_data_type;
         memDataReadIn : in mips32_data_type;
         destinationRegIn : in mips32_registerFileAddress_type;
-        has_branched_in : in boolean;
+        regWrite_override_in : in boolean;
         -- Pipeline control out
         writeBackControlWordOut : out mips32_WriteBackControlWord_type;
         -- Pipeline data out
         execResultOut : out mips32_data_type;
         memDataReadOut : out mips32_data_type;
         destinationRegOut : out mips32_registerFileAddress_type;
-        has_branched_out : out boolean
+        regWrite_override_out : out boolean
     );
 end entity;
 
@@ -35,12 +35,13 @@ begin
         if rising_edge(clk) then
             if nop and not stall then
                 writeBackControlWordOut <= mips32_writeBackControlWordAllFalse;
+                regWrite_override_out <= false;
             elsif not stall then
                 writeBackControlWordOut <= writeBackControlWordIn;
                 execResultOut <= execResultIn;
                 memDataReadOut <= memDataReadIn;
                 destinationRegOut <= destinationRegIn;
-                has_branched_out <= has_branched_in;
+                regWrite_override_out <= regWrite_override_in;
             end if;
         end if;
     end process;

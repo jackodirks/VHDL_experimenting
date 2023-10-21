@@ -20,6 +20,7 @@ entity mips32_pipeline_execute is
 
         -- To Memory stage: data
         execResult : out mips32_data_type;
+        regWrite_override : out boolean;
 
         -- To instruction fetch: branch
         overrideProgramCounter : out boolean;
@@ -31,7 +32,12 @@ architecture behaviourial of mips32_pipeline_execute is
     signal aluResultImmidiate : mips32_data_type;
     signal aluResultRtype : mips32_data_type;
     signal shifterResult : mips32_data_type;
+    signal overrideProgramCounter_buf : boolean;
 begin
+
+    overrideProgramCounter <= overrideProgramCounter_buf;
+    regWrite_override <= executeControlWord.regWrite_override_on_branch and overrideProgramCounter_buf;
+
     determineExecResult : process(executeControlWord, shifterResult, aluResultRtype, aluResultImmidiate, programCounterPlusFour)
     begin
         case executeControlWord.exec_directive is
@@ -59,23 +65,23 @@ begin
 
     determineOverridePC : process(executeControlWord, rsData, rtData)
     begin
-        overrideProgramCounter <= false;
+        overrideProgramCounter_buf <= false;
         if executeControlWord.is_branch_op then
             case executeControlWord.branch_cmd is
                 when cmd_branch_eq =>
-                    overrideProgramCounter <= rsData = rtData;
+                    overrideProgramCounter_buf <= rsData = rtData;
                 when cmd_branch_ne =>
-                    overrideProgramCounter <= rsData /= rtData;
+                    overrideProgramCounter_buf <= rsData /= rtData;
                 when cmd_branch_bgez =>
-                    overrideProgramCounter <= signed(rsData) >= 0;
+                    overrideProgramCounter_buf <= signed(rsData) >= 0;
                 when cmd_branch_blez =>
-                    overrideProgramCounter <= signed(rsData) <= 0;
+                    overrideProgramCounter_buf <= signed(rsData) <= 0;
                 when cmd_branch_bgtz =>
-                    overrideProgramCounter <= signed(rsData) > 0;
+                    overrideProgramCounter_buf <= signed(rsData) > 0;
                 when cmd_branch_bltz =>
-                    overrideProgramCounter <= signed(rsData) < 0;
+                    overrideProgramCounter_buf <= signed(rsData) < 0;
                 when cmd_branch_jumpreg =>
-                    overrideProgramCounter <= true;
+                    overrideProgramCounter_buf <= true;
             end case;
         end if;
     end process;

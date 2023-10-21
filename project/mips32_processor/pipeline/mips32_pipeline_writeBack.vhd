@@ -15,7 +15,7 @@ entity mips32_pipeline_writeBack is
         execResult : in mips32_data_type;
         memDataRead : in mips32_data_type;
         destinationReg : in mips32_registerFileAddress_type;
-        has_branched : in boolean;
+        regWrite_override : in boolean;
 
         -- To instruction decode: regWrite
         regWrite : out boolean;
@@ -26,9 +26,9 @@ end entity;
 
 architecture behaviourial of mips32_pipeline_writeBack is
 begin
-    process(writeBackControlWord, execResult, destinationReg, memDataRead, has_branched)
+    process(writeBackControlWord, execResult, destinationReg, memDataRead, regWrite_override)
     begin
-        regWrite <= writeBackControlWord.regWrite or (writeBackControlWord.write_on_branch and has_branched);
+        regWrite <= writeBackControlWord.regWrite or regWrite_override;
         regWriteAddress <= destinationReg;
         if writeBackControlWord.MemtoReg then
             regWriteData <= memDataRead;

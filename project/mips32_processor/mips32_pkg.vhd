@@ -49,6 +49,7 @@ package mips32_pkg is
         shift_cmd : mips32_shift_cmd;
         branch_cmd : mips32_branch_cmd;
         use_immidiate : boolean;
+        regWrite_override_on_branch : boolean;
     end record;
 
     type mips32_MemoryControlWord_type is record
@@ -64,7 +65,6 @@ package mips32_pkg is
     type mips32_WriteBackControlWord_type is record
         regWrite : boolean;
         MemtoReg : boolean;
-        write_on_branch : boolean;
     end record;
 
     constant mips32_instructionDecodeControlWordAllFalse : mips32_InstructionDecodeControlWord_type := (
@@ -80,7 +80,8 @@ package mips32_pkg is
         alu_cmd => cmd_alu_add,
         shift_cmd => cmd_shift_sll,
         branch_cmd => cmd_branch_ne,
-        use_immidiate => false
+        use_immidiate => false,
+        regWrite_override_on_branch => false
     );
 
     constant mips32_memoryControlWordAllFalse : mips32_MemoryControlWord_type := (
@@ -95,8 +96,7 @@ package mips32_pkg is
 
     constant mips32_writeBackControlWordAllFalse : mips32_WriteBackControlWord_type := (
         regWrite => false,
-        MemtoReg => false,
-        write_on_branch => false
+        MemtoReg => false
     );
 
     -- To begin, this processor will support the following instructions:

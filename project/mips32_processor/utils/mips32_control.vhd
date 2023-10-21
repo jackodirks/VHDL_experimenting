@@ -93,13 +93,13 @@ begin
                         executeControlWord_buf.is_branch_op := true;
                         executeControlWord_buf.branch_cmd := cmd_branch_bgez;
                         executeControlWord_buf.exec_directive := mips32_exec_calcReturn;
-                        writeBackControlWord_buf.write_on_branch := true;
+                        executeControlWord_buf.regWrite_override_on_branch := true;
                     when mips32_regimm_bltzal|mips32_regimm_bltzall =>
                         instructionDecodeControlWord_buf.regDstIsRetReg := true;
                         executeControlWord_buf.is_branch_op := true;
                         executeControlWord_buf.branch_cmd := cmd_branch_bltz;
                         executeControlWord_buf.exec_directive := mips32_exec_calcReturn;
-                        writeBackControlWord_buf.write_on_branch := true;
+                        executeControlWord_buf.regWrite_override_on_branch := true;
                     when others =>
                         invalidRegimm <= true;
                 end case;

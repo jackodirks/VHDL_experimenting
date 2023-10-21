@@ -90,6 +90,7 @@ architecture behaviourial of mips32_pipeline is
     signal rtDataFromFwu : mips32_data_type;
     -- Execute to memory
     signal execResFromExec : mips32_data_type;
+    signal regWriteOverrideFromExec : boolean;
     -- From ex/mem
     signal memControlWordFromExMem : mips32_MemoryControlWord_type;
     signal wbControlWordFromExMem : mips32_WriteBackControlWord_type;
@@ -97,7 +98,7 @@ architecture behaviourial of mips32_pipeline is
     signal regDataReadFromExMem : mips32_data_type;
     signal destRegFromExMem : mips32_registerFileAddress_type;
     signal rdAddrFromExMem : mips32_registerFileAddress_type;
-    signal has_branched_from_exMem : boolean;
+    signal regWriteOverrideFromExMem : boolean;
     -- Execute to instruction fetch
     signal overrideProgramCounterFromEx : boolean;
     signal newProgramCounterFromEx : mips32_address_type;
@@ -109,7 +110,7 @@ architecture behaviourial of mips32_pipeline is
     signal execResFromMemWb : mips32_data_type;
     signal memDataFromMemWb : mips32_data_type;
     signal destRegFromMemWb : mips32_registerFileAddress_type;
-    signal has_branched_from_memWb : boolean;
+    signal regWriteOverrideFromMemWb : boolean;
     -- From writeback
     signal regWriteFromWb : boolean;
     signal regWriteAddrFromWb : mips32_registerFileAddress_type;
@@ -212,6 +213,7 @@ begin
         programCounterPlusFour => pcPlusFourFromIdEx,
 
         execResult => execResFromExec,
+        regWrite_override => regWriteOverrideFromExec,
 
         overrideProgramCounter => overrideProgramCounterFromEx,
         newProgramCounter => newProgramCounterFromEx
@@ -228,14 +230,14 @@ begin
        regDataReadIn => rtDataFromFwu,
        destinationRegIn => destRegFromIdEx,
        rdAddressIn => rdAddrFromIdEx,
-       has_branched_in => overrideProgramCounterFromEx,
+       regWrite_override_in => regWriteOverrideFromExec,
        memoryControlWordOut => memControlWordFromExMem,
        writeBackControlWordOut => wbControlWordFromExMem,
        execResultOut => execResFromExMem,
        regDataReadOut => regDataReadFromExMem,
        destinationRegOut => destRegFromExMem,
        rdAddressOut => rdAddrFromExMem,
-       has_branched_out => has_branched_from_exMem
+       regWrite_override_out => regWriteOverrideFromExMem
    );
 
     memory : entity work.mips32_pipeline_memory
@@ -271,12 +273,12 @@ begin
        execResultIn => execResFromExMem,
        memDataReadIn => memDataFromMem,
        destinationRegIn => destRegFromExMem,
-       has_branched_in => has_branched_from_exMem,
+       regWrite_override_in => regWriteOverrideFromExMem,
        writeBackControlWordOut => wbControlWordFromMemWb,
        execResultOut => execResFromMemWb,
        memDataReadOut => memDataFromMemWb,
        destinationRegOut => destRegFromMemWb,
-       has_branched_out => has_branched_from_memWb
+       regWrite_override_out => regWriteOverrideFromMemWb
    );
 
     writeBack : entity work.mips32_pipeline_writeBack
@@ -285,7 +287,7 @@ begin
         execResult => execResFromMemWb,
         memDataRead => memDataFromMemWb,
         destinationReg => destRegFromMemWb,
-        has_branched => has_branched_from_memWb,
+        regWrite_override => regWriteOverrideFromMemWb,
 
         regWrite => regWriteFromWb,
         regWriteAddress => regWriteAddrFromWb,

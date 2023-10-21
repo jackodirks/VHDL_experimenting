@@ -28,7 +28,7 @@ architecture tb of mips32_pipeline_exmemRegister_tb is
     signal regDataReadIn : mips32_data_type := (others => '0');
     signal destinationRegIn : mips32_registerFileAddress_type := 0;
     signal rdAddressIn : mips32_registerFileAddress_type := 0;
-    signal has_branched_in : boolean := false;
+    signal regWrite_override_in : boolean := false;
     -- Pipeline control out
     signal memoryControlWordOut : mips32_MemoryControlWord_type;
     signal writeBackControlWordOut : mips32_WriteBackControlWord_type;
@@ -37,7 +37,7 @@ architecture tb of mips32_pipeline_exmemRegister_tb is
     signal regDataReadOut : mips32_data_type;
     signal destinationRegOut : mips32_registerFileAddress_type;
     signal rdAddressOut : mips32_registerFileAddress_type;
-    signal has_branched_out : boolean;
+    signal regWrite_override_out : boolean;
 begin
     clk <= not clk after (clk_period/2);
 
@@ -71,10 +71,12 @@ begin
                 stall <= false;
                 nop <= false;
                 memoryControlWordIn.memOp <= true;
+                regWrite_override_in <= true;
                 wait until falling_edge(clk);
                 nop <= true;
                 wait until falling_edge(clk);
                 check(not memoryControlWordOut.memOp);
+                check(not regWrite_override_out);
             elsif run("Nop during stall must be ignored") then
                 wait until falling_edge(clk);
                 stall <= false;
@@ -108,7 +110,7 @@ begin
         regDataReadIn => regDataReadIn,
         destinationRegIn => destinationRegIn,
         rdAddressIn => rdAddressIn,
-        has_branched_in => has_branched_in,
+        regWrite_override_in => regWrite_override_in,
         -- Pipeline control out
         memoryControlWordOut => memoryControlWordOut,
         writeBackControlWordOut => writeBackControlWordOut,
@@ -117,6 +119,6 @@ begin
         regDataReadOut => regDataReadOut,
         destinationRegOut => destinationRegOut,
         rdAddressOut => rdAddressOut,
-        has_branched_out => has_branched_out
+        regWrite_override_out => regWrite_override_out
     );
 end architecture;

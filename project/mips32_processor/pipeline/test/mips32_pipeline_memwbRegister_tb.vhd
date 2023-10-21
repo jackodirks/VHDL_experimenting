@@ -26,14 +26,14 @@ architecture tb of mips32_pipeline_memwbRegister_tb is
     signal execResultIn : mips32_data_type := (others => '0');
     signal memDataReadIn : mips32_data_type := (others => '0');
     signal destinationRegIn : mips32_registerFileAddress_type := 0;
-    signal has_branched_in : boolean := false;
+    signal regWrite_override_in : boolean := false;
     -- Pipeline control out
     signal writeBackControlWordOut : mips32_WriteBackControlWord_type;
     -- Pipeline data out
     signal execResultOut : mips32_data_type;
     signal memDataReadOut : mips32_data_type;
     signal destinationRegOut : mips32_registerFileAddress_type;
-    signal has_branched_out : boolean;
+    signal regWrite_override_out : boolean;
 begin
     clk <= not clk after (clk_period/2);
 
@@ -66,10 +66,12 @@ begin
                 stall <= false;
                 nop <= false;
                 writeBackControlWordIn.regWrite <= true;
+                regWrite_override_in <= true;
                 wait until falling_edge(clk);
                 nop <= true;
                 wait until falling_edge(clk);
                 check(not writeBackControlWordOut.regWrite);
+                check(not regWrite_override_out);
             elsif run("Nop during stall must be ignored") then
                 wait until falling_edge(clk);
                 stall <= false;
@@ -101,13 +103,13 @@ begin
         execResultIn => execResultIn,
         memDataReadIn => memDataReadIn,
         destinationRegIn => destinationRegIn,
-        has_branched_in => has_branched_in,
+        regWrite_override_in => regWrite_override_in,
         -- Pipeline control out
         writeBackControlWordOut => writeBackControlWordOut,
         -- Pipeline data out
         execResultOut => execResultOut,
         memDataReadOut => memDataReadOut,
         destinationRegOut => destinationRegOut,
-        has_branched_out => has_branched_out
+        regWrite_override_out => regWrite_override_out
     );
 end architecture;

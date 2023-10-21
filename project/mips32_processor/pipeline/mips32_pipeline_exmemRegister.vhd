@@ -19,7 +19,7 @@ entity mips32_pipeline_exmemRegister is
         regDataReadIn : in mips32_data_type;
         destinationRegIn : in mips32_registerFileAddress_type;
         rdAddressIn : in mips32_registerFileAddress_type;
-        has_branched_in : in boolean;
+        regWrite_override_in : in boolean;
         -- Pipeline control out
         memoryControlWordOut : out mips32_MemoryControlWord_type;
         writeBackControlWordOut : out mips32_WriteBackControlWord_type;
@@ -28,7 +28,7 @@ entity mips32_pipeline_exmemRegister is
         regDataReadOut : out mips32_data_type;
         destinationRegOut : out mips32_registerFileAddress_type;
         rdAddressOut : out mips32_registerFileAddress_type;
-        has_branched_out : out boolean
+        regWrite_override_out : out boolean
     );
 end entity;
 
@@ -42,6 +42,7 @@ begin
             if nop and not stall then
                 memoryControlWordOut_buf := mips32_memoryControlWordAllFalse;
                 writeBackControlWordOut_buf := mips32_writeBackControlWordAllFalse;
+                regWrite_override_out <= false;
             elsif not stall then
                 memoryControlWordOut_buf := memoryControlWordIn;
                 writeBackControlWordOut_buf := writeBackControlWordIn;
@@ -49,7 +50,7 @@ begin
                 regDataReadOut <= regDataReadIn;
                 destinationRegOut <= destinationRegIn;
                 rdAddressOut <= rdAddressIn;
-                has_branched_out <= has_branched_in;
+                regWrite_override_out <= regWrite_override_in;
             end if;
         end if;
         memoryControlWordOut <= memoryControlWordOut_buf;
