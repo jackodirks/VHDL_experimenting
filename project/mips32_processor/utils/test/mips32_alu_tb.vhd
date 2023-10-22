@@ -112,6 +112,18 @@ begin
                 expectedOutput := (others => '0');
                 wait for clk_period;
                 check_equal(output, expectedOutput);
+            elsif run("Count leading ones works") then
+                inputA <= X"f0f0f0f0";
+                cmd <= cmd_alu_clo;
+                expectedOutput := std_logic_vector(to_unsigned(4, output'length));
+                wait for 1 fs;
+                check_equal(output, expectedOutput);
+            elsif run("Count leading zeros works") then
+                inputA <= X"40f0f0f0";
+                cmd <= cmd_alu_clz;
+                expectedOutput := std_logic_vector(to_unsigned(1, output'length));
+                wait for 1 fs;
+                check_equal(output, expectedOutput);
             end if;
         end loop;
         wait until rising_edge(clk);

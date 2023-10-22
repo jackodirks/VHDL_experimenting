@@ -17,6 +17,35 @@ entity mips32_alu is
 end entity;
 
 architecture behaviourial of mips32_alu is
+    pure function count_leading_ones(
+        input : mips32_data_type
+    ) return mips32_data_type is
+        variable total : natural range 0 to mips32_data_type'length := 0;
+    begin
+        for i in mips32_data_type'high downto 0 loop
+            if input(i) = '0' then
+                exit;
+            else
+                total := total + 1;
+            end if;
+        end loop;
+        return std_logic_vector(to_unsigned(total, mips32_data_type'length));
+    end function;
+
+    pure function count_leading_zeros(
+        input : mips32_data_type
+    ) return mips32_data_type is
+        variable total : natural range 0 to mips32_data_type'length := 0;
+    begin
+        for i in mips32_data_type'high downto 0 loop
+            if input(i) = '1' then
+                exit;
+            else
+                total := total + 1;
+            end if;
+        end loop;
+        return std_logic_vector(to_unsigned(total, mips32_data_type'length));
+    end function;
 begin
     process(inputA, inputB, cmd)
         variable additionResult : mips32_data_type;
@@ -77,6 +106,10 @@ begin
                 output(0) <= setLessThanUnsignedResult;
             when cmd_alu_lui =>
                 output <= luiResult;
+            when cmd_alu_clo =>
+                output <= count_leading_ones(inputA);
+            when cmd_alu_clz =>
+                output <= count_leading_zeros(inputA);
         end case;
     end process;
 

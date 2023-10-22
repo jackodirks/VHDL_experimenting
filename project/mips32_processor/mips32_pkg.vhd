@@ -30,7 +30,8 @@ package mips32_pkg is
     type mips32_load_store_size is (ls_word, ls_halfword, ls_byte);
 
     type mips32_exec_type is (mips32_exec_alu, mips32_exec_shift, mips32_exec_calcReturn);
-    type mips32_alu_cmd is (cmd_alu_add, cmd_alu_sub, cmd_alu_and, cmd_alu_or, cmd_alu_nor, cmd_alu_lui, cmd_alu_sltu, cmd_alu_slt);
+    type mips32_alu_cmd is (cmd_alu_add, cmd_alu_sub, cmd_alu_and, cmd_alu_or, cmd_alu_nor, cmd_alu_lui, cmd_alu_sltu, cmd_alu_slt, cmd_alu_clo,
+                            cmd_alu_clz);
     type mips32_shift_cmd is (cmd_shift_sll, cmd_shift_srl, cmd_shift_sra);
     type mips32_branch_cmd is (cmd_branch_ne, cmd_branch_eq, cmd_branch_bgez, cmd_branch_jumpreg, cmd_branch_blez, cmd_branch_bgtz,
                                cmd_branch_bltz);
@@ -121,6 +122,7 @@ package mips32_pkg is
     constant mips32_opcode_bnel : mips32_opcode_type := 16#15#;
     constant mips32_opcode_blezl : mips32_opcode_type := 16#16#;
     constant mips32_opcode_bgtzl : mips32_opcode_type := 16#17#;
+    constant mips32_opcode_specialTwo : mips32_opcode_type := 16#1c#;
     constant mips32_opcode_Lb : mips32_opcode_type := 16#20#;
     constant mips32_opcode_Lh : mips32_opcode_type := 16#21#;
     constant mips32_opcode_Lwl : mips32_opcode_type := 16#22#;
@@ -159,4 +161,7 @@ package mips32_pkg is
     constant mips32_regimm_bgezal : mips32_regimm_type := 16#11#;
     constant mips32_regimm_bltzall : mips32_regimm_type := 16#12#;
     constant mips32_regimm_bgezall : mips32_regimm_type := 16#13#;
+
+    constant mips32_specialTwo_clz : mips32_function_type := 16#20#;
+    constant mips32_specialTwo_clo : mips32_function_type := 16#21#;
 end package;

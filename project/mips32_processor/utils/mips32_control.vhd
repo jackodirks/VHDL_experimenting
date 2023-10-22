@@ -147,6 +147,19 @@ begin
                 else
                     invalidOpcode <= true;
                 end if;
+            when mips32_opcode_specialTwo =>
+                instructionDecodeControlWord_buf.regDstIsRd := true;
+                writeBackControlWord_buf.regWrite := true;
+                case func is
+                    when mips32_specialTwo_clo =>
+                        executeControlWord_buf.exec_directive := mips32_exec_alu;
+                        executeControlWord_buf.alu_cmd := cmd_alu_clo;
+                    when mips32_specialTwo_clz =>
+                        executeControlWord_buf.exec_directive := mips32_exec_alu;
+                        executeControlWord_buf.alu_cmd := cmd_alu_clz;
+                    when others =>
+                        invalidFunction <= true;
+                end case;
             when mips32_opcode_Lb =>
                 executeControlWord_buf.exec_directive := mips32_exec_alu;
                 executeControlWord_buf.alu_cmd := cmd_alu_add;
