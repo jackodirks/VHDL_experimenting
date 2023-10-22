@@ -22,6 +22,7 @@ architecture tb of mips32_pipeline_execute_tb is
     signal immidiate : mips32_data_type;
     signal shamt : mips32_shamt_type;
     signal programCounterPlusFour : mips32_address_type;
+    signal rdAddress : mips32_registerFileAddress_type := 0;
 
     signal execResult : mips32_data_type;
 
@@ -229,6 +230,7 @@ begin
         immidiate => immidiate,
         shamt => shamt,
         programCounterPlusFour => programCounterPlusFour,
+        rdAddress => rdAddress,
         execResult => execResult,
         overrideProgramCounter => overrideProgramCounter,
         newProgramCounter => newProgramCounter

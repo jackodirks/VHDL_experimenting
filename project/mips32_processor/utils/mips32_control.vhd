@@ -150,13 +150,23 @@ begin
             when mips32_opcode_specialTwo =>
                 instructionDecodeControlWord_buf.regDstIsRd := true;
                 writeBackControlWord_buf.regWrite := true;
+                executeControlWord_buf.exec_directive := mips32_exec_alu;
                 case func is
                     when mips32_specialTwo_clo =>
-                        executeControlWord_buf.exec_directive := mips32_exec_alu;
                         executeControlWord_buf.alu_cmd := cmd_alu_clo;
                     when mips32_specialTwo_clz =>
-                        executeControlWord_buf.exec_directive := mips32_exec_alu;
                         executeControlWord_buf.alu_cmd := cmd_alu_clz;
+                    when others =>
+                        invalidFunction <= true;
+                end case;
+            when mips32_opcode_specialThree =>
+                writeBackControlWord_buf.regWrite := true;
+                executeControlWord_buf.exec_directive := mips32_exec_bitManip;
+                case func is
+                    when mips32_specialThree_ext =>
+                        executeControlWord_buf.bitManip_cmd := cmd_bit_manip_ext;
+                    when mips32_specialThree_ins =>
+                        executeControlWord_buf.bitManip_cmd := cmd_bit_manip_ins;
                     when others =>
                         invalidFunction <= true;
                 end case;

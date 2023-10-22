@@ -211,6 +211,7 @@ begin
         immidiate => immidiateFromIdEx,
         shamt => shamtFromIdEx,
         programCounterPlusFour => pcPlusFourFromIdEx,
+        rdAddress => rdAddrFromIdEx,
 
         execResult => execResFromExec,
         regWrite_override => regWriteOverrideFromExec,

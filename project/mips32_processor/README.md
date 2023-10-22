@@ -29,8 +29,8 @@ This is a mips32 revision 5 processor without a floating point coprocessor. More
 | CLZ         | X                       |
 | DIV         |                         |
 | DIVU        |                         |
-| EXT         |                         |
-| INS         |                         |
+| EXT         | X                       |
+| INS         | X                       |
 | J           | X                       |
 | JAL         | X                       |
 | JALR        |                         |

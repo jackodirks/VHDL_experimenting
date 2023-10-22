@@ -17,6 +17,7 @@ entity mips32_pipeline_execute is
         immidiate : in mips32_data_type;
         shamt : in mips32_shamt_type;
         programCounterPlusFour : in mips32_address_type;
+        rdAddress : in mips32_registerFileAddress_type;
 
         -- To Memory stage: data
         execResult : out mips32_data_type;
@@ -32,13 +33,14 @@ architecture behaviourial of mips32_pipeline_execute is
     signal aluResultImmidiate : mips32_data_type;
     signal aluResultRtype : mips32_data_type;
     signal shifterResult : mips32_data_type;
+    signal bitManip_result : mips32_data_type;
     signal overrideProgramCounter_buf : boolean;
 begin
 
     overrideProgramCounter <= overrideProgramCounter_buf;
     regWrite_override <= executeControlWord.regWrite_override_on_branch and overrideProgramCounter_buf;
 
-    determineExecResult : process(executeControlWord, shifterResult, aluResultRtype, aluResultImmidiate, programCounterPlusFour)
+    determineExecResult : process(executeControlWord, shifterResult, aluResultRtype, aluResultImmidiate, programCounterPlusFour, bitManip_result)
     begin
         case executeControlWord.exec_directive is
             when mips32_exec_alu =>
@@ -51,6 +53,8 @@ begin
                 execResult <= shifterResult;
             when mips32_exec_calcReturn =>
                 execResult <= std_logic_vector(unsigned(programCounterPlusFour) + 4);
+            when mips32_exec_bitManip =>
+                execResult <= bitManip_result;
         end case;
     end process;
 
@@ -108,5 +112,15 @@ begin
         cmd => executeControlWord.shift_cmd,
         shamt => shamt,
         output => shifterResult
+    );
+
+    bit_manipulator : entity work.mips32_bit_manipulator
+    port map (
+        rs => rsData,
+        rt => rtData,
+        msb => rdAddress,
+        lsb => shamt,
+        cmd => executeControlWord.bitManip_cmd,
+        output => bitManip_result
     );
 end architecture;

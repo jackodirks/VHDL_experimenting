@@ -23,10 +23,10 @@ $(ODIR):
 	mkdir -p $(@)
 
 $(ODIR)%.asm.o: $(ASMDIR)%.asm | $(ODIR)
-	$(AS) -EL -mips32 $< -o $@
+	$(AS) -EL -mips32r5 $< -o $@
 
 $(ODIR)%.c.o: $(SRCDIR)%.c | $(ODIR)
-	$(GCC) -EL -mips32 -O3 -c $< -o $@
+	$(GCC) -EL -mips32r5 -O3 -c $< -o $@
 
 $(TARGET): $(OFILES)
 	$(LD) -EL -o $@ $^ $(LDFLAGS) -Tlinker_script.ld

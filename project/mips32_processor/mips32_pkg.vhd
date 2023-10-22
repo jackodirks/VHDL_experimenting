@@ -29,12 +29,13 @@ package mips32_pkg is
     type mips32_byte_array is array (natural range <>) of mips32_byte_type;
     type mips32_load_store_size is (ls_word, ls_halfword, ls_byte);
 
-    type mips32_exec_type is (mips32_exec_alu, mips32_exec_shift, mips32_exec_calcReturn);
+    type mips32_exec_type is (mips32_exec_alu, mips32_exec_shift, mips32_exec_calcReturn, mips32_exec_bitManip);
     type mips32_alu_cmd is (cmd_alu_add, cmd_alu_sub, cmd_alu_and, cmd_alu_or, cmd_alu_nor, cmd_alu_lui, cmd_alu_sltu, cmd_alu_slt, cmd_alu_clo,
                             cmd_alu_clz);
     type mips32_shift_cmd is (cmd_shift_sll, cmd_shift_srl, cmd_shift_sra);
     type mips32_branch_cmd is (cmd_branch_ne, cmd_branch_eq, cmd_branch_bgez, cmd_branch_jumpreg, cmd_branch_blez, cmd_branch_bgtz,
                                cmd_branch_bltz);
+    type mips32_bit_manipulator_cmd is (cmd_bit_manip_ext, cmd_bit_manip_ins);
 
     type mips32_InstructionDecodeControlWord_type is record
         jump : boolean;
@@ -49,6 +50,7 @@ package mips32_pkg is
         alu_cmd : mips32_alu_cmd;
         shift_cmd : mips32_shift_cmd;
         branch_cmd : mips32_branch_cmd;
+        bitManip_cmd : mips32_bit_manipulator_cmd;
         use_immidiate : boolean;
         regWrite_override_on_branch : boolean;
     end record;
@@ -81,6 +83,7 @@ package mips32_pkg is
         alu_cmd => cmd_alu_add,
         shift_cmd => cmd_shift_sll,
         branch_cmd => cmd_branch_ne,
+        bitManip_cmd => cmd_bit_manip_ext,
         use_immidiate => false,
         regWrite_override_on_branch => false
     );
@@ -123,6 +126,7 @@ package mips32_pkg is
     constant mips32_opcode_blezl : mips32_opcode_type := 16#16#;
     constant mips32_opcode_bgtzl : mips32_opcode_type := 16#17#;
     constant mips32_opcode_specialTwo : mips32_opcode_type := 16#1c#;
+    constant mips32_opcode_specialThree : mips32_opcode_type := 16#1f#;
     constant mips32_opcode_Lb : mips32_opcode_type := 16#20#;
     constant mips32_opcode_Lh : mips32_opcode_type := 16#21#;
     constant mips32_opcode_Lwl : mips32_opcode_type := 16#22#;
@@ -164,4 +168,7 @@ package mips32_pkg is
 
     constant mips32_specialTwo_clz : mips32_function_type := 16#20#;
     constant mips32_specialTwo_clo : mips32_function_type := 16#21#;
+
+    constant mips32_specialThree_ext : mips32_function_type := 16#0#;
+    constant mips32_specialThree_ins : mips32_function_type := 16#4#;
 end package;
