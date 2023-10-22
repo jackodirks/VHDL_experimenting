@@ -3,14 +3,17 @@
 __start:
         lui $4,%hi(array)
         addiu $4, $4,%lo(array)
-        lw $5, 0($4)
-        lw $6, 4($4)
-        ext $7, $5, 16, 8
-        ins $6, $7, 8, 8
-        sw $6, 8($4)
+        lui $5,%hi(L1)
+        addiu $5, $5,%lo(L1)
+        jalr $6, $5
+        addiu $7, $0, 15
+        sw $7, 4($4)
 epilogue:
         j epilogue
+L1:
+        addiu $7, $0, 14
+        sw $7, 0($4)
+        jr $6
 array:
-    .word 0x1a2b3c4d
-    .word 0xffffffff
+    .word 0
     .word 0

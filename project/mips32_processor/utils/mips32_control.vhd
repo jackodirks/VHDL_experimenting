@@ -54,8 +54,14 @@ begin
                         executeControlWord_buf.exec_directive := mips32_exec_shift;
                         executeControlWord_buf.shift_cmd := cmd_shift_sra;
                     when mips32_function_JumpReg =>
+                        -- Technically there is a problem here, we are writing someting to rd.
+                        -- The instruction specifies that the rd address field be 0, so we avoid problems.
                         executeControlWord_buf.is_branch_op := true;
                         executeControlWord_buf.branch_cmd := cmd_branch_jumpreg;
+                    when mips32_function_jalr =>
+                        executeControlWord_buf.is_branch_op := true;
+                        executeControlWord_buf.branch_cmd := cmd_branch_jumpreg;
+                        executeControlWord_buf.exec_directive := mips32_exec_calcReturn;
                     when mips32_function_add | mips32_function_AddUnsigned =>
                         executeControlWord_buf.exec_directive := mips32_exec_alu;
                         executeControlWord_buf.alu_cmd := cmd_alu_add;

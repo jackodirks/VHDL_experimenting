@@ -33,10 +33,10 @@ This is a mips32 revision 5 processor without a floating point coprocessor. More
 | INS         | X                       |
 | J           | X                       |
 | JAL         | X                       |
-| JALR        |                         |
-| JALR.HB     |                         |
+| JALR        | X                       |
+| JALR.HB     | X                       |
 | JR          | X                       |
-| JR.HB       |                         |
+| JR.HB       | X                       |
 | LB          | X                       |
 | LBU         | X                       |
 | LHU         | X                       |

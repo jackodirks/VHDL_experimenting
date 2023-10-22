@@ -144,6 +144,7 @@ package mips32_pkg is
     constant mips32_function_Srl : mips32_function_type := 16#02#;
     constant mips32_function_Sra : mips32_function_type := 16#03#;
     constant mips32_function_JumpReg : mips32_function_type := 16#08#;
+    constant mips32_function_jalr : mips32_function_type := 16#09#;
     constant mips32_function_Add : mips32_function_type := 16#20#;
     constant mips32_function_AddUnsigned : mips32_function_type := 16#21#;
     constant mips32_function_Subtract : mips32_function_type := 16#22#;
