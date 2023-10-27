@@ -62,6 +62,11 @@ begin
                         executeControlWord_buf.is_branch_op := true;
                         executeControlWord_buf.branch_cmd := cmd_branch_jumpreg;
                         executeControlWord_buf.exec_directive := mips32_exec_calcReturn;
+                    when mips32_function_movz =>
+                        executeControlWord_buf.exec_directive := mips32_exec_alu;
+                        executeControlWord_buf.alu_cmd := cmd_alu_add;
+                        executeControlWord_buf.regWrite_override_on_rt_zero := true;
+                        writeBackControlWord_buf.regWrite := false;
                     when mips32_function_add | mips32_function_AddUnsigned =>
                         executeControlWord_buf.exec_directive := mips32_exec_alu;
                         executeControlWord_buf.alu_cmd := cmd_alu_add;

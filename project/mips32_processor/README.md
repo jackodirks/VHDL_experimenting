@@ -48,7 +48,7 @@ This is a mips32 revision 5 processor without a floating point coprocessor. More
 | MFC0        | X                       |
 | MFHI        |                         |
 | MFLO        |                         |
-| MOVZ        |                         |
+| MOVZ        | X                       |
 | MSUB        |                         |
 | MSUBU       |                         |
 | MTC0        | X                       |

@@ -305,7 +305,7 @@ begin
 
         regDataFromEx => execResFromExMem,
         regAddressFromEx => destRegFromExMem,
-        regWriteFromEx => wbControlWordFromExMem.regWrite,
+        regWriteFromEx => wbControlWordFromExMem.regWrite or regWriteOverrideFromExMem,
 
         regDataFromMem => regWriteDataFromWb,
         regAddressFromMem => regWriteAddrFromWb,

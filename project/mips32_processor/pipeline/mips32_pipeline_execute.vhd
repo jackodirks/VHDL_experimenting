@@ -35,10 +35,16 @@ architecture behaviourial of mips32_pipeline_execute is
     signal shifterResult : mips32_data_type;
     signal bitManip_result : mips32_data_type;
     signal overrideProgramCounter_buf : boolean;
+
+    signal regWrite_override_branch : boolean;
+    signal regWrite_override_movz : boolean;
 begin
 
     overrideProgramCounter <= overrideProgramCounter_buf;
-    regWrite_override <= executeControlWord.regWrite_override_on_branch and overrideProgramCounter_buf;
+    regWrite_override_branch <= executeControlWord.regWrite_override_on_branch and overrideProgramCounter_buf;
+    regWrite_override_movz <= executeControlWord.regWrite_override_on_rt_zero and unsigned(rtData) = 0;
+
+    regWrite_override <= regWrite_override_branch or regWrite_override_movz;
 
     determineExecResult : process(executeControlWord, shifterResult, aluResultRtype, aluResultImmidiate, programCounterPlusFour, bitManip_result)
     begin

@@ -53,6 +53,7 @@ package mips32_pkg is
         bitManip_cmd : mips32_bit_manipulator_cmd;
         use_immidiate : boolean;
         regWrite_override_on_branch : boolean;
+        regWrite_override_on_rt_zero : boolean;
     end record;
 
     type mips32_MemoryControlWord_type is record
@@ -85,7 +86,8 @@ package mips32_pkg is
         branch_cmd => cmd_branch_ne,
         bitManip_cmd => cmd_bit_manip_ext,
         use_immidiate => false,
-        regWrite_override_on_branch => false
+        regWrite_override_on_branch => false,
+        regWrite_override_on_rt_zero => false
     );
 
     constant mips32_memoryControlWordAllFalse : mips32_MemoryControlWord_type := (
@@ -145,6 +147,7 @@ package mips32_pkg is
     constant mips32_function_Sra : mips32_function_type := 16#03#;
     constant mips32_function_JumpReg : mips32_function_type := 16#08#;
     constant mips32_function_jalr : mips32_function_type := 16#09#;
+    constant mips32_function_movz : mips32_opcode_type := 16#a#;
     constant mips32_function_Add : mips32_function_type := 16#20#;
     constant mips32_function_AddUnsigned : mips32_function_type := 16#21#;
     constant mips32_function_Subtract : mips32_function_type := 16#22#;
