@@ -104,9 +104,8 @@ begin
                 expectedDestinationReg := 6;
                 expectedImmidiate := std_logic_vector(to_signed(-32, expectedImmidiate'length));
                 expectedExecuteControlword := mips32_executeControlWordAllFalse;
-                expectedExecuteControlword.exec_directive := mips32_exec_alu;
+                expectedExecuteControlword.exec_directive := mips32_exec_alu_imm;
                 expectedExecuteControlword.alu_cmd := cmd_alu_add;
-                expectedExecuteControlword.use_immidiate := true;
                 instructionFromInstructionFetch <= instructionIn;
                 wait until rising_edge(clk);
                 wait until falling_edge(clk);
@@ -125,9 +124,8 @@ begin
                 expectedDestinationReg := 12;
                 expectedImmidiate := std_logic_vector(to_signed(128, expectedImmidiate'length));
                 expectedExecuteControlword := mips32_executeControlWordAllFalse;
-                expectedExecuteControlword.exec_directive := mips32_exec_alu;
+                expectedExecuteControlword.exec_directive := mips32_exec_alu_imm;
                 expectedExecuteControlword.alu_cmd := cmd_alu_add;
-                expectedExecuteControlword.use_immidiate := true;
                 instructionFromInstructionFetch <= instructionIn;
                 wait until rising_edge(clk);
                 wait until falling_edge(clk);

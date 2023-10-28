@@ -29,7 +29,7 @@ package mips32_pkg is
     type mips32_byte_array is array (natural range <>) of mips32_byte_type;
     type mips32_load_store_size is (ls_word, ls_halfword, ls_byte);
 
-    type mips32_exec_type is (mips32_exec_alu, mips32_exec_shift, mips32_exec_calcReturn, mips32_exec_bitManip);
+    type mips32_exec_type is (mips32_exec_alu_rtype, mips32_exec_alu_imm, mips32_exec_shift, mips32_exec_calcReturn, mips32_exec_bitManip);
     type mips32_alu_cmd is (cmd_alu_add, cmd_alu_sub, cmd_alu_and, cmd_alu_or, cmd_alu_nor, cmd_alu_lui, cmd_alu_sltu, cmd_alu_slt, cmd_alu_clo,
                             cmd_alu_clz);
     type mips32_shift_cmd is (cmd_shift_sll, cmd_shift_srl, cmd_shift_sra);
@@ -51,7 +51,6 @@ package mips32_pkg is
         shift_cmd : mips32_shift_cmd;
         branch_cmd : mips32_branch_cmd;
         bitManip_cmd : mips32_bit_manipulator_cmd;
-        use_immidiate : boolean;
         regWrite_override_on_branch : boolean;
         regWrite_override_on_rt_zero : boolean;
     end record;
@@ -79,13 +78,12 @@ package mips32_pkg is
     );
 
     constant mips32_executeControlWordAllFalse : mips32_ExecuteControlWord_type := (
-        exec_directive => mips32_exec_alu,
+        exec_directive => mips32_exec_alu_rtype,
         is_branch_op => false,
         alu_cmd => cmd_alu_add,
         shift_cmd => cmd_shift_sll,
         branch_cmd => cmd_branch_ne,
         bitManip_cmd => cmd_bit_manip_ext,
-        use_immidiate => false,
         regWrite_override_on_branch => false,
         regWrite_override_on_rt_zero => false
     );

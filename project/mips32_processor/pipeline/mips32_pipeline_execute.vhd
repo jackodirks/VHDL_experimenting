@@ -49,12 +49,10 @@ begin
     determineExecResult : process(executeControlWord, shifterResult, aluResultRtype, aluResultImmidiate, programCounterPlusFour, bitManip_result)
     begin
         case executeControlWord.exec_directive is
-            when mips32_exec_alu =>
-                if executeControlWord.use_immidiate then
-                    execResult <= aluResultImmidiate;
-                else
-                    execResult <= aluResultRtype;
-                end if;
+            when mips32_exec_alu_rtype =>
+                execResult <= aluResultRtype;
+            when mips32_exec_alu_imm =>
+                execResult <= aluResultImmidiate;
             when mips32_exec_shift =>
                 execResult <= shifterResult;
             when mips32_exec_calcReturn =>
