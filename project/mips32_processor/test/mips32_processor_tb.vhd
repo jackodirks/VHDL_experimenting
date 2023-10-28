@@ -564,6 +564,16 @@ begin
                 readAddr := std_logic_vector(to_unsigned(16#2c#, bus_address_type'length));
                 simulated_bus_memory_pkg.read_from_address(net, memActor, readAddr, readData);
                 check_equal(readData, std_logic_vector'(X"0000000e"));
+            elsif run("ori test") then
+                simulated_bus_memory_pkg.write_file_to_address(net, memActor, 0, "./mips32_processor/test/programs/oriTest.txt");
+                test2slv <= bus_mst2slv_write(std_logic_vector(to_unsigned(controllerAddress, bus_address_type'length)), (others => '0'));
+                wait until rising_edge(clk) and any_transaction(test2slv, slv2test);
+                check(write_transaction(test2slv, slv2test));
+                test2slv <= BUS_MST2SLV_IDLE;
+                wait for 5 us;
+                readAddr := std_logic_vector(to_unsigned(16#20#, bus_address_type'length));
+                simulated_bus_memory_pkg.read_from_address(net, memActor, readAddr, readData);
+                check_equal(readData, std_logic_vector'(X"0a0b1c2d"));
             end if;
         end loop;
         wait until rising_edge(clk);

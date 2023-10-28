@@ -59,7 +59,7 @@ This is a mips32 revision 5 processor without a floating point coprocessor. More
 | MULTU       |                         |
 | NOR         | X                       |
 | OR          | X                       |
-| ORI         |                         |
+| ORI         | X                       |
 | ROTR        |                         |
 | ROTRV       |                         |
 | SB          | X                       |

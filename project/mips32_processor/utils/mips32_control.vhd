@@ -142,6 +142,10 @@ begin
                 executeControlWord_buf.exec_directive := mips32_exec_alu_imm;
                 executeControlWord_buf.alu_cmd := cmd_alu_and;
                 writeBackControlWord_buf.regWrite := true;
+            when mips32_opcode_ori =>
+                executeControlWord_buf.exec_directive := mips32_exec_alu_imm;
+                executeControlWord_buf.alu_cmd := cmd_alu_or;
+                writeBackControlWord_buf.regWrite := true;
             when mips32_opcode_Lui =>
                 executeControlWord_buf.exec_directive := mips32_exec_alu_imm;
                 executeControlWord_buf.alu_cmd := cmd_alu_lui;

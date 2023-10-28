@@ -119,6 +119,7 @@ package mips32_pkg is
     constant mips32_opcode_Addi : mips32_opcode_type := 16#8#;
     constant mips32_opcode_Addiu : mips32_opcode_type := 16#9#;
     constant mips32_opcode_Andi : mips32_opcode_type := 16#c#;
+    constant mips32_opcode_ori : mips32_opcode_type := 16#d#;
     constant mips32_opcode_Lui : mips32_opcode_type := 16#f#;
     constant mips32_opcode_COP0 : mips32_opcode_type := 16#10#;
     constant mips32_opcode_Beql : mips32_opcode_type := 16#14#;
