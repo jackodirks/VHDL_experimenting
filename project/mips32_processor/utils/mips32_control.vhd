@@ -49,7 +49,11 @@ begin
                         executeControlWord_buf.shift_cmd := cmd_shift_sll;
                     when mips32_function_srl =>
                         executeControlWord_buf.exec_directive := mips32_exec_shift;
-                        executeControlWord_buf.shift_cmd := cmd_shift_srl;
+                        if mf = 1 then
+                            executeControlWord_buf.shift_cmd := cmd_shift_rotr;
+                        else
+                            executeControlWord_buf.shift_cmd := cmd_shift_srl;
+                        end if;
                     when mips32_function_sra =>
                         executeControlWord_buf.exec_directive := mips32_exec_shift;
                         executeControlWord_buf.shift_cmd := cmd_shift_sra;

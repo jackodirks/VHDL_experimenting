@@ -60,7 +60,7 @@ This is a mips32 revision 5 processor without a floating point coprocessor. More
 | NOR         | X                       |
 | OR          | X                       |
 | ORI         | X                       |
-| ROTR        |                         |
+| ROTR        | X                       |
 | ROTRV       |                         |
 | SB          | X                       |
 | SEB         |                         |

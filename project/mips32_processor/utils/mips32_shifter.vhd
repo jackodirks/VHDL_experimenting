@@ -27,6 +27,8 @@ begin
                 output <= std_logic_vector(shift_right(unsigned(input), shamt));
             when cmd_shift_sra =>
                 output <= std_logic_vector(shift_right(signed(input), shamt));
+            when cmd_shift_rotr =>
+                output <= std_logic_vector(rotate_right(unsigned(input), shamt));
         end case;
     end process;
 end architecture;

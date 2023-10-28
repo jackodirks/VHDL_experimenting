@@ -32,7 +32,7 @@ package mips32_pkg is
     type mips32_exec_type is (mips32_exec_alu_rtype, mips32_exec_alu_imm, mips32_exec_shift, mips32_exec_calcReturn, mips32_exec_bitManip);
     type mips32_alu_cmd is (cmd_alu_add, cmd_alu_sub, cmd_alu_and, cmd_alu_or, cmd_alu_nor, cmd_alu_lui, cmd_alu_sltu, cmd_alu_slt, cmd_alu_clo,
                             cmd_alu_clz);
-    type mips32_shift_cmd is (cmd_shift_sll, cmd_shift_srl, cmd_shift_sra);
+    type mips32_shift_cmd is (cmd_shift_sll, cmd_shift_srl, cmd_shift_sra, cmd_shift_rotr);
     type mips32_branch_cmd is (cmd_branch_ne, cmd_branch_eq, cmd_branch_bgez, cmd_branch_jumpreg, cmd_branch_blez, cmd_branch_bgtz,
                                cmd_branch_bltz);
     type mips32_bit_manipulator_cmd is (cmd_bit_manip_ext, cmd_bit_manip_ins);

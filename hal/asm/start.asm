@@ -4,8 +4,8 @@ __start:
         lui $4,%hi(array)
         addiu $4, $4,%lo(array)
         lw $5, 0($4)
-        ori $5, $5, 0x1020
-        sw $5, 4($4) 
+        rotr $5, $5, 12
+        sw $5, 4($4)
 epilogue:
         j epilogue
 array:

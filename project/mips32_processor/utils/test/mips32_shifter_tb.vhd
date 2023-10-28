@@ -42,6 +42,12 @@ begin
                 cmd <= cmd_shift_sra;
                 wait for 1 ns;
                 check(X"FF0F0F0F" = output);
+            elsif run("rotate word right works") then
+                input <= X"01020304";
+                shamt <= 8;
+                cmd <= cmd_shift_rotr;
+                wait for 1 ns;
+                check_equal(output, std_logic_vector'(X"04010203"));
             end if;
         end loop;
         test_runner_cleanup(runner);
