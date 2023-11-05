@@ -8,10 +8,7 @@ use work.mips32_pkg.all;
 
 entity mips32_control is
     port (
-        opcode : in mips32_opcode_type;
-        mf : in mips32_mf_type;
-        func : in mips32_function_type;
-        regimm : in mips32_regimm_type;
+        instruction : in mips32_instruction_type;
 
         instructionDecodeControlWord : out mips32_InstructionDecodeControlWord_type;
         executeControlWord : out mips32_ExecuteControlWord_type;
@@ -26,12 +23,22 @@ end entity;
 architecture behaviourial of mips32_control is
 begin
 
-    decodeOpcode : process(opcode, mf, func, regimm)
+    decodeOpcode : process(instruction)
+        variable opcode : mips32_opcode_type;
+        variable mf : mips32_mf_type;
+        variable func : mips32_function_type;
+        variable regimm : mips32_regimm_type;
+
         variable instructionDecodeControlWord_buf : mips32_InstructionDecodeControlWord_type;
         variable executeControlWord_buf : mips32_ExecuteControlWord_type;
         variable memoryControlWord_buf : mips32_MemoryControlWord_type;
         variable writeBackControlWord_buf : mips32_WriteBackControlWord_type;
     begin
+        opcode := to_integer(unsigned(instruction(31 downto 26)));
+        mf := to_integer(unsigned(instruction(25 downto 21)));
+        func := to_integer(unsigned(instruction(5 downto 0)));
+        regimm := to_integer(unsigned(instruction(20 downto 16)));
+
         instructionDecodeControlWord_buf := mips32_instructionDecodeControlWordAllFalse;
         executeControlWord_buf := mips32_executeControlWordAllFalse;
         memoryControlWord_buf := mips32_memoryControlWordAllFalse;

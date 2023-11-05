@@ -9,6 +9,9 @@ context vunit_lib.vc_context;
 library src;
 use src.mips32_pkg.all;
 
+library tb;
+use tb.mips32_instruction_builder_pkg.all;
+
 entity mips32_pipeline_branchHelper_tb is
     generic (
         runner_cfg : string);
@@ -18,29 +21,26 @@ architecture tb of mips32_pipeline_branchHelper_tb is
     signal executeControlWord : mips32_ExecuteControlWord_type := mips32_executeControlWordAllFalse;
     signal injectBubble : boolean;
 
-    signal opcode : mips32_opcode_type := mips32_opcode_Special;
-    signal func : mips32_function_type := mips32_function_Sll;
-    signal regimm : mips32_regimm_type := 0;
+    signal instruction : mips32_instruction_type := (others => '0');
 begin
     main : process
     begin
         test_runner_setup(runner, runner_cfg);
         while test_suite loop
             if run("On bne, bubble is true") then
-                opcode <= mips32_opcode_Bne;
+                instruction <= construct_itype_instruction(opcode => mips32_opcode_Bne);
                 wait for 10 ns;
                 check(injectBubble);
             elsif run("On j, bubble is false") then
-                opcode <= mips32_opcode_J;
+                instruction <= construct_jtype_instruction(opcode => mips32_opcode_J);
                 wait for 10 ns;
                 check(not injectBubble);
             elsif run("On beq, bubble is true") then
-                opcode <= mips32_opcode_Beq;
+                instruction <= construct_itype_instruction(opcode => mips32_opcode_Beq);
                 wait for 10 ns;
                 check(injectBubble);
             elsif run("On jr, bubble is true") then
-                opcode <= mips32_opcode_Special;
-                func <= mips32_function_JumpReg;
+                instruction <= construct_rtype_instruction(opcode => mips32_opcode_Special, funct => mips32_function_JumpReg);
                 wait for 10 ns;
                 check(injectBubble);
             end if;
@@ -59,10 +59,7 @@ begin
 
     controlDecode : entity src.mips32_control
     port map (
-        opcode => opcode,
-        mf => 0,
-        func => func,
-        regimm => regimm,
+        instruction => instruction,
         executeControlWord => executeControlWord
     );
 end architecture;

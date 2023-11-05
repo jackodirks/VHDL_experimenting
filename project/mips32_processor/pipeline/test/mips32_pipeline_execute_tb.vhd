@@ -9,6 +9,9 @@ context vunit_lib.vc_context;
 library src;
 use src.mips32_pkg.all;
 
+library tb;
+use tb.mips32_instruction_builder_pkg.all;
+
 entity mips32_pipeline_execute_tb is
     generic (
         runner_cfg : string);
@@ -29,10 +32,7 @@ architecture tb of mips32_pipeline_execute_tb is
     signal overrideProgramCounter : boolean;
     signal newProgramCounter : mips32_address_type;
 
-    signal opcode : mips32_opcode_type := mips32_opcode_special;
-    signal mf : mips32_mf_type := 0;
-    signal func : mips32_function_type := mips32_function_Sll;
-    signal regimm : mips32_regimm_type := 0;
+    signal instruction : mips32_instruction_type := (others => '0');
 begin
     main : process
         variable expectedExecResult : mips32_data_type;
@@ -43,10 +43,9 @@ begin
         test_runner_setup(runner, runner_cfg);
         while test_suite loop
             if run("R-type subtract function works") then
+                instruction <= construct_rtype_instruction(opcode => mips32_opcode_special, funct => mips32_function_Subtract);
                 rsData <= std_logic_vector(to_signed(100, rsData'length));
                 rtData <= std_logic_vector(to_signed(10, rtData'length));
-                opcode <= mips32_opcode_special;
-                func <= mips32_function_Subtract;
                 expectedExecResult := std_logic_vector(to_signed(90, expectedExecResult'length));
                 expectedDestinationRegToMem := 13;
                 wait for 10 ns;
@@ -55,7 +54,7 @@ begin
                 rsData <= std_logic_vector(to_signed(32, rsData'length));
                 rtData <= std_logic_vector(to_signed(255, rtData'length));
                 immidiate <= std_logic_vector(to_signed(-4, immidiate'length));
-                opcode <= mips32_opcode_Addi;
+                instruction <= construct_itype_instruction(opcode => mips32_opcode_Addi);
                 expectedExecResult := std_logic_vector(to_signed(28, expectedExecResult'length));
                 expectedDestinationRegToMem := 26;
                 expectedRegDataRead := std_logic_vector(to_signed(255, expectedRegDataRead'length));
@@ -65,7 +64,7 @@ begin
                 rsData <= std_logic_vector(to_signed(100, rsData'length));
                 rtData <= std_logic_vector(to_signed(100, rtData'length));
                 immidiate <= std_logic_vector(to_signed(-1, immidiate'length));
-                opcode <= mips32_opcode_Beq;
+                instruction <= construct_itype_instruction(opcode => mips32_opcode_beq);
                 programCounterPlusFour <= std_logic_vector(to_unsigned(16, programCounterPlusFour'length));
                 expectedBranchTarget := std_logic_vector(to_unsigned(12, expectedBranchTarget'length));
                 wait for 10 ns;
@@ -76,7 +75,7 @@ begin
                 rtData <= std_logic_vector(to_signed(100, rtData'length));
                 immidiate <= std_logic_vector(to_signed(-1, immidiate'length));
                 programCounterPlusFour <= std_logic_vector(to_unsigned(16, programCounterPlusFour'length));
-                opcode <= mips32_opcode_Beq;
+                instruction <= construct_itype_instruction(opcode => mips32_opcode_beq);
                 expectedBranchTarget := std_logic_vector(to_unsigned(12, expectedBranchTarget'length));
                 wait for 10 ns;
                 check(not overrideProgramCounter);
@@ -85,7 +84,7 @@ begin
                 rtData <= std_logic_vector(to_signed(100, rtData'length));
                 immidiate <= std_logic_vector(to_signed(-1, immidiate'length));
                 programCounterPlusFour <= std_logic_vector(to_unsigned(16, programCounterPlusFour'length));
-                opcode <= mips32_opcode_Bne;
+                instruction <= construct_itype_instruction(opcode => mips32_opcode_bne);
                 expectedBranchTarget := std_logic_vector(to_unsigned(12, expectedBranchTarget'length));
                 wait for 10 ns;
                 check(overrideProgramCounter);
@@ -95,14 +94,13 @@ begin
                 rtData <= std_logic_vector(to_signed(20, rtData'length));
                 immidiate <= std_logic_vector(to_signed(-1, immidiate'length));
                 programCounterPlusFour <= std_logic_vector(to_unsigned(16, programCounterPlusFour'length));
-                opcode <= mips32_opcode_Bne;
+                instruction <= construct_itype_instruction(opcode => mips32_opcode_bne);
                 expectedBranchTarget := std_logic_vector(to_unsigned(12, expectedBranchTarget'length));
                 wait for 10 ns;
                 check(not overrideProgramCounter);
             elsif run("Jump on jr") then
                 rsData <= std_logic_vector(to_signed(20, rsData'length));
-                opcode <= mips32_opcode_special;
-                func <= mips32_function_JumpReg;
+                instruction <= construct_rtype_instruction(opcode => mips32_opcode_special, funct => mips32_function_JumpReg);
                 wait for 10 ns;
                 check(overrideProgramCounter);
                 check_equal(rsData, newProgramCounter);
@@ -110,8 +108,7 @@ begin
                 rsData <= std_logic_vector(to_signed(0, rsData'length));
                 immidiate <= std_logic_vector(to_signed(-1, immidiate'length));
                 programCounterPlusFour <= std_logic_vector(to_unsigned(16, programCounterPlusFour'length));
-                opcode <= mips32_opcode_regimm;
-                regimm <= mips32_regimm_bgez;
+                instruction <= construct_itype_instruction(opcode => mips32_opcode_regimm, rt => mips32_regimm_bgez);
                 expectedBranchTarget := std_logic_vector(to_unsigned(12, expectedBranchTarget'length));
                 wait for 10 ns;
                 check(overrideProgramCounter);
@@ -120,8 +117,7 @@ begin
                 rsData <= std_logic_vector(to_signed(-1, rsData'length));
                 immidiate <= std_logic_vector(to_signed(-1, immidiate'length));
                 programCounterPlusFour <= std_logic_vector(to_unsigned(16, programCounterPlusFour'length));
-                opcode <= mips32_opcode_regimm;
-                regimm <= mips32_regimm_bgez;
+                instruction <= construct_itype_instruction(opcode => mips32_opcode_regimm, rt => mips32_regimm_bgez);
                 expectedBranchTarget := std_logic_vector(to_unsigned(12, expectedBranchTarget'length));
                 wait for 10 ns;
                 check(not overrideProgramCounter);
@@ -129,8 +125,7 @@ begin
                 rsData <= std_logic_vector(to_signed(5, rsData'length));
                 immidiate <= std_logic_vector(to_signed(-1, immidiate'length));
                 programCounterPlusFour <= std_logic_vector(to_unsigned(16, programCounterPlusFour'length));
-                opcode <= mips32_opcode_regimm;
-                regimm <= mips32_regimm_bgez;
+                instruction <= construct_itype_instruction(opcode => mips32_opcode_regimm, rt => mips32_regimm_bgez);
                 expectedBranchTarget := std_logic_vector(to_unsigned(12, expectedBranchTarget'length));
                 wait for 10 ns;
                 check(overrideProgramCounter);
@@ -139,7 +134,7 @@ begin
                 rsData <= std_logic_vector(to_signed(0, rsData'length));
                 immidiate <= std_logic_vector(to_signed(-1, immidiate'length));
                 programCounterPlusFour <= std_logic_vector(to_unsigned(16, programCounterPlusFour'length));
-                opcode <= mips32_opcode_blez;
+                instruction <= construct_itype_instruction(opcode => mips32_opcode_blez);
                 expectedBranchTarget := std_logic_vector(to_unsigned(12, expectedBranchTarget'length));
                 wait for 10 ns;
                 check(overrideProgramCounter);
@@ -148,7 +143,7 @@ begin
                 rsData <= std_logic_vector(to_signed(1, rsData'length));
                 immidiate <= std_logic_vector(to_signed(-1, immidiate'length));
                 programCounterPlusFour <= std_logic_vector(to_unsigned(16, programCounterPlusFour'length));
-                opcode <= mips32_opcode_blez;
+                instruction <= construct_itype_instruction(opcode => mips32_opcode_blez);
                 expectedBranchTarget := std_logic_vector(to_unsigned(12, expectedBranchTarget'length));
                 wait for 10 ns;
                 check(not overrideProgramCounter);
@@ -156,7 +151,7 @@ begin
                 rsData <= std_logic_vector(to_signed(-1, rsData'length));
                 immidiate <= std_logic_vector(to_signed(-1, immidiate'length));
                 programCounterPlusFour <= std_logic_vector(to_unsigned(16, programCounterPlusFour'length));
-                opcode <= mips32_opcode_blez;
+                instruction <= construct_itype_instruction(opcode => mips32_opcode_blez);
                 expectedBranchTarget := std_logic_vector(to_unsigned(12, expectedBranchTarget'length));
                 wait for 10 ns;
                 check(overrideProgramCounter);
@@ -165,7 +160,7 @@ begin
                 rsData <= std_logic_vector(to_signed(5, rsData'length));
                 immidiate <= std_logic_vector(to_signed(-1, immidiate'length));
                 programCounterPlusFour <= std_logic_vector(to_unsigned(16, programCounterPlusFour'length));
-                opcode <= mips32_opcode_bgtz;
+                instruction <= construct_itype_instruction(opcode => mips32_opcode_bgtz);
                 expectedBranchTarget := std_logic_vector(to_unsigned(12, expectedBranchTarget'length));
                 wait for 10 ns;
                 check(overrideProgramCounter);
@@ -174,7 +169,7 @@ begin
                 rsData <= std_logic_vector(to_signed(0, rsData'length));
                 immidiate <= std_logic_vector(to_signed(-1, immidiate'length));
                 programCounterPlusFour <= std_logic_vector(to_unsigned(16, programCounterPlusFour'length));
-                opcode <= mips32_opcode_bgtz;
+                instruction <= construct_itype_instruction(opcode => mips32_opcode_bgtz);
                 expectedBranchTarget := std_logic_vector(to_unsigned(12, expectedBranchTarget'length));
                 wait for 10 ns;
                 check(not overrideProgramCounter);
@@ -182,7 +177,7 @@ begin
                 rsData <= std_logic_vector(to_signed(-1, rsData'length));
                 immidiate <= std_logic_vector(to_signed(-1, immidiate'length));
                 programCounterPlusFour <= std_logic_vector(to_unsigned(16, programCounterPlusFour'length));
-                opcode <= mips32_opcode_bgtz;
+                instruction <= construct_itype_instruction(opcode => mips32_opcode_bgtz);
                 expectedBranchTarget := std_logic_vector(to_unsigned(12, expectedBranchTarget'length));
                 wait for 10 ns;
                 check(not overrideProgramCounter);
@@ -190,8 +185,7 @@ begin
                 rsData <= std_logic_vector(to_signed(-5, rsData'length));
                 immidiate <= std_logic_vector(to_signed(-1, immidiate'length));
                 programCounterPlusFour <= std_logic_vector(to_unsigned(16, programCounterPlusFour'length));
-                opcode <= mips32_opcode_regimm;
-                regimm <= mips32_regimm_bltz;
+                instruction <= construct_itype_instruction(opcode => mips32_opcode_regimm, rt => mips32_regimm_bltz);
                 expectedBranchTarget := std_logic_vector(to_unsigned(12, expectedBranchTarget'length));
                 wait for 10 ns;
                 check(overrideProgramCounter);
@@ -200,8 +194,7 @@ begin
                 rsData <= std_logic_vector(to_signed(0, rsData'length));
                 immidiate <= std_logic_vector(to_signed(-1, immidiate'length));
                 programCounterPlusFour <= std_logic_vector(to_unsigned(16, programCounterPlusFour'length));
-                opcode <= mips32_opcode_regimm;
-                regimm <= mips32_regimm_bltz;
+                instruction <= construct_itype_instruction(opcode => mips32_opcode_regimm, rt => mips32_regimm_bltz);
                 expectedBranchTarget := std_logic_vector(to_unsigned(12, expectedBranchTarget'length));
                 wait for 10 ns;
                 check(not overrideProgramCounter);
@@ -209,8 +202,7 @@ begin
                 rsData <= std_logic_vector(to_signed(10, rsData'length));
                 immidiate <= std_logic_vector(to_signed(-1, immidiate'length));
                 programCounterPlusFour <= std_logic_vector(to_unsigned(16, programCounterPlusFour'length));
-                opcode <= mips32_opcode_regimm;
-                regimm <= mips32_regimm_bltz;
+                instruction <= construct_itype_instruction(opcode => mips32_opcode_regimm, rt => mips32_regimm_bltz);
                 expectedBranchTarget := std_logic_vector(to_unsigned(12, expectedBranchTarget'length));
                 wait for 10 ns;
                 check(not overrideProgramCounter);
@@ -238,10 +230,7 @@ begin
 
     controlDecode : entity src.mips32_control
     port map (
-        opcode => opcode,
-        mf => mf,
-        func => func,
-        regimm => regimm,
+        instruction => instruction,
         executeControlWord => executeControlWord
     );
 
