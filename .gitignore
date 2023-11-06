@@ -48,6 +48,10 @@ uart_master/obj/*
 hal/final*
 hal/obj/*
 
+#riscv-hal project
+riscv-hal/final*
+riscv-hal/obj/*
+
 #vivado tcl
 vivado_tcl/build/*
 vivado_tcl/.Xil/*
