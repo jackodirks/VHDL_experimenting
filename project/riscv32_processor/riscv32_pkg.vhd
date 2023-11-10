@@ -16,16 +16,18 @@ package riscv32_pkg is
     subtype riscv32_data_type is std_logic_vector(2**riscv32_data_width_log2b -1 downto 0);
     subtype riscv32_instruction_type is std_logic_vector(2**riscv32_instruction_width_log2b - 1 downto 0);
     subtype riscv32_byte_type is std_logic_vector(2**riscv32_byte_width_log2b - 1 downto 0);
-    subtype riscv32_opcode_type is natural range 0 to 63;
+    subtype riscv32_opcode_type is natural range 0 to 127;
     subtype riscv32_funct7_type is natural range 0 to 63;
     subtype riscv32_funct3_type is natural range 0 to 7;
     subtype riscv32_registerFileAddress_type is natural range 0 to 31;
+    subtype riscv32_shamt_type is natural range 0 to 31;
 
     type riscv32_data_array is array (natural range <>) of riscv32_data_type;
     type riscv32_instruction_array is array (natural range <>) of riscv32_instruction_type;
     type riscv32_byte_array is array (natural range <>) of riscv32_byte_type;
     type riscv32_load_store_size is (ls_word, ls_halfword, ls_byte);
 
+    type riscv32_immdiate_type is (riscv32_i_immidiate, riscv32_u_immidiate, riscv32_b_immidiate, riscv32_s_immidiate);
     type riscv32_exec_type is (riscv32_exec_alu_rtype, riscv32_exec_alu_imm, riscv32_exec_shift, riscv32_exec_calcReturn, riscv32_exec_bitManip);
     type riscv32_alu_cmd is (cmd_alu_add, cmd_alu_sub, cmd_alu_and, cmd_alu_or, cmd_alu_nor, cmd_alu_lui, cmd_alu_sltu, cmd_alu_slt, cmd_alu_clo,
                             cmd_alu_clz);
@@ -37,8 +39,7 @@ package riscv32_pkg is
     type riscv32_InstructionDecodeControlWord_type is record
         jump : boolean;
         PCSrc : boolean;
-        regDstIsRd : boolean;
-        regDstIsRetReg : boolean;
+        immidiate_type : riscv32_immdiate_type;
     end record;
 
     type riscv32_ExecuteControlWord_type is record
@@ -70,8 +71,7 @@ package riscv32_pkg is
     constant riscv32_instructionDecodeControlWordAllFalse : riscv32_InstructionDecodeControlWord_type := (
         jump => false,
         PCSrc => false,
-        regDstIsRd => false,
-        regDstIsRetReg => false
+        immidiate_type => riscv32_i_immidiate
     );
 
     constant riscv32_executeControlWordAllFalse : riscv32_ExecuteControlWord_type := (
@@ -110,7 +110,7 @@ package riscv32_pkg is
     constant riscv32_opcode_store : riscv32_opcode_type := 16#23#;
     constant riscv32_opcode_op : riscv32_opcode_type := 16#33#;
     constant riscv32_opcode_lui : riscv32_opcode_type := 16#37#;
-    constant riscv32_opcode_branch : riscv32_opcode_type := 16#67#;
+    constant riscv32_opcode_branch : riscv32_opcode_type := 16#63#;
     constant riscv32_opcode_jalr : riscv32_opcode_type := 16#67#;
     constant riscv32_opcode_jal : riscv32_opcode_type := 16#6f#;
     constant riscv32_opcode_system : riscv32_opcode_type := 16#73#;

@@ -49,6 +49,11 @@ tb_library.add_source_files(SRC_PATH / "uart_bus_master" / "test" / "*.vhd")
 src_library.add_source_files(SRC_PATH / "riscv32_processor" / "*.vhd")
 tb_library.add_source_files(SRC_PATH / "riscv32_processor" / "test" / "*.vhd")
 
+src_library.add_source_files(SRC_PATH / "riscv32_processor" / "utils" / "*.vhd")
+
+src_library.add_source_files(SRC_PATH / "riscv32_processor" / "pipeline" / "*.vhd")
+tb_library.add_source_files(SRC_PATH / "riscv32_processor" / "pipeline" / "test" / "*.vhd")
+
 VU.set_sim_option("ghdl.gtkwave_script.gui", "gtkwave/setup.tcl")
 
 VU.main()
