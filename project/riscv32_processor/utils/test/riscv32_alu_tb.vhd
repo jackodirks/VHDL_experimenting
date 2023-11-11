@@ -24,6 +24,7 @@ architecture tb of riscv32_alu_tb is
     signal inputB : riscv32_data_type;
     signal cmd : riscv32_alu_cmd;
     signal output : riscv32_data_type;
+    signal shamt : riscv32_shamt_type;
 
 begin
 
@@ -96,6 +97,24 @@ begin
                 expectedOutput := (others => '0');
                 wait for clk_period;
                 check_equal(output, expectedOutput);
+            elsif run("sll works") then
+                inputA <= X"0000000f";
+                shamt <= 4;
+                cmd <= cmd_alu_sll;
+                wait for 1 ns;
+                check(X"000000f0" = output);
+            elsif run("srl works") then
+                inputA <= X"000000f0";
+                shamt <= 4;
+                cmd <= cmd_alu_srl;
+                wait for 1 ns;
+                check(X"0000000f" = output);
+            elsif run("Sra works") then
+                inputA <= X"F0F0F0F0";
+                shamt <= 4;
+                cmd <= cmd_alu_sra;
+                wait for 1 ns;
+                check(X"FF0F0F0F" = output);
             end if;
         end loop;
         wait until rising_edge(clk);
@@ -110,6 +129,7 @@ begin
     port map (
         inputA,
         inputB,
+        shamt,
         cmd,
         output
     );

@@ -28,10 +28,9 @@ package riscv32_pkg is
     type riscv32_load_store_size is (ls_word, ls_halfword, ls_byte);
 
     type riscv32_immdiate_type is (riscv32_i_immidiate, riscv32_u_immidiate, riscv32_b_immidiate, riscv32_s_immidiate);
-    type riscv32_exec_type is (riscv32_exec_alu_rtype, riscv32_exec_alu_imm, riscv32_exec_shift_rtype, riscv32_exec_shift_immidiate, riscv32_exec_calcReturn, riscv32_exec_lui, riscv32_exec_auipc);
-    type riscv32_alu_cmd is (cmd_alu_add, cmd_alu_slt, cmd_alu_sltu, cmd_alu_and, cmd_alu_or, cmd_alu_xor, cmd_alu_sub);
-    type riscv32_shift_cmd is (cmd_shift_sll, cmd_shift_srl, cmd_shift_sra);
-    type riscv32_branch_cmd is (cmd_branch_eq, cmd_branch_ne, cmd_branch_lt, cmd_branch_ltu, cmd_branch_ge, cmd_branch_geu);
+    type riscv32_exec_type is (riscv32_exec_alu_rtype, riscv32_exec_alu_imm, riscv32_exec_calcReturn, riscv32_exec_lui, riscv32_exec_auipc);
+    type riscv32_alu_cmd is (cmd_alu_add, cmd_alu_slt, cmd_alu_sltu, cmd_alu_and, cmd_alu_or, cmd_alu_xor, cmd_alu_sub, cmd_alu_sll, cmd_alu_srl, cmd_alu_sra);
+    type riscv32_branch_cmd is (cmd_branch_eq, cmd_branch_ne, cmd_branch_lt, cmd_branch_ltu, cmd_branch_ge, cmd_branch_geu, cmd_branch_jalr);
 
     type riscv32_InstructionDecodeControlWord_type is record
         jump : boolean;
@@ -43,10 +42,7 @@ package riscv32_pkg is
         exec_directive : riscv32_exec_type;
         is_branch_op : boolean;
         alu_cmd : riscv32_alu_cmd;
-        shift_cmd : riscv32_shift_cmd;
         branch_cmd : riscv32_branch_cmd;
-        regWrite_override_on_branch : boolean;
-        regWrite_override_on_rt_zero : boolean;
     end record;
 
     type riscv32_MemoryControlWord_type is record
@@ -74,10 +70,7 @@ package riscv32_pkg is
         exec_directive => riscv32_exec_alu_rtype,
         is_branch_op => false,
         alu_cmd => cmd_alu_add,
-        shift_cmd => cmd_shift_sll,
-        branch_cmd => cmd_branch_ne,
-        regWrite_override_on_branch => false,
-        regWrite_override_on_rt_zero => false
+        branch_cmd => cmd_branch_ne
     );
 
     constant riscv32_memoryControlWordAllFalse : riscv32_MemoryControlWord_type := (

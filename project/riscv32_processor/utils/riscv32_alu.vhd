@@ -9,6 +9,7 @@ entity riscv32_alu is
     port (
         inputA : in riscv32_data_type;
         inputB : in riscv32_data_type;
+        shamt : in riscv32_shamt_type;
         cmd : in riscv32_alu_cmd;
 
         output : out riscv32_data_type
@@ -61,6 +62,12 @@ begin
             when cmd_alu_sltu =>
                 output(output'high downto 1) <= (others => '0');
                 output(0) <= setLessThanUnsignedResult;
+            when cmd_alu_sll =>
+                output <= std_logic_vector(shift_left(unsigned(inputA), shamt));
+            when cmd_alu_srl =>
+                output <= std_logic_vector(shift_right(unsigned(inputA), shamt));
+            when cmd_alu_sra =>
+                output <= std_logic_vector(shift_right(signed(inputA), shamt));
         end case;
     end process;
 
