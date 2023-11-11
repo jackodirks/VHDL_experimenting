@@ -17,7 +17,7 @@ package riscv32_pkg is
     subtype riscv32_instruction_type is std_logic_vector(2**riscv32_instruction_width_log2b - 1 downto 0);
     subtype riscv32_byte_type is std_logic_vector(2**riscv32_byte_width_log2b - 1 downto 0);
     subtype riscv32_opcode_type is natural range 0 to 127;
-    subtype riscv32_funct7_type is natural range 0 to 63;
+    subtype riscv32_funct7_type is natural range 0 to 127;
     subtype riscv32_funct3_type is natural range 0 to 7;
     subtype riscv32_registerFileAddress_type is natural range 0 to 31;
     subtype riscv32_shamt_type is natural range 0 to 31;
@@ -28,7 +28,7 @@ package riscv32_pkg is
     type riscv32_load_store_size is (ls_word, ls_halfword, ls_byte);
 
     type riscv32_immdiate_type is (riscv32_i_immidiate, riscv32_u_immidiate, riscv32_b_immidiate, riscv32_s_immidiate);
-    type riscv32_exec_type is (riscv32_exec_alu_rtype, riscv32_exec_alu_imm, riscv32_exec_calcReturn, riscv32_exec_lui, riscv32_exec_auipc);
+    type riscv32_exec_type is (riscv32_exec_alu_imm, riscv32_exec_alu_rtype, riscv32_exec_calcReturn, riscv32_exec_lui, riscv32_exec_auipc);
     type riscv32_alu_cmd is (cmd_alu_add, cmd_alu_slt, cmd_alu_sltu, cmd_alu_and, cmd_alu_or, cmd_alu_xor, cmd_alu_sub, cmd_alu_sll, cmd_alu_srl, cmd_alu_sra);
     type riscv32_branch_cmd is (cmd_branch_eq, cmd_branch_ne, cmd_branch_lt, cmd_branch_ltu, cmd_branch_ge, cmd_branch_geu, cmd_branch_jalr);
 
@@ -67,10 +67,10 @@ package riscv32_pkg is
     );
 
     constant riscv32_executeControlWordAllFalse : riscv32_ExecuteControlWord_type := (
-        exec_directive => riscv32_exec_alu_rtype,
+        exec_directive => riscv32_exec_alu_imm,
         is_branch_op => false,
         alu_cmd => cmd_alu_add,
-        branch_cmd => cmd_branch_ne
+        branch_cmd => cmd_branch_eq
     );
 
     constant riscv32_memoryControlWordAllFalse : riscv32_MemoryControlWord_type := (
@@ -112,8 +112,8 @@ package riscv32_pkg is
     constant riscv32_funct3_or : riscv32_funct3_type := 16#6#;
     constant riscv32_funct3_and : riscv32_funct3_type := 16#7#;
 
-    constant riscv32_funct7_srli : riscv32_funct7_type := 16#0#;
-    constant riscv32_funct7_srai : riscv32_funct7_type := 16#20#;
+    constant riscv32_funct7_srl : riscv32_funct7_type := 16#0#;
+    constant riscv32_funct7_sra : riscv32_funct7_type := 16#20#;
 
     constant riscv32_funct7_add : riscv32_funct7_type := 16#0#;
     constant riscv32_funct7_sub : riscv32_funct7_type := 16#20#;

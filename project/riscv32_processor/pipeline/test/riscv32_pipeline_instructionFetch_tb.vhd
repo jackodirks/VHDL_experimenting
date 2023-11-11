@@ -163,7 +163,7 @@ begin
             elsif run("Check branch not taken instruction flow") then
                 -- We start at the falling edge of the clock
                 check_equal(requestFromBusAddress, startAddress);
-                instructionFromBus <= construct_stype_instruction(opcode => riscv32_opcode_branch, rs1 => 1, rs2 => 2, funct3 => riscv32_funct3_bne, imm5 => "10100", imm7 => "0000000");
+                instructionFromBus <= construct_btype_instruction(opcode => riscv32_opcode_branch, rs1 => 1, rs2 => 2, funct3 => riscv32_funct3_bne, imm5 => "10100", imm7 => "0000000");
                 wait for clk_period;
                 -- IF should detect this is a branch instruction and freeze the pc
                 check_equal(requestFromBusAddress, startAddress);

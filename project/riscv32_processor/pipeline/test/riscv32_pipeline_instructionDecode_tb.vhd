@@ -23,7 +23,7 @@ architecture tb of riscv32_pipeline_instructionDecode_tb is
     signal overrideProgramCounter : boolean;
     signal repeatInstruction : boolean;
 
-    signal instructionFromInstructionFetch : riscv32_instruction_type := (others => '1');
+    signal instructionFromInstructionFetch : riscv32_instruction_type := riscv32_instructionNop;
     signal programCounter : riscv32_address_type := (others => '1');
 
     signal newProgramCounter : riscv32_address_type;
@@ -98,7 +98,7 @@ begin
                 wait for 1 ns;
                 check(repeatInstruction);
             elsif run("Branch instructions cause correct rs2, rs1 and immidiate") then
-                instructionFromInstructionFetch <= construct_stype_instruction(opcode => riscv32_opcode_branch, rs1 => 1, rs2 => 2, funct3 => riscv32_funct3_bne, imm5 => "10100", imm7 => "0000000");
+                instructionFromInstructionFetch <= construct_btype_instruction(opcode => riscv32_opcode_branch, rs1 => 1, rs2 => 2, funct3 => riscv32_funct3_bne, imm5 => "10100", imm7 => "0000000");
                 wait for 1 ns;
                 check(not overrideProgramCounter);
                 check_equal(rs1Address, 1);
@@ -112,7 +112,7 @@ begin
                 check_equal(rs1Address, 4);
                 check_equal(immidiate, std_logic_vector'(X"fffffffc"));
             elsif run("STORE instructions cause correct rs1, rs2 and immidiate") then
-                instructionFromInstructionFetch <= construct_stype_instruction(opcode => riscv32_opcode_store, rs1 =>5, rs2 => 7, funct3 => riscv32_funct3_sb, imm7 => "1111111", imm5 => "11100");
+                instructionFromInstructionFetch <= construct_btype_instruction(opcode => riscv32_opcode_store, rs1 =>5, rs2 => 7, funct3 => riscv32_funct3_sb, imm7 => "1111111", imm5 => "11100");
                 wait for 1 ns;
                 check(not overrideProgramCounter);
                 check_equal(rs2Address, 7);
