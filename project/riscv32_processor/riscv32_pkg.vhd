@@ -28,13 +28,10 @@ package riscv32_pkg is
     type riscv32_load_store_size is (ls_word, ls_halfword, ls_byte);
 
     type riscv32_immdiate_type is (riscv32_i_immidiate, riscv32_u_immidiate, riscv32_b_immidiate, riscv32_s_immidiate);
-    type riscv32_exec_type is (riscv32_exec_alu_rtype, riscv32_exec_alu_imm, riscv32_exec_shift, riscv32_exec_calcReturn, riscv32_exec_bitManip);
-    type riscv32_alu_cmd is (cmd_alu_add, cmd_alu_sub, cmd_alu_and, cmd_alu_or, cmd_alu_nor, cmd_alu_lui, cmd_alu_sltu, cmd_alu_slt, cmd_alu_clo,
-                            cmd_alu_clz);
-    type riscv32_shift_cmd is (cmd_shift_sll, cmd_shift_srl, cmd_shift_sra, cmd_shift_rotr);
-    type riscv32_branch_cmd is (cmd_branch_ne, cmd_branch_eq, cmd_branch_bgez, cmd_branch_jumpreg, cmd_branch_blez, cmd_branch_bgtz,
-                               cmd_branch_bltz);
-    type riscv32_bit_manipulator_cmd is (cmd_bit_manip_ext, cmd_bit_manip_ins);
+    type riscv32_exec_type is (riscv32_exec_alu_rtype, riscv32_exec_alu_imm, riscv32_exec_shift_rtype, riscv32_exec_shift_immidiate, riscv32_exec_calcReturn, riscv32_exec_lui, riscv32_exec_auipc);
+    type riscv32_alu_cmd is (cmd_alu_add, cmd_alu_slt, cmd_alu_sltu, cmd_alu_and, cmd_alu_or, cmd_alu_xor, cmd_alu_sub);
+    type riscv32_shift_cmd is (cmd_shift_sll, cmd_shift_srl, cmd_shift_sra);
+    type riscv32_branch_cmd is (cmd_branch_eq, cmd_branch_ne, cmd_branch_lt, cmd_branch_ltu, cmd_branch_ge, cmd_branch_geu);
 
     type riscv32_InstructionDecodeControlWord_type is record
         jump : boolean;
@@ -48,7 +45,6 @@ package riscv32_pkg is
         alu_cmd : riscv32_alu_cmd;
         shift_cmd : riscv32_shift_cmd;
         branch_cmd : riscv32_branch_cmd;
-        bitManip_cmd : riscv32_bit_manipulator_cmd;
         regWrite_override_on_branch : boolean;
         regWrite_override_on_rt_zero : boolean;
     end record;
@@ -80,7 +76,6 @@ package riscv32_pkg is
         alu_cmd => cmd_alu_add,
         shift_cmd => cmd_shift_sll,
         branch_cmd => cmd_branch_ne,
-        bitManip_cmd => cmd_bit_manip_ext,
         regWrite_override_on_branch => false,
         regWrite_override_on_rt_zero => false
     );
