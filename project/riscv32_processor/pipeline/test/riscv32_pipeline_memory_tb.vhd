@@ -19,8 +19,6 @@ entity riscv32_pipeline_memory_tb is
 end entity;
 
 architecture tb of riscv32_pipeline_memory_tb is
-    signal stall : boolean := false;
-
     signal memoryControlWord : riscv32_MemoryControlWord_type := riscv32_memoryControlWordAllFalse;
 
     signal requestAddress : riscv32_data_type := (others => '0');
@@ -236,7 +234,6 @@ begin
 
     memoryStage : entity src.riscv32_pipeline_memory
     port map (
-        stall => stall,
         memoryControlWord => memoryControlWord,
         requestAddress => requestAddress,
         rs2Data => rs2Data,

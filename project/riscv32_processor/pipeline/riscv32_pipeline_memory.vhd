@@ -7,8 +7,6 @@ use work.riscv32_pkg.all;
 
 entity riscv32_pipeline_memory is
     port (
-        -- Control in
-        stall : in boolean;
         -- From execute stage: control signals
         memoryControlWord : in riscv32_MemoryControlWord_type;
 
