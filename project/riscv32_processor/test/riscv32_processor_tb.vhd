@@ -102,7 +102,7 @@ begin
     begin
         test_runner_setup(runner, runner_cfg);
         while test_suite loop
-            if run("Store and read one") then
+            if run("Store and read eleven") then
                 simulated_bus_memory_pkg.write_file_to_address(net, memActor, 0, "./riscv32_processor/test/programs/storeEleven.txt");
                 start_cpu(test2slv, slv2test);
                 wait for 100*clk_period;
@@ -115,6 +115,13 @@ begin
                 wait for 100*clk_period;
                 expectedReadData := X"0000000e";
                 readAddr := std_logic_vector(to_unsigned(16#1c#, bus_address_type'length));
+                check_word_at_address(net, readAddr, expectedReadData);
+            elsif run("Looped add") then
+                simulated_bus_memory_pkg.write_file_to_address(net, memActor, 0, "./riscv32_processor/test/programs/loopedAdd.txt");
+                start_cpu(test2slv, slv2test);
+                wait for 20 us;
+                expectedReadData := X"00000007";
+                readAddr := std_logic_vector(to_unsigned(16#24#, bus_address_type'length));
                 check_word_at_address(net, readAddr, expectedReadData);
             end if;
         end loop;
