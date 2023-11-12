@@ -1,12 +1,11 @@
 .global __start
 
 __start:
-        nop
-        lui     a0,%hi(array_int32)
-        addi    a0,a0,%lo(array_int32)
-        li      a1,11
-        call    bubbleSort_int32
+        lui     x1,%hi(data)
+        addi    x1,x1,%lo(data)
+        li      x2,11
+        sw      x2,0(x1)
 epilogue:
         j epilogue
-array_size:
-        .word   11
+data:
+        .word   0
