@@ -55,6 +55,9 @@ tb_library.add_source_files(SRC_PATH / "riscv32_processor" / "utils" / "test" / 
 src_library.add_source_files(SRC_PATH / "riscv32_processor" / "pipeline" / "*.vhd")
 tb_library.add_source_files(SRC_PATH / "riscv32_processor" / "pipeline" / "test" / "*.vhd")
 
+src_library.add_source_files(SRC_PATH / "riscv32_processor" / "dcache" / "*.vhd")
+tb_library.add_source_files(SRC_PATH / "riscv32_processor" / "dcache" / "test" / "*.vhd")
+
 VU.set_sim_option("ghdl.gtkwave_script.gui", "gtkwave/setup.tcl")
 
 VU.main()
