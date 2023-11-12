@@ -66,6 +66,32 @@ architecture tb of riscv32_processor_tb is
             mapping => bus_map_constant(bus_address_type'high - 18, '0') & bus_map_range(18, 0)
         )
     );
+
+    procedure start_cpu (signal mst2slv : inout bus_mst2slv_type; signal slv2mst : in bus_slv2mst_type) is
+    begin
+        mst2slv <= bus_mst2slv_write(
+            address => std_logic_vector(to_unsigned(controllerAddress, bus_address_type'length)),
+            write_data => (others => '0'),
+            byte_mask => (others => '1'));
+        wait until rising_edge(clk) and any_transaction(mst2slv, slv2mst);
+        check(write_transaction(mst2slv, slv2mst));
+        mst2slv <= BUS_MST2SLV_IDLE;
+    end procedure;
+
+    procedure check_word_at_address(
+        signal net : inout network_t;
+        constant address : in bus_address_type;
+        constant data : in bus_data_type) is
+        variable readData : bus_data_type;
+    begin
+        simulated_bus_memory_pkg.read_from_address(
+            net => net,
+            actor => memActor,
+            addr => address,
+            data => readData);
+        check_equal(readData, data);
+    end procedure;
+
 begin
     clk <= not clk after (clk_period/2);
     main : process
@@ -77,28 +103,19 @@ begin
         test_runner_setup(runner, runner_cfg);
         while test_suite loop
             if run("Store and read one") then
-                simulated_bus_memory_pkg.write_file_to_address(
-                    net => net,
-                    actor => memActor,
-                    addr => 0,
-                    fileName => "./riscv32_processor/test/programs/storeEleven.txt");
-                -- Clear CPU internal reset
-                test2slv <= bus_mst2slv_write(
-                    address => std_logic_vector(to_unsigned(controllerAddress, bus_address_type'length)),
-                    write_data => (others => '0'),
-                    byte_mask => (others => '1'));
-                wait until rising_edge(clk) and any_transaction(test2slv, slv2test);
-                check(write_transaction(test2slv, slv2test));
-                test2slv <= BUS_MST2SLV_IDLE;
+                simulated_bus_memory_pkg.write_file_to_address(net, memActor, 0, "./riscv32_processor/test/programs/storeEleven.txt");
+                start_cpu(test2slv, slv2test);
                 wait for 100*clk_period;
                 expectedReadData := X"0000000b";
                 readAddr := std_logic_vector(to_unsigned(16#14#, bus_address_type'length));
-                simulated_bus_memory_pkg.read_from_address(
-                    net => net,
-                    actor => memActor,
-                    addr => readAddr,
-                    data => readData);
-                check_equal(readData, expectedReadData);
+                check_word_at_address(net, readAddr, expectedReadData);
+            elsif run("Load, add and store") then
+                simulated_bus_memory_pkg.write_file_to_address(net, memActor, 0, "./riscv32_processor/test/programs/loadThenStore.txt");
+                start_cpu(test2slv, slv2test);
+                wait for 100*clk_period;
+                expectedReadData := X"0000000e";
+                readAddr := std_logic_vector(to_unsigned(16#1c#, bus_address_type'length));
+                check_word_at_address(net, readAddr, expectedReadData);
             end if;
         end loop;
         wait until rising_edge(clk);
