@@ -34,6 +34,8 @@ begin
 
         variable invalid_func : boolean := false;
         variable invalid_branch : boolean := false;
+        variable invalid_store : boolean := false;
+        variable invalid_load : boolean := false;
     begin
         instructionDecodeControlWord_buf := riscv32_instructionDecodeControlWordAllFalse;
         executeControlWord_buf := riscv32_executeControlWordAllFalse;
@@ -45,6 +47,9 @@ begin
         funct7 := to_integer(unsigned(instruction(31 downto 25)));
         illegal_instruction <= false;
         invalid_func := false;
+        invalid_branch := false;
+        invalid_store := false;
+        invalid_load := false;
 
         case funct3 is
             when riscv32_funct3_add_sub =>
@@ -102,6 +107,37 @@ begin
                 invalid_branch := true;
         end case;
 
+        case funct3 is
+            when riscv32_funct3_sw =>
+                memoryControlWord_buf.loadStoreSize := ls_word;
+            when riscv32_funct3_sh =>
+                memoryControlWord_buf.loadStoreSize := ls_halfword;
+            when riscv32_funct3_sb =>
+                memoryControlWord_buf.loadStoreSize := ls_byte;
+            when others =>
+                invalid_store := true;
+        end case;
+
+        case funct3 is
+            when riscv32_funct3_lw =>
+                memoryControlWord_buf.loadStoreSize := ls_word;
+                memoryControlWord_buf.memReadSignExtend := false;
+            when riscv32_funct3_lh =>
+                memoryControlWord_buf.loadStoreSize := ls_halfword;
+                memoryControlWord_buf.memReadSignExtend := true;
+            when riscv32_funct3_lhu =>
+                memoryControlWord_buf.loadStoreSize := ls_halfword;
+                memoryControlWord_buf.memReadSignExtend := false;
+            when riscv32_funct3_lb =>
+                memoryControlWord_buf.loadStoreSize := ls_byte;
+                memoryControlWord_buf.memReadSignExtend := true;
+            when riscv32_funct3_lbu =>
+                memoryControlWord_buf.loadStoreSize := ls_byte;
+                memoryControlWord_buf.memReadSignExtend := false;
+            when others =>
+                invalid_load := true;
+        end case;
+
         case opcode is
             when riscv32_opcode_jalr =>
                 executeControlWord_buf.exec_directive := riscv32_exec_calcReturn;
@@ -132,10 +168,16 @@ begin
                 instructionDecodeControlWord_buf.immidiate_type := riscv32_i_immidiate;
                 executeControlWord_buf.exec_directive := riscv32_exec_alu_imm;
                 executeControlWord_buf.alu_cmd := cmd_alu_add;
+                memoryControlWord_buf.MemOp := true;
+                memoryControlWord_buf.MemOpIsWrite := false;
+                illegal_instruction <= invalid_load;
             when riscv32_opcode_store =>
                 instructionDecodeControlWord_buf.immidiate_type := riscv32_s_immidiate;
                 executeControlWord_buf.exec_directive := riscv32_exec_alu_imm;
                 executeControlWord_buf.alu_cmd := cmd_alu_add;
+                memoryControlWord_buf.MemOp := true;
+                memoryControlWord_buf.MemOpIsWrite := true;
+                illegal_instruction <= invalid_store;
             when others =>
                 illegal_instruction <= true;
         end case;

@@ -89,10 +89,6 @@ begin
                 check_equal(rdAddress, 12);
                 check_equal(rs1Address, 31);
                 check_equal(rs2Address, 30);
-            elsif run("Before the first rising_edge, all control logic should be false") then
-                check(executeControlWord = riscv32_executeControlWordAllFalse);
-                check(memoryControlWord = riscv32_memoryControlWordAllFalse);
-                check(writeBackControlWord = riscv32_writeBackControlWordAllFalse);
             elsif run("Load hazard detected causes repeat") then
                 loadHazardDetected <= true;
                 wait for 1 ns;

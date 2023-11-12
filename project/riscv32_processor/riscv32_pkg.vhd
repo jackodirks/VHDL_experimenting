@@ -21,6 +21,7 @@ package riscv32_pkg is
     subtype riscv32_funct3_type is natural range 0 to 7;
     subtype riscv32_registerFileAddress_type is natural range 0 to 31;
     subtype riscv32_shamt_type is natural range 0 to 31;
+    subtype riscv32_byte_mask_type is std_logic_vector(riscv32_bytes_per_data_word - 1 downto 0);
 
     type riscv32_data_array is array (natural range <>) of riscv32_data_type;
     type riscv32_instruction_array is array (natural range <>) of riscv32_instruction_type;
@@ -48,11 +49,8 @@ package riscv32_pkg is
     type riscv32_MemoryControlWord_type is record
         MemOp : boolean;
         MemOpIsWrite : boolean;
-        cop0Write : boolean;
         memReadSignExtend : boolean;
         loadStoreSize : riscv32_load_store_size;
-        wordLeft : boolean;
-        wordRight : boolean;
     end record;
 
     type riscv32_WriteBackControlWord_type is record
@@ -76,11 +74,8 @@ package riscv32_pkg is
     constant riscv32_memoryControlWordAllFalse : riscv32_MemoryControlWord_type := (
         MemOp => false,
         MemOpIsWrite => false,
-        cop0Write => false,
         memReadSignExtend => false,
-        loadStoreSize => ls_word,
-        wordLeft => false,
-        wordRight => false
+        loadStoreSize => ls_word
     );
 
     constant riscv32_writeBackControlWordAllFalse : riscv32_WriteBackControlWord_type := (
