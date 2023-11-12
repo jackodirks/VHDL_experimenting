@@ -26,7 +26,7 @@ architecture tb of riscv32_pipeline_writeBack_tb is
 
     signal execResult : riscv32_data_type := (others => '0');
     signal memDataRead : riscv32_data_type := (others => '0');
-    signal destinationReg : riscv32_registerFileAddress_type := 0;
+    signal rdAddress : riscv32_registerFileAddress_type := 0;
 
     signal regWrite : boolean;
     signal regWriteAddress : riscv32_registerFileAddress_type;
@@ -46,77 +46,77 @@ begin
                 instruction <= construct_itype_instruction(opcode => riscv32_opcode_opimm);
                 execResult <= X"11223344";
                 memDataRead <= X"00112233";
-                destinationReg <= 4;
+                rdAddress <= 4;
                 wait for 1 ns;
                 check(regWrite);
-                check_equal(regWriteAddress, destinationReg);
+                check_equal(regWriteAddress, rdAddress);
                 check_equal(regWriteData, execResult);
             elsif run("Opcode LUI causes execResult write") then
                 instruction <= construct_stype_instruction(opcode => riscv32_opcode_lui);
                 execResult <= X"11223344";
                 memDataRead <= X"00112233";
-                destinationReg <= 6;
+                rdAddress <= 6;
                 wait for 1 ns;
                 check(regWrite);
-                check_equal(regWriteAddress, destinationReg);
+                check_equal(regWriteAddress, rdAddress);
                 check_equal(regWriteData, execResult);
             elsif run("Opcode AIUPC causes execResult write") then
                 instruction <= construct_stype_instruction(opcode => riscv32_opcode_auipc);
                 execResult <= X"11223344";
                 memDataRead <= X"00112233";
-                destinationReg <= 31;
+                rdAddress <= 31;
                 wait for 1 ns;
                 check(regWrite);
-                check_equal(regWriteAddress, destinationReg);
+                check_equal(regWriteAddress, rdAddress);
                 check_equal(regWriteData, execResult);
             elsif run("Opcode OP causes execResult write") then
                 instruction <= construct_rtype_instruction(opcode => riscv32_opcode_op);
                 execResult <= X"11223344";
                 memDataRead <= X"00112233";
-                destinationReg <= 31;
+                rdAddress <= 31;
                 wait for 1 ns;
                 check(regWrite);
-                check_equal(regWriteAddress, destinationReg);
+                check_equal(regWriteAddress, rdAddress);
                 check_equal(regWriteData, execResult);
             elsif run("Opcode JAL causes execResult write") then
                 instruction <= construct_rtype_instruction(opcode => riscv32_opcode_jal);
                 execResult <= X"11223344";
                 memDataRead <= X"00112233";
-                destinationReg <= 31;
+                rdAddress <= 31;
                 wait for 1 ns;
                 check(regWrite);
-                check_equal(regWriteAddress, destinationReg);
+                check_equal(regWriteAddress, rdAddress);
                 check_equal(regWriteData, execResult);
             elsif run("Opcode JALR causes execResult write") then
                 instruction <= construct_itype_instruction(opcode => riscv32_opcode_jalr);
                 execResult <= X"11223344";
                 memDataRead <= X"00112233";
-                destinationReg <= 31;
+                rdAddress <= 31;
                 wait for 1 ns;
                 check(regWrite);
-                check_equal(regWriteAddress, destinationReg);
+                check_equal(regWriteAddress, rdAddress);
                 check_equal(regWriteData, execResult);
             elsif run("Opcode BRANCH does not cause write") then
                 instruction <= construct_btype_instruction(opcode => riscv32_opcode_branch);
                 execResult <= X"11223344";
                 memDataRead <= X"00112233";
-                destinationReg <= 31;
+                rdAddress <= 31;
                 wait for 1 ns;
                 check(not regWrite);
             elsif run("Opcode LOAD causes memDataRead write") then
                 instruction <= construct_itype_instruction(opcode => riscv32_opcode_load);
                 execResult <= X"11223344";
                 memDataRead <= X"00112233";
-                destinationReg <= 31;
+                rdAddress <= 31;
                 wait for 1 ns;
                 check(regWrite);
-                check_equal(regWriteAddress, destinationReg);
+                check_equal(regWriteAddress, rdAddress);
                 check_equal(regWriteData, memDataRead);
             elsif run("Opcode STORE does not cause write") then
                 instruction <= construct_stype_instruction(opcode => riscv32_opcode_store);
                 execResult <= X"11223344";
                 memDataRead <= X"00112233";
-                destinationReg <= 31;
+                rdAddress <= 31;
                 wait for 1 ns;
                 check(not regWrite);
             end if;
@@ -133,7 +133,7 @@ begin
         writeBackControlWord => writeBackControlWord,
         execResult => execResult,
         memDataRead => memDataRead,
-        destinationReg => destinationReg,
+        rdAddress => rdAddress,
         regWrite => regWrite,
         regWriteAddress => regWriteAddress,
         regWriteData => regWriteData

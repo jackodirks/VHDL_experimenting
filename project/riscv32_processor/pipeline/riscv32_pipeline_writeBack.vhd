@@ -13,7 +13,7 @@ entity riscv32_pipeline_writeBack is
         -- From mem stage: data
         execResult : in riscv32_data_type;
         memDataRead : in riscv32_data_type;
-        destinationReg : in riscv32_registerFileAddress_type;
+        rdAddress : in riscv32_registerFileAddress_type;
 
         -- To instruction decode: regWrite
         regWrite : out boolean;
@@ -24,10 +24,10 @@ end entity;
 
 architecture behaviourial of riscv32_pipeline_writeBack is
 begin
-    process(writeBackControlWord, execResult, destinationReg, memDataRead)
+    process(writeBackControlWord, execResult, rdAddress, memDataRead)
     begin
         regWrite <= writeBackControlWord.regWrite;
-        regWriteAddress <= destinationReg;
+        regWriteAddress <= rdAddress;
         if writeBackControlWord.MemtoReg then
             regWriteData <= memDataRead;
         else
