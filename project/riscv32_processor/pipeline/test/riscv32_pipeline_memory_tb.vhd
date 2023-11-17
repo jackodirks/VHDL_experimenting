@@ -72,8 +72,8 @@ begin
                 check(not doMemRead);
                 check(doMemWrite);
                 check_equal(memAddress, std_logic_vector'(X"00004004"));
-                check_equal(memByteMask, std_logic_vector'(X"3"));
-                check_equal(dataToMem(15 downto 0), rs2Data(31 downto 16));
+                check_equal(memByteMask, std_logic_vector'(X"c"));
+                check_equal(dataToMem(31 downto 16), rs2Data(15 downto 0));
             elsif run("Test store byte, aligned") then
                 instruction <= construct_stype_instruction(opcode => riscv32_opcode_store, funct3 => riscv32_funct3_sb);
                 requestAddress <= X"00004004";
@@ -92,8 +92,8 @@ begin
                 check(not doMemRead);
                 check(doMemWrite);
                 check_equal(memAddress, std_logic_vector'(X"00004004"));
-                check_equal(memByteMask, std_logic_vector'(X"1"));
-                check_equal(dataToMem(7 downto 0), rs2Data(15 downto 8));
+                check_equal(memByteMask, std_logic_vector'(X"2"));
+                check_equal(dataToMem(15 downto 8), rs2Data(7 downto 0));
             elsif run("Test store byte, offset 3") then
                 instruction <= construct_stype_instruction(opcode => riscv32_opcode_store, funct3 => riscv32_funct3_sb);
                 requestAddress <= X"00004007";
@@ -102,8 +102,8 @@ begin
                 check(not doMemRead);
                 check(doMemWrite);
                 check_equal(memAddress, std_logic_vector'(X"00004004"));
-                check_equal(memByteMask, std_logic_vector'(X"1"));
-                check_equal(dataToMem(7 downto 0), rs2Data(31 downto 24));
+                check_equal(memByteMask, std_logic_vector'(X"8"));
+                check_equal(dataToMem(31 downto 24), rs2Data(7 downto 0));
             elsif run("Test load word") then
                 instruction <= construct_itype_instruction(opcode => riscv32_opcode_load, funct3 => riscv32_funct3_lw);
                 requestAddress <= X"00004004";

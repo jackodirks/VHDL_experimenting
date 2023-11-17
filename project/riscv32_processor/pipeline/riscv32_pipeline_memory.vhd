@@ -85,16 +85,12 @@ begin
                 byteMaskToMem_buf := "1111";
             when ls_halfword =>
                 byteMaskToMem_buf := "0011";
-                if not memoryControlWord.MemOpIsWrite then
-                    shiftCount := to_integer(unsigned(requestAddress(1 downto 1)))*2;
-                    byteMaskToMem_buf := std_logic_vector(shift_left(unsigned(byteMaskToMem_buf), shiftCount));
-                end if;
+                shiftCount := to_integer(unsigned(requestAddress(1 downto 1)))*2;
+                byteMaskToMem_buf := std_logic_vector(shift_left(unsigned(byteMaskToMem_buf), shiftCount));
             when ls_byte =>
                 byteMaskToMem_buf := "0001";
-                if not memoryControlWord.MemOpIsWrite and requestAddress(0) = '1' then
-                    shiftCount := to_integer(unsigned(requestAddress(1 downto 0)));
-                    byteMaskToMem_buf := std_logic_vector(shift_left(unsigned(byteMaskToMem_buf), shiftCount));
-                end if;
+                shiftCount := to_integer(unsigned(requestAddress(1 downto 0)));
+                byteMaskToMem_buf := std_logic_vector(shift_left(unsigned(byteMaskToMem_buf), shiftCount));
         end case;
         byteMaskToMem <= byteMaskToMem_buf;
     end process;
@@ -107,10 +103,10 @@ begin
                 memWriteData <= rs2Data;
             when ls_halfword =>
                 shiftCount := to_integer(unsigned(requestAddress(1 downto 1)))*16;
-                memWriteData <= std_logic_vector(shift_right(unsigned(rs2Data), shiftCount));
+                memWriteData <= std_logic_vector(shift_left(unsigned(rs2Data), shiftCount));
             when ls_byte =>
                 shiftCount := to_integer(unsigned(requestAddress(1 downto 0)))*8;
-                memWriteData <= std_logic_vector(shift_right(unsigned(rs2Data), shiftCount));
+                memWriteData <= std_logic_vector(shift_left(unsigned(rs2Data), shiftCount));
         end case;
     end process;
 
