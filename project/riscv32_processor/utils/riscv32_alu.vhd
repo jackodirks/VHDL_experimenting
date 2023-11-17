@@ -18,7 +18,7 @@ end entity;
 
 architecture behaviourial of riscv32_alu is
 begin
-    process(inputA, inputB, cmd)
+    process(inputA, inputB, shamt, cmd)
         variable additionResult : riscv32_data_type;
         variable subtractionResult : riscv32_data_type;
         variable andResult : riscv32_data_type;

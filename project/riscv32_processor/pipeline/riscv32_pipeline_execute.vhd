@@ -31,7 +31,7 @@ architecture behaviourial of riscv32_pipeline_execute is
     signal aluResultRtype : riscv32_data_type;
     signal bitManip_result : riscv32_data_type;
 begin
-    determineExecResult : process(executeControlWord, aluResultRtype, aluResultImmidiate, programCounter)
+    determineExecResult : process(executeControlWord, aluResultRtype, aluResultImmidiate, programCounter, immidiate)
     begin
         case executeControlWord.exec_directive is
             when riscv32_exec_alu_rtype =>
