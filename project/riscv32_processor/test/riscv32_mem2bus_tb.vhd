@@ -334,27 +334,6 @@ begin
                 wait until rising_edge(clk);
                 check(not stall);
                 check_equal(dataOut(15 downto 8), std_logic_vector'(X"F3"));
-            elsif run("Non-word aligned byte read in dcache range caches entire word") then
-                writeAddress := std_logic_vector(to_unsigned(cache_range_start, writeAddress'length));
-                writeData := X"F1F2F3F4";
-                simulated_bus_memory_pkg.write_to_address(
-                    net => net,
-                    actor => slaveActor,
-                    addr => writeAddress,
-                    mask => (others => '1'),
-                    data => writeData);
-                wait until falling_edge(clk);
-                doRead <= true;
-                address <= std_logic_vector(to_unsigned(cache_range_start + 1, address'length));
-                byteMask <= "0001";
-                wait until rising_edge(clk) and not stall;
-                check_equal(dataOut(7 downto 0), std_logic_vector'(X"F3"));
-                doRead <= true;
-                address <= std_logic_vector(to_unsigned(cache_range_start, address'length));
-                byteMask <= "0001";
-                wait until rising_edge(clk);
-                check(not stall);
-                check_equal(dataOut(7 downto 0), std_logic_vector'(X"F4"));
             elsif run("Cache hitting write updates the cache") then
                 writeAddress := std_logic_vector(to_unsigned(cache_range_start, writeAddress'length));
                 writeData := X"F1F2F3F4";
@@ -407,6 +386,80 @@ begin
                 wait until rising_edge(clk);
                 check(not stall);
                 check_equal(dataOut, std_logic_vector'(X"F1F2F3F4"));
+            elsif run("Unaligned read always stalls") then
+                writeAddress := std_logic_vector(to_unsigned(cache_range_start, writeAddress'length));
+                writeData := X"F1F2F3F4";
+                simulated_bus_memory_pkg.write_to_address(
+                    net => net,
+                    actor => slaveActor,
+                    addr => writeAddress,
+                    mask => (others => '1'),
+                    data => writeData);
+                wait until falling_edge(clk);
+                doRead <= true;
+                address <= std_logic_vector(to_unsigned(cache_range_start, address'length));
+                byteMask <= (others => '1');
+                wait until rising_edge(clk) and not stall;
+                doRead <= true;
+                address <= std_logic_vector(to_unsigned(cache_range_start + 1, address'length));
+                byteMask <= (others => '1');
+                wait until rising_edge(clk);
+                check(stall);
+            elsif run("Unaligned read from cached data leads to bus_fault_unaligned_access") then
+                writeAddress := std_logic_vector(to_unsigned(cache_range_start, writeAddress'length));
+                writeData := X"F1F2F3F4";
+                simulated_bus_memory_pkg.write_to_address(
+                    net => net,
+                    actor => slaveActor,
+                    addr => writeAddress,
+                    mask => (others => '1'),
+                    data => writeData);
+                wait until falling_edge(clk);
+                doRead <= true;
+                address <= std_logic_vector(to_unsigned(cache_range_start, address'length));
+                byteMask <= (others => '1');
+                wait until rising_edge(clk) and not stall;
+                doRead <= true;
+                address <= std_logic_vector(to_unsigned(cache_range_start + 1, address'length));
+                byteMask <= (others => '1');
+                wait until rising_edge(clk) and hasFault;
+                check_equal(faultData, bus_fault_unaligned_access);
+                check(stall);
+            elsif run("Unaligned read from uncached data leads to bus_fault_unaligned_access") then
+                writeAddress := std_logic_vector(to_unsigned(cache_range_start, writeAddress'length));
+                writeData := X"F1F2F3F4";
+                simulated_bus_memory_pkg.write_to_address(
+                    net => net,
+                    actor => slaveActor,
+                    addr => writeAddress,
+                    mask => (others => '1'),
+                    data => writeData);
+                wait until falling_edge(clk);
+                doRead <= true;
+                address <= std_logic_vector(to_unsigned(cache_range_start + 1, address'length));
+                byteMask <= (others => '1');
+                wait until rising_edge(clk) and hasFault;
+                check_equal(faultData, bus_fault_unaligned_access);
+                check(stall);
+            elsif run("Unaligned non-request does not stall") then
+                writeAddress := std_logic_vector(to_unsigned(cache_range_start, writeAddress'length));
+                writeData := X"F1F2F3F4";
+                simulated_bus_memory_pkg.write_to_address(
+                    net => net,
+                    actor => slaveActor,
+                    addr => writeAddress,
+                    mask => (others => '1'),
+                    data => writeData);
+                wait until falling_edge(clk);
+                doRead <= true;
+                address <= std_logic_vector(to_unsigned(cache_range_start, address'length));
+                byteMask <= (others => '1');
+                wait until rising_edge(clk) and not stall;
+                doRead <= false;
+                address <= std_logic_vector(to_unsigned(cache_range_start + 1, address'length));
+                byteMask <= (others => '1');
+                wait until rising_edge(clk);
+                check(not stall);
             end if;
         end loop;
         wait until rising_edge(clk);

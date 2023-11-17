@@ -49,7 +49,6 @@ architecture behaviourial of riscv32_mem2bus is
     signal write_stall : boolean := false;
     signal dcache_updating_from_bus : boolean := false;
     signal corrected_byte_mask : riscv32_byte_mask_type;
-    signal corrected_address : riscv32_address_type;
 
     signal mst2slv_buf : bus_mst2slv_type := BUS_MST2SLV_IDLE;
 
@@ -70,6 +69,9 @@ architecture behaviourial of riscv32_mem2bus is
     signal dcache_significant_hit : boolean;
     signal address_in_dcache_range : boolean;
     signal dcache_reset : std_logic;
+
+    -- Unaligned access handling
+    signal unaligned_access : boolean := false;
 begin
     address_in_dcache_range <= bus_addr_in_range(address, range_to_cache);
     dcache_significant_hit <= address_in_dcache_range and not dcache_miss;
@@ -88,9 +90,10 @@ begin
     end process;
 
     write_stall <= volatile_write_cache_miss and doWrite;
-    transaction_required <= read_stall or write_stall;
-    stall <= transaction_required;
     mst2slv <= mst2slv_buf;
+    unaligned_access <= unsigned(address(riscv32_address_width_log2b - riscv32_byte_width_log2b - 1 downto 0)) > 0 and (doRead or doWrite);
+    transaction_required <= read_stall or write_stall;
+    stall <= transaction_required or unaligned_access;
 
     dcache_reset <= '1' when flushCache or rst = '1' else '0';
 
@@ -103,12 +106,10 @@ begin
         end if;
     end process;
 
-    correct_for_dcache : process(byteMask, address, address_in_dcache_range, dcache_miss, doRead)
+    correct_for_dcache : process(byteMask, address_in_dcache_range, dcache_miss, doRead)
     begin
-        corrected_address <= address;
         if address_in_dcache_range and dcache_miss and doRead then
             corrected_byte_mask <= (others => '1');
-            corrected_address(riscv32_data_width_log2b - riscv32_byte_width_log2b - 1 downto 0) <= (others => '0');
         else
             corrected_byte_mask <= byteMask;
         end if;
@@ -172,7 +173,6 @@ begin
         dcache_updating_from_bus <= override_inputs;
         dcache_address_in <= address;
         if override_inputs then
-            dcache_address_in(1 downto 0) <= (others => '0');
             dcache_byte_mask <= (others => '1');
             dcache_do_write <= overriding_write;
             dcache_data_in <= overriding_data_in;
@@ -203,10 +203,13 @@ begin
             elsif transaction_required and not bus_active and not hasFault_buf and not forbidBusInteraction and not dcache_updating_from_bus then
                 bus_active := true;
                 if doRead then
-                    mst2slv_buf <= bus_mst2slv_read(corrected_address, corrected_byte_mask);
+                    mst2slv_buf <= bus_mst2slv_read(address, corrected_byte_mask);
                 elsif doWrite then
-                    mst2slv_buf <= bus_mst2slv_write(corrected_address, dataIn, corrected_byte_mask);
+                    mst2slv_buf <= bus_mst2slv_write(address, dataIn, corrected_byte_mask);
                 end if;
+            elsif unaligned_access then
+                hasFault_buf := true;
+                faultData <= bus_fault_unaligned_access;
             end if;
 
         end if;
