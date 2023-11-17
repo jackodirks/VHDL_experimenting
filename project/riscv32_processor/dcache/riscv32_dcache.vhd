@@ -32,8 +32,6 @@ end entity;
 architecture behaviourial of riscv32_dcache is
     -- Tag size is what is left after subtracting the fact that we store word based and the address bits that are covered by the
     -- actual cache address.
-    constant sub_word_part_lsb : natural := 0;
-    constant sub_word_part_msb : natural := riscv32_address_width_log2b - riscv32_byte_width_log2b - 1;
     constant address_part_lsb : natural := riscv32_address_width_log2b - riscv32_byte_width_log2b;
     constant address_part_msb : natural := address_part_lsb + word_count_log2b - 1;
     constant tag_part_lsb : natural := address_part_msb + 1;
@@ -44,27 +42,10 @@ architecture behaviourial of riscv32_dcache is
     signal requestAddress : std_logic_vector(word_count_log2b - 1 downto 0);
     signal valid : boolean;
     signal dirtyOut : boolean;
-    signal dataFromBrank : riscv32_data_type;
-
-    signal modified_byte_mask : riscv32_byte_mask_type;
-    signal modified_data : riscv32_data_type;
-    signal sub_word_part : natural range 0 to 2**(sub_word_part_msb + 1) -1;
 begin
 
     tagIn <= addressIn(tag_part_msb downto tag_part_lsb);
     requestAddress <= addressIn(address_part_msb downto address_part_lsb);
-    sub_word_part <= to_integer(unsigned(addressIn(sub_word_part_msb downto sub_word_part_lsb)));
-
-    realign_write : process(addressIn, dataIn, byteMask, sub_word_part)
-    begin
-        modified_byte_mask <= std_logic_vector(shift_left(unsigned(byteMask), sub_word_part));
-        modified_data <= std_logic_vector(shift_left(unsigned(dataIn), sub_word_part * riscv32_byte_width));
-    end process;
-
-    realign_read : process(addressIn, dataFromBrank, sub_word_part)
-    begin
-        dataOut <= std_logic_vector(shift_right(unsigned(dataFromBrank), sub_word_part * riscv32_byte_width));
-    end process;
 
     miss <= not valid or (tagIn /= tagOut);
     dirty <= dirtyOut and valid;
@@ -84,11 +65,11 @@ begin
         clk => clk,
         rst => rst,
         requestAddress => requestAddress,
-        dataOut => dataFromBrank,
-        dataIn => modified_data,
+        dataOut => dataOut,
+        dataIn => dataIn,
         tagOut => tagOut,
         tagIn => tagIn,
-        byteMask => modified_byte_mask,
+        byteMask => byteMask,
         valid => valid,
         dirty => dirtyOut,
         resetDirty => resetDirty,

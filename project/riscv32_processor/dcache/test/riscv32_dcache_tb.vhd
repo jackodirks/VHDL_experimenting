@@ -70,22 +70,6 @@ begin
                 byteMask <= X"1";
                 wait until falling_edge(clk);
                 check_equal(dataOut, std_logic_vector'(X"FEDCBAFF"));
-            elsif run("Update single byte, unaligned address") then
-                wait until falling_edge(clk);
-                addressIn <= X"01020304";
-                dataIn <= X"FEDCBA98";
-                byteMask <= (others => '1');
-                doWrite <= true;
-                resetDirty <= true;
-                wait until falling_edge(clk);
-                addressIn <= X"01020305";
-                dataIn <= X"000000FF";
-                byteMask <= X"1";
-                wait until falling_edge(clk);
-                doWrite <= false;
-                addressIn <= X"01020304";
-                wait for 1 fs;
-                check_equal(dataOut, std_logic_vector'(X"FEDCFF98"));
             elsif run("Miss but dirty outputs data and address of dirty cache line") then
                 wait until falling_edge(clk);
                 addressIn <= X"00000000";
@@ -114,19 +98,6 @@ begin
                 wait until falling_edge(clk);
                 rst <= '0';
                 check(not dirty);
-            elsif run("Unaligned reads get handled") then
-                wait until falling_edge(clk);
-                addressIn <= X"01020304";
-                dataIn <= X"FEDCBA98";
-                byteMask <= (others => '1');
-                doWrite <= true;
-                resetDirty <= true;
-                wait until falling_edge(clk);
-                addressIn <= X"01020305";
-                byteMask <= X"1";
-                doWrite <= false;
-                wait for 1 fs;
-                check_equal(dataOut(7 downto 0), std_logic_vector'(X"BA"));
             end if;
         end loop;
         wait until rising_edge(clk);
