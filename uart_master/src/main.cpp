@@ -30,19 +30,19 @@ static void dumpSubList(DeppUartMaster& master, uint32_t startAddress) {
         }
         curAddress += 4;
     }
-    for (std::size_t i = 0; i < 11; ++i) {
+    for (std::size_t i = 0; i < 12; ++i) {
         std::cout << std::dec << "At index " << i << " value " << (int)data[i] << std::endl;
     }
 }
 
 static void dumpList(DeppUartMaster& master) {
-    uint32_t curAddress = spiMemStartAddress + 0x18c;
+    uint32_t curAddress = 0x120000;
     std::cout << "32 bit:" << std::endl;
     dumpSubList<int32_t>(master, curAddress);
-    curAddress = spiMemStartAddress + 0x174;
+    curAddress = 0x120030;
     std::cout << "16 bit:" << std::endl;
     dumpSubList<int16_t>(master, curAddress);
-    curAddress = spiMemStartAddress + 0x168;
+    curAddress = 0x120048;
     std::cout << "8 bit:" << std::endl;
     dumpSubList<int8_t>(master, curAddress);
 }
@@ -60,6 +60,14 @@ static void writeAndVerify(DeppUartMaster& master, const std::string& filePath, 
         if (data[i] != readData) {
             std::cout << std::hex << "Validation failed at address " << currentAddress << " expected data " << data[i] << " received data " << readData << std::dec << std::endl;
         }
+        currentAddress += 4;
+    }
+}
+
+static void clearMemory(DeppUartMaster& master, uint32_t startAddress, uint32_t wordCount) {
+    uint32_t currentAddress = startAddress;
+    for (uint32_t i = 0; i < wordCount; ++i) {
+        master.writeWord(currentAddress, 0);
         currentAddress += 4;
     }
 }
@@ -88,12 +96,13 @@ int main(int argc, char* argv[]) {
     std::string path(argv[1]);
     printClockSpeed(master);
     writeAndVerify(master, path, spiMemStartAddress);
+    clearMemory(master, 0x120000, 25);
     uint32_t cpuStatus = master.readWord(cpuBaseAddress);
     dumpRegFile(master);
     std::cout << std::hex << "cpuStatus, pre run: 0x" << cpuStatus << std::endl;
     dumpList(master);
     master.writeWord(cpuBaseAddress, 0x0);
-    usleep(200000);
+    usleep(1000);
     master.writeWord(cpuBaseAddress, 0x1);
     cpuStatus = master.readWord(cpuBaseAddress);
     std::cout << std::hex << "cpuStatus, post run: 0x" << cpuStatus << std::endl;
