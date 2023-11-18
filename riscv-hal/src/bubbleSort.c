@@ -2,10 +2,6 @@
 #include <stdint.h>
 #include <stddef.h>
 
-int32_t array_int32[] = {2, -4, 1, -3, 0, -2, -5, 3, 5, 4, -1};
-int16_t array_int16[] = {2, -4, 1, -3, 0, -2, -5, 3, 5, 4, -1};
-int8_t array_int8[] = {2, -4, 1, -3, 0, -2, -5, 3, 5, 4, -1};
-
 static void swap_int32(int32_t* xp, int32_t* yp)
 {
     int32_t temp = *xp;

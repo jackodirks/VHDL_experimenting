@@ -86,7 +86,7 @@ begin
         tx => master_tx
     );
 
-    processor : entity work.mips32_processor
+    processor : entity work.riscv32_processor
     generic map (
         startAddress => procStartAddress,
         clk_period => clk_period,

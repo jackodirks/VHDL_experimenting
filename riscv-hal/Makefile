@@ -12,7 +12,7 @@ OFILES := $(patsubst $(SRCDIR)%,$(ODIR)%,$(OFILES))
 TARGET:=final
 TARGETBIN:=final.bin
 TARGETTXT:=final.txt
-LDFLAGS := --gc-sections
+LDFLAGS := -Wl,--gc-sections
 ARCHFLAGS := -march=rv32i -mabi=ilp32
 .PHONY: all release clean
 
@@ -26,10 +26,10 @@ $(ODIR)%.asm.o: $(ASMDIR)%.asm | $(ODIR)
 	$(AS) $(ARCHFLAGS) $< -o $@
 
 $(ODIR)%.c.o: $(SRCDIR)%.c | $(ODIR)
-	$(GCC) $(ARCHFLAGS) -mbranch-cost=3 -O3 -c $< -o $@
+	$(GCC) $(ARCHFLAGS) -Iinc -mbranch-cost=2 -O3 -c $< -o $@
 
 $(TARGET): $(OFILES)
-	$(LD) -o $@ $^ $(LDFLAGS) -Tlinker_script.ld
+	$(GCC) -o $@ $^ $(LDFLAGS) -Tlinker_script.ld $(ARCHFLAGS)
 
 $(TARGETBIN): $(TARGET)
 	$(OBJCOPY) -j .text -j .data -j .bss -O binary $^ $@

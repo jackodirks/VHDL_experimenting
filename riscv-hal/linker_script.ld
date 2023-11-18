@@ -2,28 +2,41 @@ ENTRY(__start)
 
 MEMORY
 {
-    SRAM (rwx) : ORIGIN = 0x100000, LENGTH = 0x60000
+    FLASH (rx) : ORIGIN = 0x100000, LENGTH = 0x20000
+    SRAM (rwx) : ORIGIN = 0x120000, LENGTH = 0x40000
 }
 
 SECTIONS
 {
     .text :
     {
+        *(.text.startup)
         *(.text)
-    } > SRAM
+        _flash_data = .;
+    } > FLASH
 
     .data :
     {
+        _data = .;
+        *(vtable)
         *(.data)
-    } > SRAM
+        *(.rodata)
+        _edata = .;
+    } > SRAM AT > FLASH
 
     .bss :
     {
+        _bss = .;
         *(.bss)
+        _ebss = .;
     } > SRAM
 
-    .MIPS.abiflags :
+    .heap :
     {
-        *(.MIPS.abiflags)
+        . = ALIGN(8);
+        _heap_start = .;
     } > SRAM
+
+    _stack_start = ORIGIN(SRAM) + LENGTH(SRAM);
+    _global_pointer = ORIGIN(SRAM) + LENGTH(SRAM)/2;
 }

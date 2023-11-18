@@ -101,19 +101,44 @@ begin
         constant spimem1_start_address : bus_address_type := std_logic_vector(to_unsigned(16#120000#, bus_address_type'length));
         constant spimem2_start_address : bus_address_type := std_logic_vector(to_unsigned(16#140000#, bus_address_type'length));
 
+        variable curAddr : natural;
         variable address : bus_address_type;
+        variable expectedData : bus_data_type;
     begin
         test_runner_setup(runner, runner_cfg);
         while test_suite loop
             if run("Spi mem is usable") then
                 write(net, spimem0_start_address, X"01020304");
                 read(net, spimem0_start_address, X"01020304");
-            elsif run("processor: Looped add") then
-                write_file(net, spimem0_start_address, "./mips32_processor/test/programs/loopedAdd.txt");
+            elsif run("Riscv32: bubblesort") then
+                write_file(net, spimem0_start_address, "./riscv32_processor/test/programs/fullBubblesort.txt");
                 write(net, processor_controller_start_address, X"00000000");
-                wait for 1000*clk_period;
-                address := std_logic_vector(to_unsigned(to_integer(unsigned(spimem0_start_address)) + 16#24#, address'length));
-                read(net, address, X"00000003");
+                wait for 300 us;
+                curAddr := 16#00120000#;
+                for i in -6 to 5 loop
+                    address := std_logic_vector(to_unsigned(curAddr, address'length));
+                    curAddr := curAddr + 4;
+                    expectedData := std_logic_vector(to_signed(i, expectedData'length));
+                    read(net, address, expectedData);
+                end loop;
+                curAddr := 16#00120030#;
+                for i in -3 to 2 loop
+                    address := std_logic_vector(to_unsigned(curAddr, address'length));
+                    expectedData(31 downto 16) := std_logic_vector(to_signed(i*2 + 1, 16));
+                    expectedData(15 downto 0) := std_logic_vector(to_signed(i*2, 16));
+                    read(net, address, expectedData);
+                    curAddr := curAddr + 4;
+                end loop;
+                curAddr := 16#00120048#;
+                for i in 0 to 2 loop
+                    address := std_logic_vector(to_unsigned(curAddr, address'length));
+                    expectedData(31 downto 24) := std_logic_vector(to_signed(i*4 - 3, 8));
+                    expectedData(23 downto 16) := std_logic_vector(to_signed(i*4 - 4, 8));
+                    expectedData(15 downto 8) := std_logic_vector(to_signed(i*4 - 5, 8));
+                    expectedData(7 downto 0) := std_logic_vector(to_signed(i*4 - 6, 8));
+                    read(net, address, expectedData);
+                    curAddr := curAddr + 4;
+                end loop;
             end if;
         end loop;
         wait until rising_edge(clk) or falling_edge(clk);
