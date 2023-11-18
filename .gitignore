@@ -52,6 +52,10 @@ hal/obj/*
 riscv-hal/final*
 riscv-hal/obj/*
 
+#minimal-riscv-hal project
+minimal-riscv-hal/final*
+minimal-riscv-hal/obj/*
+
 #vivado tcl
 vivado_tcl/build/*
 vivado_tcl/.Xil/*

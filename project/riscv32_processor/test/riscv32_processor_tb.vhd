@@ -123,6 +123,35 @@ begin
                 expectedReadData := X"00000007";
                 readAddr := std_logic_vector(to_unsigned(16#24#, bus_address_type'length));
                 check_word_at_address(net, readAddr, expectedReadData);
+            elsif run("Bubblesort") then
+                simulated_bus_memory_pkg.write_file_to_address(net, memActor, 0, "./riscv32_processor/test/programs/minimalBubblesort.txt");
+                start_cpu(test2slv, slv2test);
+                wait for 500 us;
+                curAddr := 16#15c#;
+                for i in -6 to 5 loop
+                    readAddr := std_logic_vector(to_unsigned(curAddr, bus_address_type'length));
+                    expectedReadData := std_logic_vector(to_signed(i, expectedReadData'length));
+                    check_word_at_address(net, readAddr, expectedReadData);
+                    curAddr := curAddr + 4;
+                end loop;
+                curAddr := 16#18c#;
+                for i in -3 to 2 loop
+                    readAddr := std_logic_vector(to_unsigned(curAddr, readAddr'length));
+                    expectedReadData(31 downto 16) := std_logic_vector(to_signed(i*2 + 1, 16));
+                    expectedReadData(15 downto 0) := std_logic_vector(to_signed(i*2, 16));
+                    check_word_at_address(net, readAddr, expectedReadData);
+                    curAddr := curAddr + 4;
+                end loop;
+                curAddr := 16#1a4#;
+                for i in 0 to 2 loop
+                    readAddr := std_logic_vector(to_unsigned(curAddr, readAddr'length));
+                    expectedReadData(31 downto 24) := std_logic_vector(to_signed(i*4 - 3, 8));
+                    expectedReadData(23 downto 16) := std_logic_vector(to_signed(i*4 - 4, 8));
+                    expectedReadData(15 downto 8) := std_logic_vector(to_signed(i*4 - 5, 8));
+                    expectedReadData(7 downto 0) := std_logic_vector(to_signed(i*4 - 6, 8));
+                    check_word_at_address(net, readAddr, expectedReadData);
+                    curAddr := curAddr + 4;
+                end loop;
             end if;
         end loop;
         wait until rising_edge(clk);
