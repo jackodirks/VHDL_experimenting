@@ -28,21 +28,6 @@ tb_library.add_source_files(SRC_PATH / "triple_23lc1024_controller"/ "test" / "*
 
 src_library.add_source_files(SRC_PATH / "common" / "simple_multishot_timer.vhd")
 
-src_library.add_source_files(SRC_PATH / "mips32_processor" / "*.vhd")
-tb_library.add_source_files(SRC_PATH / "mips32_processor" / "test" / "*.vhd")
-
-src_library.add_source_files(SRC_PATH / "mips32_processor" / "pipeline" / "*.vhd")
-tb_library.add_source_files(SRC_PATH / "mips32_processor" / "pipeline" / "test" / "*.vhd")
-
-src_library.add_source_files(SRC_PATH / "mips32_processor" / "utils" / "*.vhd")
-tb_library.add_source_files(SRC_PATH / "mips32_processor" / "utils" / "test" / "*.vhd")
-
-src_library.add_source_files(SRC_PATH / "mips32_processor" / "icache" / "*.vhd")
-tb_library.add_source_files(SRC_PATH / "mips32_processor" / "icache" / "test" / "*.vhd")
-
-src_library.add_source_files(SRC_PATH / "mips32_processor" / "dcache" / "*.vhd")
-tb_library.add_source_files(SRC_PATH / "mips32_processor" / "dcache" / "test" / "*.vhd")
-
 src_library.add_source_files(SRC_PATH / "uart_bus_master" / "*.vhd")
 tb_library.add_source_files(SRC_PATH / "uart_bus_master" / "test" / "*.vhd")
 
