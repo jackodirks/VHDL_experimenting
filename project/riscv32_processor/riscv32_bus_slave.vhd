@@ -76,8 +76,7 @@ begin
                 slv2mst_buf.faultData := fault_data;
             elsif internal_transaction then
                 internal_transaction := false;
-                slv2mst_buf.readValid := '1';
-                slv2mst_buf.writeValid := '1';
+                slv2mst_buf.valid := true;
                 slv2mst_buf.readData := data_in_internal;
             elsif bus_requesting(mst2slv) then
                 if mst2slv.address(1 downto 0) /= "00" then

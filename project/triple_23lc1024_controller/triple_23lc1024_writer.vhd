@@ -22,7 +22,7 @@ entity triple_23lc1024_writer is
 
         ready : in boolean;
         fault : in boolean;
-        valid : out std_logic;
+        valid : out boolean;
         active : out boolean;
 
         request_length : in positive range 1 to bus_bytes_per_word;
@@ -46,7 +46,7 @@ begin
         constant max_count : natural := 16 + 2**(bus_data_width_log2b - 2) * 2;
         variable count : natural range 0 to max_count := 0;
         variable count_goal : natural range 16 to max_count := 16;
-        variable valid_internal : std_logic := '0';
+        variable valid_internal : boolean := false;
         variable cs_set_internal : std_logic := '1';
         variable transmitData : bus_data_type := (others => 'X');
         variable burst_internal : std_logic := '0';
@@ -57,7 +57,7 @@ begin
             if rst = '1' then
                 spi_clk <= '0';
                 cs_set_internal := '1';
-                valid_internal := '0';
+                valid_internal := false;
                 count := 0;
                 fault_latched := false;
             else
@@ -83,10 +83,10 @@ begin
 
                 if count = 0 then
                     half_period_timer_rst <= '1';
-                    valid_internal := '0';
+                    valid_internal := false;
                     if ready and cs_set_internal = '1' then
                         fault_latched := false;
-                        valid_internal := '1';
+                        valid_internal := true;
                         transmitCommandAndAddress := instructionWrite & "0000000" & address;
                         transmitData := write_data;
                         burst_internal := burst;
@@ -102,7 +102,7 @@ begin
                 if count > 0 then
                     half_period_timer_rst <= '0';
                     cs_set_internal := '0';
-                    valid_internal := '0';
+                    valid_internal := false;
                 end if;
 
                 if count >= 1 and count < 15 then
@@ -128,7 +128,7 @@ begin
                         if ready then
                             transmitData := write_data;
                             burst_internal := burst;
-                            valid_internal := '1';
+                            valid_internal := true;
                             count := 15;
                         else
                             half_period_timer_rst <= '1';

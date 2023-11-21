@@ -125,7 +125,7 @@ begin
 
     process(slv2mst)
     begin
-        if slv2mst.readValid = '1' or slv2mst.writeValid = '1' then
+        if slv2mst.valid then
             valid_latch <= true;
         end if;
     end process;

@@ -34,7 +34,7 @@ architecture tb of triple_23LC1024_reader_tb is
 
     signal active : boolean;
     signal ready :  boolean := false;
-    signal valid : std_logic;
+    signal valid : boolean;
     signal request_length : positive range 1 to bus_bytes_per_word;
     signal address : std_logic_vector(16 downto 0) := (others => '0');
     signal read_data : bus_data_type := (others => '0');
@@ -89,7 +89,7 @@ begin
                 ready <= true;
                 burst <= '0';
                 request_length <= 4;
-                wait until rising_edge(clk) and valid = '1';
+                wait until rising_edge(clk) and valid;
                 ready <= false;
                 address <= (others => 'X');
                 check_equal(read_data, std_logic_vector(to_unsigned(255, bus_data_type'length)));
@@ -106,7 +106,7 @@ begin
                 ready <= true;
                 burst <= '0';
                 request_length <= 4;
-                wait until rising_edge(clk) and valid = '1';
+                wait until rising_edge(clk) and valid;
                 ready <= false;
                 address <= (others => 'X');
                 check_equal(read_data, exp_data);
@@ -123,11 +123,11 @@ begin
                 ready <= true;
                 burst <= '0';
                 request_length <= 4;
-                wait until rising_edge(clk) and valid = '1';
+                wait until rising_edge(clk) and valid;
                 check_equal(read_data, std_logic_vector(to_unsigned(254, bus_data_type'length)));
                 address <= std_logic_vector(to_unsigned(4, address'length));
                 ready <= true;
-                wait until rising_edge(clk) and valid = '1';
+                wait until rising_edge(clk) and valid;
                 check_equal(read_data, std_logic_vector(to_unsigned(14, bus_data_type'length)));
                 ready <= false;
                 address <= (others => 'X');
@@ -142,12 +142,12 @@ begin
                 ready <= true;
                 burst <= '1';
                 request_length <= 4;
-                wait until rising_edge(clk) and valid = '1';
+                wait until rising_edge(clk) and valid;
                 check_equal(read_data, std_logic_vector(to_unsigned(254, bus_data_type'length)));
                 address <= std_logic_vector(to_unsigned(4, address'length));
                 burst <= '0';
                 ready <= true;
-                wait until rising_edge(clk) and valid = '1';
+                wait until rising_edge(clk) and valid;
                 check_equal(read_data, std_logic_vector(to_unsigned(14, bus_data_type'length)));
                 ready <= false;
                 address <= (others => 'X');
@@ -162,7 +162,7 @@ begin
                 ready <= true;
                 burst <= '1';
                 request_length <= 4;
-                wait until rising_edge(clk) and valid = '1';
+                wait until rising_edge(clk) and valid;
                 check_equal(read_data, std_logic_vector(to_unsigned(254, bus_data_type'length)));
                 address <= std_logic_vector(to_unsigned(4, address'length));
                 burst <= '0';
@@ -170,7 +170,7 @@ begin
                 wait for 2 us;
                 wait until falling_edge(clk);
                 ready <= true;
-                wait until rising_edge(clk) and valid = '1';
+                wait until rising_edge(clk) and valid;
                 check_equal(read_data, std_logic_vector(to_unsigned(14, bus_data_type'length)));
                 ready <= false;
                 address <= (others => 'X');
@@ -185,7 +185,7 @@ begin
                 ready <= true;
                 burst <= '1';
                 request_length <= 4;
-                wait until rising_edge(clk) and valid = '1';
+                wait until rising_edge(clk) and valid;
                 ready <= false;
                 wait for clk_period;
                 fault <= true;
@@ -198,7 +198,7 @@ begin
                 rst <= '0';
                 ready <= true;
                 request_length <= 4;
-                wait until rising_edge(clk) and valid = '1';
+                wait until rising_edge(clk) and valid;
                 wait until rising_edge(clk);
                 check_equal(active, true);
                 ready <= false;
@@ -215,7 +215,7 @@ begin
                 ready <= true;
                 burst <= '0';
                 request_length <= 2;
-                wait until rising_edge(clk) and valid = '1';
+                wait until rising_edge(clk) and valid;
                 exp_data := X"00004321";
                 check_equal(read_data, exp_data);
             elsif run("Read of size 1 works") then
@@ -226,7 +226,7 @@ begin
                 ready <= true;
                 burst <= '0';
                 request_length <= 1;
-                wait until rising_edge(clk) and valid = '1';
+                wait until rising_edge(clk) and valid;
                 exp_data := X"00000021";
                 check_equal(read_data, exp_data);
             end if;

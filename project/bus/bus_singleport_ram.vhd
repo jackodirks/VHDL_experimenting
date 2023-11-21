@@ -38,13 +38,11 @@ begin
                 mem2mst_out <= BUS_SLV2MST_IDLE;
                 active := false;
             elsif fault or any_transaction(mst2mem, mem2mst_out) then
-                mem2mst_out.writeValid <= '0';
-                mem2mst_out.readValid <= '0';
+                mem2mst_out.valid <= false;
             elsif active then
                 mem2mst_out.readData((b+1)*bus_byte_size - 1 downto b*bus_byte_size) <= ramb_data_out;
                 if b = bus_bytes_per_word - 1 then
-                    mem2mst_out.writeValid <= '1';
-                    mem2mst_out.readValid <= '1';
+                    mem2mst_out.valid <= true;
                     active := false;
                     b := 0;
                 else

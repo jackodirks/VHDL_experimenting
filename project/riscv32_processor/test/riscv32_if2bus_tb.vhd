@@ -60,7 +60,7 @@ begin
             elsif run("Resolving bus read finishes request") then
                 requestAddress <= X"00100000";
                 wait until rising_edge(clk) and bus_requesting(mst2slv);
-                slv2mst.readValid <= '1';
+                slv2mst.valid <= true;
                 slv2mst.readData <= X"33221100";
                 wait until rising_edge(clk) and not stall;
                 check_equal(slv2mst.readData, instruction);
@@ -79,7 +79,7 @@ begin
             elsif run("Requesting the same address twice does not cause two bus requests") then
                 requestAddress <= X"00100000";
                 wait until rising_edge(clk) and bus_requesting(mst2slv);
-                slv2mst.readValid <= '1';
+                slv2mst.valid <= true;
                 slv2mst.readData <= X"33221100";
                 wait until rising_edge(clk) and any_transaction(mst2slv, slv2mst);
                 slv2mst <= BUS_SLV2MST_IDLE;
@@ -92,7 +92,7 @@ begin
             elsif run("Requesting two different addresses does cause two bus requests") then
                 requestAddress <= X"00100000";
                 wait until rising_edge(clk) and bus_requesting(mst2slv);
-                slv2mst.readValid <= '1';
+                slv2mst.valid <= true;
                 slv2mst.readData <= X"33221100";
                 wait until rising_edge(clk) and any_transaction(mst2slv, slv2mst);
                 wait until rising_edge(clk) and not stall;
@@ -110,7 +110,7 @@ begin
                 wait until rising_edge(clk) and bus_requesting(mst2slv);
                 forbidBusInteraction <= true;
                 wait for 5*clk_period;
-                slv2mst.readValid <= '1';
+                slv2mst.valid <= true;
                 slv2mst.readData <= X"33221100";
                 wait until rising_edge(clk) and any_transaction(mst2slv, slv2mst);
                 slv2mst <= BUS_SLV2MST_IDLE;
@@ -123,7 +123,7 @@ begin
             elsif run("flushCache flushes the cache") then
                 requestAddress <= X"00100000";
                 wait until rising_edge(clk) and bus_requesting(mst2slv);
-                slv2mst.readValid <= '1';
+                slv2mst.valid <= true;
                 slv2mst.readData <= X"33221100";
                 wait until rising_edge(clk) and any_transaction(mst2slv, slv2mst);
                 slv2mst <= BUS_SLV2MST_IDLE;
@@ -137,14 +137,14 @@ begin
             elsif run("Can cache multiple instructions") then
                 requestAddress <= X"00100000";
                 wait until rising_edge(clk) and bus_requesting(mst2slv);
-                slv2mst.readValid <= '1';
+                slv2mst.valid <= true;
                 slv2mst.readData <= X"01020304";
                 wait until rising_edge(clk) and any_transaction(mst2slv, slv2mst);
                 slv2mst <= BUS_SLV2MST_IDLE;
                 wait until rising_edge(clk) and not stall;
                 requestAddress <= X"00100004";
                 wait until rising_edge(clk) and bus_requesting(mst2slv);
-                slv2mst.readValid <= '1';
+                slv2mst.valid <= true;
                 slv2mst.readData <= X"F1F2F3F4";
                 wait until rising_edge(clk) and any_transaction(mst2slv, slv2mst);
                 slv2mst <= BUS_SLV2MST_IDLE;
@@ -156,7 +156,7 @@ begin
             elsif run("Address out of range causes stall") then
                 requestAddress <= X"00100000";
                 wait until rising_edge(clk) and bus_requesting(mst2slv);
-                slv2mst.readValid <= '1';
+                slv2mst.valid <= true;
                 slv2mst.readData <= X"01020304";
                 wait until rising_edge(clk) and any_transaction(mst2slv, slv2mst);
                 slv2mst <= BUS_SLV2MST_IDLE;

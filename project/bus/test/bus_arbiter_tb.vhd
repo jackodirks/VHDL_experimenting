@@ -67,7 +67,7 @@ begin
                 mst2arbiter(2) <= bus_mst2slv_read(address => actualAddress);
                 wait until arbiter2slv.readReady = '1';
                 check_equal(actualAddress, arbiter2slv.address);
-                slv2arbiter.readValid <= '1';
+                slv2arbiter.valid <= true;
                 slv2arbiter.readData <= X"00112233";
                 wait until rising_edge(clk);
                 check_equal(slv2arbiter.readData, arbiter2mst(2).readData);
@@ -75,7 +75,7 @@ begin
                 actualAddress := std_logic_vector(to_unsigned(4, bus_address_type'length));
                 mst2arbiter(2) <= bus_mst2slv_read(address => actualAddress);
                 wait until rising_edge(clk) and arbiter2slv.readReady = '1';
-                slv2arbiter.readValid <= '1';
+                slv2arbiter.valid <= true;
                 actualAddress := std_logic_vector(to_unsigned(0, bus_address_type'length));
                 mst2arbiter(0) <= bus_mst2slv_read(address => actualAddress);
                 wait until rising_edge(clk);

@@ -110,12 +110,12 @@ begin
             end if;
 
             if mst2mem.readReady = '1' and read_delay_left = 0 then
-                mem2mst_internal.readValid <= '1';
+                mem2mst_internal.valid <= true;
                 for i in 0 to bus_bytes_per_word - 1 loop
                     mem2mst_internal.readData((i+1)*bus_byte_type'length - 1 downto i*bus_byte_type'length) <= ram(address + i);
                 end loop;
             elsif mst2mem.writeReady = '1' and write_delay_left = 0 then
-                mem2mst_internal.writeValid <= '1';
+                mem2mst_internal.valid <= true;
             end if;
         end if;
     end process;

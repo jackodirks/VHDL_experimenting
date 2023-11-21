@@ -95,17 +95,16 @@ begin
             elsif run("Answer from correct slave is passed on") then
                 actualAddress := std_logic_vector(to_unsigned(4, bus_address_type'length));
                 master2demux <= bus_mst2slv_read(address => actualAddress);
-                secondSlave2demux.writeValid <= '1';
+                secondSlave2demux.valid <= true;
                 secondSlave2demux.fault <= '1';
                 secondSlave2demux.readData <= X"000000FF";
                 secondSlave2demux.faultData <= bus_fault_address_out_of_range;
 
-                firstSlave2demux.readValid <= '1';
+                firstSlave2demux.valid <= true;
                 firstSlave2demux.readData <= X"000000AA";
                 firstSlave2demux.faultData <= bus_fault_no_fault;
                 wait until rising_edge(clk);
-                check(demux2master.writeValid = '0');
-                check(demux2master.readValid = '1');
+                check(demux2master.valid);
                 check(demux2master.fault = '0');
                 check(demux2master.readData = X"000000AA");
                 check(demux2master.faultData = bus_fault_no_fault);

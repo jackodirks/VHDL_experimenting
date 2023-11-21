@@ -7,11 +7,10 @@ package bus_pkg is
     -- We follow AXI in the Ready/Valid handshake
     -- The master initiates all communication. When readReady or writeReady become high (they must never be high at the same time) address and possibly writeData must be valid.
     -- Transaction occurs if {read|write}Ready and either the related valid or fault are high at the same time during a rising_edge of the clock. This immidiately finishes the transaction.
-    -- A fault sets a faultcode on the faultData. readValid and writeValid are allowed to be high at the same time.
+    -- A fault sets a faultcode on the faultData.
     -- It is allowed, but not required, to have fault and {read|write}Valid high at the same time. If multiple are high, fault takes precedence.
-    -- It is allowed to have both readValid and writeValid high at the same time.
-    -- A read transaction is defined as a moment where rising_edge(clk) AND readReady = '1' AND readValid = '1'
-    -- A write transaction is defined as a moment where rising_edge(clk) AND writeReady = '1' AND writeValid = '1'
+    -- A read transaction is defined as a moment where rising_edge(clk) AND readReady = '1' AND valid
+    -- A write transaction is defined as a moment where rising_edge(clk) AND writeReady = '1' AND valid
     -- A fault transaction is defined as a moment where rising_edge(clk) AND fault = '1'
     --
     -- Note that this implies that a fast master/slave combo are allowed to, for example, keep writeReady and valid high all the time and transact data every rising edge of the clock.
@@ -78,8 +77,7 @@ package bus_pkg is
 
     type bus_slv2mst_type is record
         readData        : bus_data_type;
-        readValid       : std_logic;
-        writeValid      : std_logic;
+        valid           : boolean;
         fault           : std_logic;
         faultData       : bus_fault_type;
     end record;
@@ -109,8 +107,7 @@ package bus_pkg is
 
     constant BUS_SLV2MST_IDLE : bus_slv2mst_type := (
         readData => (others => 'X'),
-        readValid => '0',
-        writeValid => '0',
+        valid => false,
         fault => '0',
         faultData => (others => 'X')
     );
@@ -209,7 +206,7 @@ package body bus_pkg is
         slv  : bus_slv2mst_type
     ) return boolean is
     begin
-        return mst.readReady = '1' and slv.readValid = '1' and slv.fault /= '1';
+        return mst.readReady = '1' and slv.valid and slv.fault /= '1';
     end read_transaction;
 
     pure function write_transaction(
@@ -217,7 +214,7 @@ package body bus_pkg is
         slv  : bus_slv2mst_type
     ) return boolean is
     begin
-        return mst.writeReady = '1' and slv.writeValid = '1' and slv.fault /= '1';
+        return mst.writeReady = '1' and slv.valid and slv.fault /= '1';
     end write_transaction;
 
     pure function fault_transaction(

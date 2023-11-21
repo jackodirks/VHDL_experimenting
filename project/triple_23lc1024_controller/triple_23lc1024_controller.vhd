@@ -46,7 +46,7 @@ architecture behavioral of triple_23lc1024_controller is
     signal spi_sio_read_out : std_logic_vector(3 downto 0);
     signal cs_set_read  : std_logic;
     signal ready_read : boolean;
-    signal valid_read : std_logic;
+    signal valid_read : boolean;
     signal reading : boolean;
 
     -- Write specific signals
@@ -55,7 +55,7 @@ architecture behavioral of triple_23lc1024_controller is
     signal spi_sio_write_out : std_logic_vector(3 downto 0);
     signal cs_set_write  : std_logic;
     signal ready_write : boolean;
-    signal valid_write : std_logic;
+    signal valid_write : boolean;
 
     -- CS control signals
     signal spi_cs_internal : std_logic_vector(2 downto 0);
@@ -76,8 +76,7 @@ architecture behavioral of triple_23lc1024_controller is
 begin
 
     slv2mst.fault <= '1' when has_fault else '0';
-    slv2mst.readValid <= valid_read;
-    slv2mst.writeValid <= valid_write;
+    slv2mst.valid <= valid_read or valid_write;
 
     ready_handling : process (write_request, read_request, config_done, read_active, write_active)
     begin
@@ -208,7 +207,7 @@ begin
         clk => clk,
         rst => rst,
         mst2slv => mst2slv,
-        transaction_ready => valid_write = '1' or valid_read = '1',
+        transaction_ready => valid_write or valid_read,
         any_active => read_active or write_active,
         request_length => request_length,
         cs_request => cs_request,

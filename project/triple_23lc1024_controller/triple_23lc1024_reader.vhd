@@ -23,7 +23,7 @@ entity triple_23lc1024_reader is
 
         ready : in boolean;
         fault : in boolean;
-        valid : out std_logic;
+        valid : out boolean;
         active : out boolean;
         reading : out boolean;
 
@@ -58,7 +58,7 @@ begin
             if rst = '1' then
                 spi_clk <= '0';
                 cs_set_internal := '1';
-                valid <= '0';
+                valid <= false;
                 active <= false;
                 count := 0;
                 transaction_complete := false;
@@ -84,7 +84,7 @@ begin
                     reading <= false;
                     transaction_complete := false;
                     half_period_timer_rst <= '1';
-                    valid <= '0';
+                    valid <= false;
                     fault_latch := false;
                     if cs_set_internal = '1' and ready then
                         transmitCommandAndAddress := instructionRead & "0000000" & address;
@@ -100,7 +100,7 @@ begin
                 if count > 0 then
                     half_period_timer_rst <= '0';
                     cs_set_internal := '0';
-                    valid <= '0';
+                    valid <= false;
                     if fault then
                         fault_latch := true;
                     end if;
@@ -116,7 +116,7 @@ begin
                 if count > 15 then
                     half_period_timer_rst <= '0';
                     cs_set_internal := '0';
-                    valid <= '0';
+                    valid <= false;
                 end if;
                 -- now we get a dummy byte. Also the point where we continue from when doing a burst.
                 if count >= 16 and count <= 20 then
@@ -138,7 +138,7 @@ begin
                             transaction_complete := true;
                             fault_latch := false;
                         elsif ready then
-                            valid <= '1';
+                            valid <= true;
                             transaction_complete := true;
                             if burst = '1' then
                                 count := 19;
