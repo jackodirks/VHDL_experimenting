@@ -29,6 +29,9 @@ tb_library.add_source_files(SRC_PATH / "common" / "test" / "*.vhd")
 src_library.add_source_files(SRC_PATH / "uart_bus_master" / "*.vhd")
 tb_library.add_source_files(SRC_PATH / "uart_bus_master" / "test" / "*.vhd")
 
+src_library.add_source_files(SRC_PATH / "uart_bus_slave" / "*.vhd")
+tb_library.add_source_files(SRC_PATH / "uart_bus_slave" / "test" / "*.vhd")
+
 src_library.add_source_files(SRC_PATH / "riscv32_processor" / "*.vhd")
 tb_library.add_source_files(SRC_PATH / "riscv32_processor" / "test" / "*.vhd")
 
