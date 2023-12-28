@@ -17,7 +17,10 @@ entity main_file is
         global_reset : in std_logic;
 
         master_rx : in std_logic;
-        master_tx : out std_logic
+        master_tx : out std_logic;
+
+        slave_rx : in std_logic;
+        slave_tx : out std_logic
     );
 end main_file;
 
@@ -27,6 +30,11 @@ architecture Behavioral of main_file is
     constant procStartAddress : bus_address_type := std_logic_vector(to_unsigned(spiMemStartAddress, bus_address_type'length));
 
     constant address_map : addr_range_and_mapping_array := (
+        address_range_and_map(
+            low => std_logic_vector(to_unsigned(16#1000#, bus_address_type'length)),
+            high => std_logic_vector(to_unsigned(16#100c# - 1, bus_address_type'length)),
+            mapping => bus_map_constant(bus_address_type'high - 4, '0') & bus_map_range(4, 0)
+        ),
         address_range_and_map(
             low => std_logic_vector(to_unsigned(16#2000#, bus_address_type'length)),
             high => std_logic_vector(to_unsigned(16#2100# - 1, bus_address_type'length)),
@@ -59,6 +67,9 @@ architecture Behavioral of main_file is
     signal demux2control : bus_mst2slv_type;
     signal control2demux : bus_slv2mst_type;
 
+    signal demux2uartSlave : bus_mst2slv_type;
+    signal uartSlave2demux : bus_slv2mst_type;
+
     signal mem_spi_sio_out : std_logic_vector(3 downto 0);
     signal mem_spi_sio_in : std_logic_vector(3 downto 0);
     signal mem_spi_cs_n : std_logic_vector(2 downto 0);
@@ -90,9 +101,9 @@ begin
     generic map (
         startAddress => procStartAddress,
         clk_period => clk_period,
-        iCache_range => address_map(1).addr_range,
+        iCache_range => address_map(2).addr_range,
         iCache_word_count_log2b => 8,
-        dCache_range => address_map(1).addr_range,
+        dCache_range => address_map(2).addr_range,
         dCache_word_count_log2b => 8
     ) port map (
         clk => clk,
@@ -127,10 +138,12 @@ begin
     port map (
         mst2demux => arbiter2demux,
         demux2mst => demux2arbiter,
-        demux2slv(0) => demux2control,
-        demux2slv(1) => demux2spimem,
-        slv2demux(0) => control2demux,
-        slv2demux(1) => spimem2demux
+        demux2slv(0) => demux2uartSlave,
+        demux2slv(1) => demux2control,
+        demux2slv(2) => demux2spimem,
+        slv2demux(0) => uartSlave2demux,
+        slv2demux(1) => control2demux,
+        slv2demux(2) => spimem2demux
     );
 
     spimem : entity work.triple_23lc1024_controller
@@ -146,4 +159,15 @@ begin
         mst2slv => demux2spimem,
         slv2mst => spimem2demux
     );
+
+    uart_bus_slave : entity work.uart_bus_slave
+    port map (
+        clk => clk,
+        reset => rst = '1',
+        rx => slave_rx,
+        tx => slave_tx,
+        mst2slv => demux2uartSlave,
+        slv2mst => uartSlave2demux
+    );
+
 end Behavioral;

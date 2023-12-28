@@ -36,6 +36,9 @@ architecture tb of main_file_tb is
     signal hold_n_sio3 : std_logic;
     signal sck : std_logic;
     signal si_sio0 : std_logic;
+    -- UART slave
+    signal slv_tx : std_logic;
+    signal slv_rx : std_logic;
 
     signal rst : std_logic := '0';
 
@@ -172,7 +175,9 @@ begin
         clk => clk,
         global_reset => rst,
         master_rx => rx,
-        master_tx => tx
+        master_tx => tx,
+        slave_rx => slv_rx,
+        slave_tx => slv_tx
     );
 
     uart_slave : entity vunit_lib.uart_slave

@@ -7,10 +7,11 @@ entity toplevel is
     generic (
         clk_freq_mhz : positive
     );
-    Port ( 
+    Port (
         CLK12MHZ : in STD_LOGIC;
         ja : inout std_logic_vector(7 downto 0);
         jb : out std_logic_vector(7 downto 0);
+        jc : inout std_logic_vector(7 downto 0);
         uart_rxd_out : out std_logic;
         uart_txd_in : in std_logic
     );
@@ -23,7 +24,7 @@ architecture Behavioral of toplevel is
     signal global_reset : std_logic := '0';
     constant clk_frequency_hz : real := real(clk_freq_mhz) * real(1000_000);
     constant clk_period : time := (1 sec) / (clk_frequency_hz);
-    
+
     component main_clock_gen
 port
  (-- Clock in ports
@@ -36,10 +37,11 @@ port
  );
 end component;
 
-    
+
 begin
     ja(3 downto 0) <= (others => 'Z');
     jb(3 downto 0) <= (others => 'Z');
+    jc(7 downto 2) <= (others => 'Z');
 
     main_file : entity work.main_file
     generic map (
@@ -51,7 +53,9 @@ begin
         clk => CLKSYS,
         global_reset => '0',
         master_rx => uart_txd_in,
-        master_tx => uart_rxd_out
+        master_tx => uart_rxd_out,
+        slave_rx => jc(0),
+        slave_tx => jc(1)
     );
 
 
@@ -60,7 +64,7 @@ port map (
     reset => '0',
     CLK12MHZ => CLK12MHZ,
     CLKSYS => CLKSYS,
-    locked => clk_gen_locked   
+    locked => clk_gen_locked
 );
 
 end Behavioral;

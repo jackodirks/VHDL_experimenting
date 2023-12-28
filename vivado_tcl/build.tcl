@@ -71,7 +71,7 @@ synth_ip [get_files $outputDir/main_clock_gen/main_clock_gen.xci] > $outputDir/m
 
 read_vhdl -vhdl2008 [ glob toplevel.vhd ]
 read_vhdl -vhdl2008 [ glob ../project/main_file.vhd ]
-read_vhdl -vhdl2008 [ glob ../project/common/simple_multishot_timer.vhd ]
+read_vhdl -vhdl2008 [ glob ../project/common/*.vhd ]
 read_vhdl -vhdl2008 [ glob ../project/bus/*.vhd ]
 read_vhdl -vhdl2008 [ glob ../project/riscv32_processor/*.vhd ]
 read_vhdl -vhdl2008 [ glob ../project/riscv32_processor/icache/*.vhd ]
@@ -80,6 +80,7 @@ read_vhdl -vhdl2008 [ glob ../project/riscv32_processor/pipeline/*.vhd ]
 read_vhdl -vhdl2008 [ glob ../project/riscv32_processor/utils/*.vhd ]
 read_vhdl -vhdl2008 [ glob ../project/triple_23lc1024_controller/*.vhd ]
 read_vhdl -vhdl2008 [ glob ../project/uart_bus_master/*.vhd ]
+read_vhdl -vhdl2008 [ glob ../project/uart_bus_slave/*.vhd ]
 read_xdc ./Arty-S7-50.xdc
 
 # Synthesis
