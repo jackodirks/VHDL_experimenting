@@ -77,7 +77,7 @@ begin
                 wait until rising_edge(clk) and bus_pkg.write_transaction(mst2slv, slv2mst);
                 mst2slv <= bus_pkg.bus_mst2slv_read(address, byte_mask);
                 wait until rising_edge(clk) and bus_pkg.read_transaction(mst2slv, slv2mst);
-                check_equal(slv2mst.readData(0), '1');
+                check_equal(slv2mst.readData(7 downto 0), std_logic_vector'(X"01"));
             elsif run("Test two word tx") then
                 -- First, set baudrate. We want 115200, at 50 MHz, this means 434 as the baud divisor
                 address := std_logic_vector(to_unsigned(8, address'length));
@@ -200,6 +200,30 @@ begin
                 check_equal(slv2mst.readData(7 downto 0), std_logic_vector'(X"56"));
                 wait until rising_edge(clk) and bus_pkg.read_transaction(mst2slv, slv2mst);
                 check_equal(slv2mst.readData(7 downto 0), std_logic_vector'(X"78"));
+            elsif run("Reset resets") then
+                -- Enable the transceiver
+                address := std_logic_vector(to_unsigned(1, address'length));
+                data := X"00010001";
+                byte_mask := "0101";
+                mst2slv <= bus_pkg.bus_mst2slv_write(address, data, byte_mask);
+                wait until rising_edge(clk) and bus_pkg.write_transaction(mst2slv, slv2mst);
+                -- Check if transceiving is enabled
+                address := std_logic_vector(to_unsigned(1, address'length));
+                byte_mask := "0101";
+                mst2slv <= bus_pkg.bus_mst2slv_read(address, byte_mask);
+                wait until rising_edge(clk) and bus_pkg.read_transaction(mst2slv, slv2mst);
+                check_equal(slv2mst.readData(0), '1');
+                check_equal(slv2mst.readData(16), '1');
+                -- Now reset the system
+                reset <= true;
+                wait until rising_edge(clk);
+                reset <= false;
+                address := std_logic_vector(to_unsigned(1, address'length));
+                byte_mask := "0101";
+                mst2slv <= bus_pkg.bus_mst2slv_read(address, byte_mask);
+                wait until rising_edge(clk) and bus_pkg.read_transaction(mst2slv, slv2mst);
+                check_equal(slv2mst.readData(0), '0');
+                check_equal(slv2mst.readData(16), '0');
             end if;
         end loop;
         wait until rising_edge(clk) or falling_edge(clk);

@@ -60,7 +60,10 @@ begin
         if rising_edge(clk) then
             tx_queue_push_data <= false;
             rx_queue_pop_data <= false;
-            if handle_bus_request then
+            if reset then
+                tx_reset_internal <= true;
+                rx_reset_internal <= true;
+            elsif handle_bus_request then
                 slv2mst_internal.valid <= true;
                 address := to_integer(unsigned(mst2slv.address(3 downto 0)));
                 for i in 0 to bus_pkg.bus_bytes_per_word - 1 loop
@@ -76,6 +79,7 @@ begin
                                 tx_reset_internal <= false when data_byte(0) = '1' else true;
                             end if;
                             slv2mst_internal.readData(i*8) <= '0' when tx_reset_internal else '1';
+                            slv2mst_internal.readData(i*8 + 7 downto i*8 + 1) <= (others => '0');
                         end if;
 
                         if address + i = 2 and mst2slv.readReady = '1' then
@@ -88,6 +92,7 @@ begin
                                 rx_reset_internal <= false when data_byte(0) = '1' else true;
                             end if;
                             slv2mst_internal.readData(i*8) <= '0' when rx_reset_internal else '1';
+                            slv2mst_internal.readData(i*8 + 7 downto i*8 + 1) <= (others => '0');
                         end if;
 
                         if address + i >= 4 and address + i < 6 then
@@ -118,7 +123,11 @@ begin
         variable transaction_response_ready : boolean := false;
     begin
         if rising_edge(clk) then
-            if bus_pkg.any_transaction(mst2slv, slv2mst_buf) then
+            if reset then
+                transaction_in_progress := false;
+                transaction_response_ready := false;
+                handle_bus_request <= false;
+            elsif bus_pkg.any_transaction(mst2slv, slv2mst_buf) then
                 transaction_in_progress := false;
                 transaction_response_ready := false;
                 slv2mst_buf <= bus_pkg.BUS_SLV2MST_IDLE;
