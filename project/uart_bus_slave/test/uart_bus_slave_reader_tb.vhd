@@ -50,9 +50,9 @@ begin
                 wait until rising_edge(clk) and data_ready;
                 check_equal(data_out, std_logic_vector'(X"12"));
                 wait until rising_edge(clk) and not data_ready;
-                push_stream(net, uart_master_stream, X"34");
+                push_stream(net, uart_master_stream, X"ff");
                 wait until rising_edge(clk) and data_ready;
-                check_equal(data_out, std_logic_vector'(X"34"));
+                check_equal(data_out, std_logic_vector'(X"ff"));
             end if;
         end loop;
         wait until rising_edge(clk) or falling_edge(clk);

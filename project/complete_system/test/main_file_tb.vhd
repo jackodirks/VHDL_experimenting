@@ -152,8 +152,8 @@ begin
                 write_file(net, spimem0_start_address, "./complete_system/test/programs/uartTest.txt");
                 write(net, processor_controller_start_address, X"00000000");
                 wait for 200 us;
-                push_stream(net, slave_uart_master_stream, X"12");
-                check_stream(net, slave_uart_slave_stream, X"12");
+                push_stream(net, slave_uart_master_stream, X"61");
+                check_stream(net, slave_uart_slave_stream, X"61");
             end if;
         end loop;
         wait until rising_edge(clk) or falling_edge(clk);

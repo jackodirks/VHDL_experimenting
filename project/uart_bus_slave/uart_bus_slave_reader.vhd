@@ -43,7 +43,7 @@ begin
                     process_counter := process_counter + 1;
                 end if;
 
-                if process_counter >= 3 and process_counter <= 17 then
+                if process_counter >= 3 and process_counter <= 18 then
                     if process_counter mod 2 = 1 then
                         if not has_read then
                             data_out_buf := rx & data_out_buf(7 downto 1);
