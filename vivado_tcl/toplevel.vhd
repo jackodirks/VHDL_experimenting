@@ -11,7 +11,8 @@ entity toplevel is
         CLK12MHZ : in STD_LOGIC;
         ja : inout std_logic_vector(7 downto 0);
         jb : out std_logic_vector(7 downto 0);
-        jc : inout std_logic_vector(7 downto 0);
+        slave_rx : in std_logic;
+        slave_tx : out std_logic;
         uart_rxd_out : out std_logic;
         uart_txd_in : in std_logic
     );
@@ -41,7 +42,6 @@ end component;
 begin
     ja(3 downto 0) <= (others => 'Z');
     jb(3 downto 0) <= (others => 'Z');
-    jc(7 downto 2) <= (others => 'Z');
 
     main_file : entity work.main_file
     generic map (
@@ -54,8 +54,8 @@ begin
         global_reset => '0',
         master_rx => uart_txd_in,
         master_tx => uart_rxd_out,
-        slave_rx => jc(0),
-        slave_tx => jc(1)
+        slave_rx => slave_rx,
+        slave_tx => slave_tx
     );
 
 
