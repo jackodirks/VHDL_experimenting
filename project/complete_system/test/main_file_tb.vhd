@@ -19,13 +19,19 @@ entity main_file_tb is
 end entity;
 
 architecture tb of main_file_tb is
-    constant clk_period : time := 8 ns;
+    constant clk_period : time := 10 ns;
     constant baud_rate : positive := 2000000;
-    constant uart_slave_bfm : uart_slave_t := new_uart_slave(initial_baud_rate => baud_rate);
-    constant uart_slave_stream : stream_slave_t := as_stream(uart_slave_bfm);
 
-    constant uart_master_bfm : uart_master_t := new_uart_master(initial_baud_rate => baud_rate);
-    constant uart_master_stream : stream_master_t := as_stream(uart_master_bfm);
+    constant command_uart_slave_bfm : uart_slave_t := new_uart_slave(initial_baud_rate => baud_rate);
+    constant command_uart_slave_stream : stream_slave_t := as_stream(command_uart_slave_bfm);
+    constant command_uart_master_bfm : uart_master_t := new_uart_master(initial_baud_rate => baud_rate);
+    constant command_uart_master_stream : stream_master_t := as_stream(command_uart_master_bfm);
+
+    constant slave_uart_slave_bfm : uart_slave_t := new_uart_slave(initial_baud_rate => 115200);
+    constant slave_uart_slave_stream : stream_slave_t := as_stream(slave_uart_slave_bfm);
+    constant slave_uart_master_bfm : uart_master_t := new_uart_master(initial_baud_rate => 115200);
+    constant slave_uart_master_stream : stream_master_t := as_stream(slave_uart_master_bfm);
+
     signal clk : std_logic := '0';
     signal rx : std_logic;
     signal tx : std_logic;
@@ -47,15 +53,15 @@ architecture tb of main_file_tb is
         constant addr : in bus_address_type;
         constant data : in bus_data_type) is
     begin
-        push_stream(net, uart_master_stream, uart_bus_master_pkg.COMMAND_WRITE_WORD);
-        check_stream(net, uart_slave_stream, uart_bus_master_pkg.ERROR_NO_ERROR);
+        push_stream(net, command_uart_master_stream, uart_bus_master_pkg.COMMAND_WRITE_WORD);
+        check_stream(net, command_uart_slave_stream, uart_bus_master_pkg.ERROR_NO_ERROR);
         for i in 0 to bus_bytes_per_word - 1 loop
-            push_stream(net, uart_master_stream, addr(i*8 + 7 downto i*8));
+            push_stream(net, command_uart_master_stream, addr(i*8 + 7 downto i*8));
         end loop;
         for i in 0 to bus_bytes_per_word - 1 loop
-            push_stream(net, uart_master_stream, data(i*8 + 7 downto i*8));
+            push_stream(net, command_uart_master_stream, data(i*8 + 7 downto i*8));
         end loop;
-        check_stream(net, uart_slave_stream, uart_bus_master_pkg.ERROR_NO_ERROR);
+        check_stream(net, command_uart_slave_stream, uart_bus_master_pkg.ERROR_NO_ERROR);
     end procedure;
 
     procedure read(
@@ -63,14 +69,14 @@ architecture tb of main_file_tb is
         constant addr : in bus_address_type;
         constant data : in bus_data_type) is
     begin
-        push_stream(net, uart_master_stream, uart_bus_master_pkg.COMMAND_READ_WORD);
-        check_stream(net, uart_slave_stream, uart_bus_master_pkg.ERROR_NO_ERROR);
+        push_stream(net, command_uart_master_stream, uart_bus_master_pkg.COMMAND_READ_WORD);
+        check_stream(net, command_uart_slave_stream, uart_bus_master_pkg.ERROR_NO_ERROR);
         for i in 0 to bus_bytes_per_word - 1 loop
-            push_stream(net, uart_master_stream, addr(i*8 + 7 downto i*8));
+            push_stream(net, command_uart_master_stream, addr(i*8 + 7 downto i*8));
         end loop;
-        check_stream(net, uart_slave_stream, uart_bus_master_pkg.ERROR_NO_ERROR);
+        check_stream(net, command_uart_slave_stream, uart_bus_master_pkg.ERROR_NO_ERROR);
         for i in 0 to bus_bytes_per_word - 1 loop
-            check_stream(net, uart_slave_stream, data(i*8 + 7 downto i*8));
+            check_stream(net, command_uart_slave_stream, data(i*8 + 7 downto i*8));
         end loop;
     end procedure;
 
@@ -114,7 +120,7 @@ begin
                 write(net, spimem0_start_address, X"01020304");
                 read(net, spimem0_start_address, X"01020304");
             elsif run("Riscv32: bubblesort") then
-                write_file(net, spimem0_start_address, "./riscv32_processor/test/programs/fullBubblesort.txt");
+                write_file(net, spimem0_start_address, "./complete_system/test/programs/fullBubblesort.txt");
                 write(net, processor_controller_start_address, X"00000000");
                 wait for 300 us;
                 curAddr := 16#00120000#;
@@ -142,6 +148,12 @@ begin
                     read(net, address, expectedData);
                     curAddr := curAddr + 4;
                 end loop;
+            elsif run("Riscv32 UART test") then
+                write_file(net, spimem0_start_address, "./complete_system/test/programs/uartTest.txt");
+                write(net, processor_controller_start_address, X"00000000");
+                wait for 200 us;
+                push_stream(net, slave_uart_master_stream, X"12");
+                check_stream(net, slave_uart_slave_stream, X"12");
             end if;
         end loop;
         wait until rising_edge(clk) or falling_edge(clk);
@@ -180,15 +192,27 @@ begin
         slave_tx => slv_tx
     );
 
-    uart_slave : entity vunit_lib.uart_slave
+    command_uart_slave : entity vunit_lib.uart_slave
     generic map (
-      uart => uart_slave_bfm)
+      uart => command_uart_slave_bfm)
     port map (
       rx => tx);
 
-    uart_master : entity vunit_lib.uart_master
+    command_uart_master : entity vunit_lib.uart_master
     generic map (
-      uart => uart_master_bfm)
+      uart => command_uart_master_bfm)
     port map (
       tx => rx);
+
+    slave_uart_slave : entity vunit_lib.uart_slave
+    generic map (
+      uart => slave_uart_slave_bfm)
+    port map (
+      rx => slv_tx);
+
+    slave_uart_master : entity vunit_lib.uart_master
+    generic map (
+      uart => slave_uart_master_bfm)
+    port map (
+      tx => slv_rx);
 end architecture;

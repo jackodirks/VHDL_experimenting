@@ -7,6 +7,7 @@ SRCDIR:=src/
 ODIR=obj/
 OFILES := $(patsubst %.asm,%.asm.o,$(wildcard $(ASMDIR)*.asm))
 OFILES += $(patsubst %.c,%.c.o,$(wildcard $(SRCDIR)*.c))
+OFILES += $(patsubst %.c,%.c.o,$(wildcard $(SRCDIR)*.c))
 OFILES := $(patsubst $(ASMDIR)%,$(ODIR)%,$(OFILES))
 OFILES := $(patsubst $(SRCDIR)%,$(ODIR)%,$(OFILES))
 TARGET:=final
