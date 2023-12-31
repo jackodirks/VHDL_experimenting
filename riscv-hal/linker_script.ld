@@ -13,21 +13,23 @@ SECTIONS
         *(.text.startup)
         *(.text)
         _flash_data = .;
+        . = ALIGN(4);
     } > FLASH
 
     .data :
     {
         _data = .;
         *(vtable)
-        *(.data)
-        *(.rodata)
+        *(.*data*)
+        . = ALIGN(4);
         _edata = .;
     } > SRAM AT > FLASH
 
     .bss :
     {
+        . = ALIGN(4);
         _bss = .;
-        *(.bss)
+        *(.*bss*)
         _ebss = .;
     } > SRAM
 

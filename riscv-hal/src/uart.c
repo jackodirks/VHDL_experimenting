@@ -17,6 +17,8 @@ static volatile uint16_t* const rxQueueCount = (volatile uint16_t*)0x1006;
 static volatile uint32_t* const baudDivisor = (volatile uint32_t*)0x1008;
 
 void uart_init(uint32_t baudrate) {
+    *txEnable = 0;
+    *rxEnable = 0;
     *baudDivisor = SYSTEM_CLOCK_FREQUENCY_HZ/baudrate;
     *txEnable = 1;
     *rxEnable = 1;

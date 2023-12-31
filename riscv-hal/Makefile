@@ -13,7 +13,8 @@ OFILES := $(patsubst $(SRCDIR)%,$(ODIR)%,$(OFILES))
 TARGET:=final
 TARGETBIN:=final.bin
 TARGETTXT:=final.txt
-LDFLAGS := -Wl,--gc-sections
+LDFLAGS := -Wl,--gc-sections -nodefaultlibs -lc -lgcc
+CFLAGS := -Wall -Wextra
 ARCHFLAGS := -march=rv32i -mabi=ilp32
 .PHONY: all release clean
 
@@ -27,7 +28,7 @@ $(ODIR)%.asm.o: $(ASMDIR)%.asm | $(ODIR)
 	$(AS) $(ARCHFLAGS) $< -o $@
 
 $(ODIR)%.c.o: $(SRCDIR)%.c | $(ODIR)
-	$(GCC) $(ARCHFLAGS) -Iinc -mbranch-cost=2 -O3 -c $< -o $@
+	$(GCC) $(CFLAGS) $(ARCHFLAGS) -Iinc -mbranch-cost=2 -O3 -c $< -o $@
 
 $(TARGET): $(OFILES)
 	$(GCC) -o $@ $^ $(LDFLAGS) -Tlinker_script.ld $(ARCHFLAGS)
