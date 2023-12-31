@@ -74,10 +74,10 @@ architecture tb of main_file_tb is
         for i in 0 to bus_bytes_per_word - 1 loop
             push_stream(net, command_uart_master_stream, addr(i*8 + 7 downto i*8));
         end loop;
-        check_stream(net, command_uart_slave_stream, uart_bus_master_pkg.ERROR_NO_ERROR);
         for i in 0 to bus_bytes_per_word - 1 loop
             check_stream(net, command_uart_slave_stream, data(i*8 + 7 downto i*8));
         end loop;
+        check_stream(net, command_uart_slave_stream, uart_bus_master_pkg.ERROR_NO_ERROR);
     end procedure;
 
     procedure write_file(

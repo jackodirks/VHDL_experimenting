@@ -108,13 +108,13 @@ uint32_t DeppUartMaster::readWord(uint32_t address) {
         throw std::runtime_error(ss.str());
     }
     this->writeWord(address);
+    uint32_t data = this->readWord();
     retVal = this->readByte();
     if (retVal != ERROR_NO_ERROR) {
         std::stringstream ss;
         ss << "Read resulted in " << (int)(retVal & 0xf);
         throw std::runtime_error(ss.str());
     }
-    uint32_t data = this->readWord();
     return data;
 }
 
@@ -220,6 +220,12 @@ void DeppUartMaster::selfTest() {
     }
     // address
     this->writeWord(0x0);
+    // Pop 4 bytes
+    this->readByte();
+    this->readByte();
+    this->readByte();
+    this->readByte();
+    // Read return value
     retVal = this->readByte();
     if ((retVal & 0xf) != ERROR_BUS) {
         std::stringstream ss;

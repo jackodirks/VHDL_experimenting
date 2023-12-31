@@ -13,7 +13,6 @@ entity uart_bus_master is
     );
     port (
         clk : in std_logic;
-        rst : in std_logic;
 
         rx : in std_logic;
         tx : out std_logic;
@@ -26,6 +25,7 @@ end entity;
 architecture behaviourial of uart_bus_master is
 
     type command_type is (no_command, command_read_word, command_write_word);
+    type state_type is (state_wait_for_command, state_command_response, state_wait_for_address, state_wait_for_count, state_read_word_from_uart, state_write_word_to_bus, state_read_word_from_bus, state_write_word_to_uart, state_finalize);
 
     signal tx_byte : std_logic_vector(7 downto 0) := (others => '0');
     signal tx_data_ready : boolean := false;
@@ -49,164 +49,198 @@ architecture behaviourial of uart_bus_master is
         return ret_val;
     end function;
 
-    signal bytes_received : natural := 0;
-    signal last_received_byte : std_logic_vector(7 downto 0) := (others => 'X');
 
-    signal active_command : command_type := no_command;
-    signal command_decoded : boolean := false;
+    -- tx_queue_signals
+    signal tx_queue_data_in : std_logic_vector(7 downto 0) := (others => '0');
+    signal tx_queue_push_data : boolean := false;
+    signal tx_queue_data_out : std_logic_vector(7 downto 0);
+    signal tx_queue_pop_data : boolean := false;
+    signal tx_queue_empty : boolean;
+    signal tx_queue_full : boolean;
 
-    signal bytes_transmitted : natural := 0;
-    signal byte_ready_for_transmission : std_logic_vector(7 downto 0) := (others => 'X');
-    signal transmission_waiting : boolean := false;
+    -- rx_queue_signals
+    signal rx_queue_data_in : std_logic_vector(7 downto 0);
+    signal rx_queue_push_data : boolean := false;
+    signal rx_queue_data_out : std_logic_vector(7 downto 0);
+    signal rx_queue_pop_data : boolean := false;
+    signal rx_queue_empty : boolean;
 
-    signal clear_internal_state : boolean := false;
-
-    signal reset_internal_state : boolean := false;
-
-    signal bus_address : bus_pkg.bus_address_type := (others => 'X');
-    signal bus_address_ready : boolean := false;
-
-    signal bus_write_data : bus_pkg.bus_data_type := (others => 'X');
-    signal bus_write_data_ready : boolean := false;
-
-    signal bus_transaction_complete : boolean := false;
-    signal slv2mst_buf : bus_pkg.bus_slv2mst_type := bus_pkg.BUS_SLV2MST_IDLE;
+    signal address_to_bus : bus_pkg.bus_address_type;
+    signal data_to_bus : bus_pkg.bus_data_type;
+    signal data_from_bus : bus_pkg.bus_data_type;
+    signal bus_do_read : boolean := false;
+    signal bus_do_write : boolean := false;
+    signal bus_finished : boolean := false;
+    signal bus_fault : boolean := false;
+    signal bus_last_fault : bus_pkg.bus_fault_type := bus_pkg.bus_fault_no_fault;
 
 begin
+    fsm : process(clk)
+        variable cur_state : state_type := state_wait_for_command;
+        variable next_state : state_type := state_wait_for_command;
 
-    reset_internal_state <= clear_internal_state or rst = '1';
-
-    byte_receiver : process(clk)
+        variable command : command_type := no_command;
+        variable word_index_counter : natural range 0 to 3 := 0;
+        variable queue_wait_cycle : boolean := false;
     begin
         if rising_edge(clk) then
-            if reset_internal_state then
-                bytes_received <= 0;
-            elsif rx_data_ready then
-                last_received_byte <= rx_byte;
-                bytes_received <= bytes_received + 1;
-            end if;
-        end if;
-    end process;
+            rx_queue_pop_data <= false;
+            tx_queue_push_data <= false;
+            bus_do_read <= false;
+            bus_do_write <= false;
+            cur_state := next_state;
 
-    byte_transmitter : process(clk)
-        variable tx_data_ready_buf : boolean := false;
-        variable tx_data_ready_prev : boolean := false;
-    begin
-        if rising_edge(clk) then
-            tx_data_ready_buf := false;
-            if reset_internal_state then
-                bytes_transmitted <= 0;
-            elsif transmission_waiting and not tx_data_ready_prev and not tx_busy then
-                tx_byte <= byte_ready_for_transmission;
-                tx_data_ready_buf := true;
-                bytes_transmitted <= bytes_transmitted + 1;
-            end if;
-            tx_data_ready_prev := tx_data_ready_buf;
-        end if;
-        tx_data_ready <= tx_data_ready_buf;
-    end process;
-
-    command_decoder : process(clk)
-    begin
-        if rising_edge(clk) then
-            if reset_internal_state then
-                command_decoded <= false;
-                active_command <= no_command;
-            elsif bytes_received = 1 then
-                active_command <= translateCommand(last_received_byte);
-                command_decoded <= true;
-            end if;
-        end if;
-    end process;
-
-    transmission_manager : process(clk)
-    begin
-        if rising_edge(clk) then
-            clear_internal_state <= false;
-            transmission_waiting <= false;
-            if reset_internal_state then
-                -- pass
-            elsif command_decoded and bytes_transmitted = 0 then
-                if active_command = no_command then
-                    byte_ready_for_transmission <= uart_bus_master_pkg.ERROR_UNKOWN_COMMAND;
-                else
-                    byte_ready_for_transmission <= uart_bus_master_pkg.ERROR_NO_ERROR;
-                end if;
-                transmission_waiting <= true;
-            elsif bytes_transmitted = 1 and active_command = no_command then
-                clear_internal_state <= true;
-            elsif bus_transaction_complete then
-                transmission_waiting <= true;
-                if bytes_transmitted = 1 then
-                    if slv2mst_buf.fault = '1' then
-                        byte_ready_for_transmission <= (7 downto 4 => slv2mst_buf.faultData,
-                                                    3 downto 0 => uart_bus_master_pkg.ERROR_BUS(3 downto 0));
-                    else
-                        byte_ready_for_transmission <= uart_bus_master_pkg.ERROR_NO_ERROR;
+            case cur_state is
+                when state_wait_for_command =>
+                    if not rx_queue_empty then
+                        command := translateCommand(rx_queue_data_out);
+                        rx_queue_pop_data <= true;
+                        next_state := state_command_response;
                     end if;
-                elsif bytes_transmitted = 2 and (slv2mst_buf.fault = '1' or active_command = command_write_word) then
-                    clear_internal_state <= true;
-                elsif bytes_transmitted > 1 and bytes_transmitted <= 5 then
-                    byte_ready_for_transmission <= slv2mst_buf.readData((bytes_transmitted - 2)*8 + 7 downto (bytes_transmitted - 2)*8);
-                elsif bytes_transmitted > 5 then
-                    clear_internal_state <= true;
-                end if;
-            end if;
+                when state_command_response =>
+                    if not tx_queue_full then
+                        tx_queue_push_data <= true;
+                        if command = no_command then
+                            tx_queue_data_in <= uart_bus_master_pkg.ERROR_UNKOWN_COMMAND;
+                            next_state := state_wait_for_command;
+                        else
+                            tx_queue_data_in <= uart_bus_master_pkg.ERROR_NO_ERROR;
+                            next_state := state_wait_for_address;
+                        end if;
+                    end if;
+                when state_wait_for_address =>
+                    if queue_wait_cycle then
+                        queue_wait_cycle := false;
+                    elsif not rx_queue_empty then
+                        address_to_bus(word_index_counter*8 + 7 downto word_index_counter*8) <= rx_queue_data_out;
+                        rx_queue_pop_data <= true;
+                        queue_wait_cycle := true;
+
+                        if (word_index_counter = 3) then
+                            word_index_counter := 0;
+                            if command = command_read_word then
+                                next_state := state_read_word_from_bus;
+                            else
+                                next_state := state_read_word_from_uart;
+                            end if;
+                        else
+                            word_index_counter := word_index_counter + 1;
+                        end if;
+                    end if;
+                when state_read_word_from_bus =>
+                    bus_do_read <= true;
+                    if bus_finished then
+                        next_state := state_write_word_to_uart;
+                    end if;
+                when state_write_word_to_uart =>
+                    if queue_wait_cycle then
+                        queue_wait_cycle := false;
+                    elsif not tx_queue_full then
+                        tx_queue_data_in <= data_from_bus(word_index_counter*8 + 7 downto word_index_counter*8);
+                        tx_queue_push_data <= true;
+                        queue_wait_cycle := true;
+
+                        if word_index_counter = 3 then
+                            word_index_counter := 0;
+                            next_state := state_finalize;
+                        else
+                            word_index_counter := word_index_counter + 1;
+                        end if;
+                    end if;
+                when state_read_word_from_uart =>
+                    if queue_wait_cycle then
+                        queue_wait_cycle := false;
+                    elsif not rx_queue_empty then
+                        data_to_bus(word_index_counter*8 + 7 downto word_index_counter*8) <= rx_queue_data_out;
+                        rx_queue_pop_data <= true;
+                        queue_wait_cycle := true;
+                        if (word_index_counter = 3) then
+                            word_index_counter := 0;
+                            next_state := state_write_word_to_bus;
+                        else
+                            word_index_counter := word_index_counter + 1;
+                        end if;
+                    end if;
+                when state_write_word_to_bus =>
+                    bus_do_write <= true;
+                    if bus_finished then
+                        next_state := state_finalize;
+                    end if;
+                when state_finalize =>
+                    if queue_wait_cycle then
+                        queue_wait_cycle := false;
+                    elsif not tx_queue_full then
+                        tx_queue_push_data <= true;
+                        queue_wait_cycle := true;
+                        if bus_fault then
+                            tx_queue_data_in <= bus_last_fault & uart_bus_master_pkg.ERROR_BUS(3 downto 0);
+                        else
+                            tx_queue_data_in <= uart_bus_master_pkg.ERROR_NO_ERROR;
+                        end if;
+                        next_state := state_wait_for_command;
+                    end if;
+                when others =>
+                    next_state := cur_state;
+            end case;
+
+
         end if;
     end process;
 
-    address_receiver : process(clk)
-    begin
-        if rising_edge(clk) then
-            if bytes_received > 1 and bytes_received <= 5 then
-                bus_address((bytes_received - 2)*8 + 7 downto (bytes_received - 2)*8) <= last_received_byte;
-            end if;
-            if reset_internal_state then
-                bus_address_ready <= false;
-            elsif bytes_received = 5 then
-                bus_address_ready <= true;
-            end if;
-        end if;
-    end process;
-
-    data_receiver : process(clk)
-    begin
-        if rising_edge(clk) then
-            if bytes_received > 5 and bytes_received <= 9 then
-                bus_write_data((bytes_received - 6)*8 + 7 downto (bytes_received - 6)*8) <= last_received_byte;
-            end if;
-            if reset_internal_state then
-                bus_write_data_ready <= false;
-            elsif bytes_received = 9 then
-                bus_write_data_ready <= true;
-            end if;
-        end if;
-    end process;
-
-
-    bus_manager : process(clk)
-        variable bus_transaction_started : boolean := false;
+    bus_handling : process(clk)
         variable mst2slv_buf : bus_pkg.bus_mst2slv_type := bus_pkg.BUS_MST2SLV_IDLE;
     begin
         if rising_edge(clk) then
-            if reset_internal_state then
-                bus_transaction_started := false;
-                mst2slv_buf := bus_pkg.BUS_MST2SLV_IDLE;
-                bus_transaction_complete <= false;
-                slv2mst_buf <= bus_pkg.BUS_SLV2MST_IDLE;
-            elsif active_command = command_read_word and bus_address_ready and not bus_transaction_started then
-                mst2slv_buf := bus_pkg.bus_mst2slv_read(bus_address);
-                bus_transaction_started := true;
-            elsif active_command = command_write_word and bus_write_data_ready and not bus_transaction_started then
-                mst2slv_buf := bus_pkg.bus_mst2slv_write(bus_address, bus_write_data, x"f");
-                bus_transaction_started := true;
+            if bus_finished then
+                bus_finished <= false;
             elsif bus_pkg.any_transaction(mst2slv_buf, slv2mst) then
-                slv2mst_buf <= slv2mst;
+                data_from_bus <= slv2mst.readData;
+                if bus_pkg.fault_transaction(mst2slv_buf, slv2mst) then
+                    bus_last_fault <= slv2mst.faultData;
+                    bus_fault <= true;
+                else
+                    bus_fault <= false;
+                end if;
                 mst2slv_buf := bus_pkg.BUS_MST2SLV_IDLE;
-                bus_transaction_complete <= true;
+                bus_finished <= true;
+            elsif bus_pkg.bus_requesting(mst2slv_buf) then
+                -- pass
+            elsif bus_do_read then
+                mst2slv_buf := bus_pkg.bus_mst2slv_read(address_to_bus);
+            elsif bus_do_write then
+                mst2slv_buf := bus_pkg.bus_mst2slv_write(address_to_bus, data_to_bus);
             end if;
         end if;
         mst2slv <= mst2slv_buf;
+    end process;
+
+    rx_to_queue_handling : process(clk)
+    begin
+        if rising_edge(clk) then
+            rx_queue_data_in <= rx_byte;
+            if rx_data_ready then
+                rx_queue_push_data <= true;
+            else
+                rx_queue_push_data <= false;
+            end if;
+        end if;
+    end process;
+
+    tx_from_queue_handling : process(clk)
+        variable process_active : boolean := false;
+    begin
+        if rising_edge(clk) then
+            tx_byte <= tx_queue_data_out;
+            tx_data_ready <= false;
+            tx_queue_pop_data <= false;
+            if process_active and tx_busy then
+                process_active := false;
+                elsif not process_active and not tx_queue_empty and not tx_busy then
+                tx_data_ready <= true;
+                tx_queue_pop_data <= true;
+                process_active := true;
+            end if;
+        end if;
     end process;
 
     bus_master_tx : entity work.uart_bus_master_tx
@@ -215,7 +249,7 @@ begin
         baud_rate => baud_rate
     ) port map (
         clk => clk,
-        rst => rst,
+        rst => '0',
         tx => tx,
         transmit_byte => tx_byte,
         data_ready => tx_data_ready,
@@ -228,9 +262,42 @@ begin
         baud_rate => baud_rate
     ) port map (
         clk => clk,
-        rst => rst,
+        rst => '0',
         rx => rx,
         receive_byte => rx_byte,
         data_ready => rx_data_ready
     );
+
+    tx_queue : entity work.generic_fifo
+    generic map (
+        depth_log2b => 4,
+        word_size_log2b => 3
+    )
+    port map (
+        clk => clk,
+        reset => false,
+        empty => tx_queue_empty,
+        full => tx_queue_full,
+        data_in => tx_queue_data_in,
+        push_data => tx_queue_push_data,
+        data_out => tx_queue_data_out,
+        pop_data => tx_queue_pop_data
+    );
+
+    rx_queue : entity work.generic_fifo
+    generic map (
+        depth_log2b => 4,
+        word_size_log2b => 3
+    )
+    port map (
+        clk => clk,
+        reset => false,
+        empty => rx_queue_empty,
+        data_in => rx_queue_data_in,
+        push_data => rx_queue_push_data,
+        data_out => rx_queue_data_out,
+        pop_data => rx_queue_pop_data
+    );
+
+
 end architecture;

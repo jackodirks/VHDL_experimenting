@@ -89,7 +89,6 @@ begin
         clk_period => clk_period,
         baud_rate => baud_rate
     ) port map (
-        rst => rst,
         clk => clk,
         mst2slv => extMaster2arbiter,
         slv2mst => arbiter2extMaster,
