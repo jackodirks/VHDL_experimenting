@@ -13,7 +13,7 @@ static constexpr uint32_t spiMemStartAddress = 0x100000;
 static constexpr uint32_t spiMemLength = 0x60000;
 static constexpr uint32_t cpuBaseAddress = 0x2000;
 
-static bool writeAndVerify(DeppUartMaster& master, const std::string& filePath, uint32_t startAddress) {
+static void writeFile(DeppUartMaster& master, const std::string& filePath, uint32_t startAddress) {
     std::vector<uint32_t> data = readFromFile(filePath);
     uint32_t currentAddress = startAddress;
     for (uint32_t elem : data) {
@@ -21,6 +21,11 @@ static bool writeAndVerify(DeppUartMaster& master, const std::string& filePath, 
         currentAddress += 4;
     }
     currentAddress = startAddress;
+}
+
+static bool verifyWrite(DeppUartMaster& master, const std::string& filePath, uint32_t startAddress) {
+    std::vector<uint32_t> data = readFromFile(filePath);
+    uint32_t currentAddress = startAddress;
     bool success = true;
     for (size_t i = 0; i < data.size(); ++i) {
         uint32_t readData = master.readWord(currentAddress);
@@ -51,8 +56,10 @@ int main(int argc, char* argv[]) {
     std::string path(argv[1]);
     std::cout << "Stop the CPU" << std::endl;
     stopProcessor(master);
-    std::cout << "Write and verify" << std::endl;
-    bool success = writeAndVerify(master, path, spiMemStartAddress);
+    std::cout << "Write" << std::endl;
+    writeFile(master, path, spiMemStartAddress);
+    std::cout << "Verify" << std::endl;
+    bool success = verifyWrite(master, path, spiMemStartAddress);
     if (!success) {
         std::cout << "Not starting the CPU due to verification errors" << std::endl;
         return EXIT_FAILURE;
