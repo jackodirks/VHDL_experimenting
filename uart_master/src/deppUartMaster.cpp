@@ -14,13 +14,13 @@ static constexpr uint8_t ERROR_BUS = 0x2;
 
 static constexpr uint8_t COMMAND_READ_WORD = 0x1;
 static constexpr uint8_t COMMAND_WRITE_WORD = 0x2;
+static constexpr uint8_t COMMAND_WRITE_WORD_SEQUENCE = 0x4;
 
 static constexpr uint8_t BUS_FAULT_NO_FAULT = 0x0;
 static constexpr uint8_t BUS_FAULT_UNALIGNED_ACCESS = 0x1;
 static constexpr uint8_t BUS_FAULT_ADDRESS_OUT_OF_RANGE = 0x2;
 static constexpr uint8_t BUS_FAULT_ILLEGAL_WRITE_MASK = 0x3;
 static constexpr uint8_t BUS_FAULT_ILLEGAL_ADDRESS_FOR_BURST = 0x4;
-
 
 DeppUartMaster::DeppUartMaster(const std::string& devName, speed_t baudRate) {
     this->fd = open(devName.c_str(), O_RDWR | O_NOCTTY);
@@ -72,65 +72,6 @@ DeppUartMaster::~DeppUartMaster() {
     close(this->fd);
 }
 
-void DeppUartMaster::writeWord(uint32_t address, uint32_t data) {
-    uint8_t buf[8];
-    for (size_t i = 0; i < 4; ++i) {
-        buf[i] = static_cast<uint8_t>(address & 0xff);
-        address >>= 8;
-    }
-    for (size_t i = 4; i < 8; ++i) {
-        buf[i] = static_cast<uint8_t>(data & 0xff);
-        data >>= 8;
-    }
-
-    this->writeByte(COMMAND_WRITE_WORD);
-    uint8_t retVal = this->readByte();
-    if (retVal != ERROR_NO_ERROR) {
-        std::stringstream ss;
-        ss << "Write COMMAND_WRITE_WORD resulted in something other than ERROR_NO_ERROR: " << (int)retVal;
-        throw std::runtime_error(ss.str());
-    }
-    this->writeArray(&buf[0], 8);
-    retVal = this->readByte();
-    if (retVal != ERROR_NO_ERROR) {
-        std::stringstream ss;
-        ss << "Write resulted in " << (int)(retVal & 0xf);
-        throw std::runtime_error(ss.str());
-    }
-}
-
-uint32_t DeppUartMaster::readWord(uint32_t address) {
-    this->writeByte(COMMAND_READ_WORD);
-    uint8_t retVal = this->readByte();
-    if (retVal != ERROR_NO_ERROR) {
-        std::stringstream ss;
-        ss << "Write COMMAND_READ_WORD resulted in something other than ERROR_NO_ERROR: " << (int)retVal;
-        throw std::runtime_error(ss.str());
-    }
-    this->writeWord(address);
-    uint32_t data = this->readWord();
-    retVal = this->readByte();
-    if (retVal != ERROR_NO_ERROR) {
-        std::stringstream ss;
-        ss << "Read resulted in " << (int)(retVal & 0xf);
-        throw std::runtime_error(ss.str());
-    }
-    return data;
-}
-
-void DeppUartMaster::writeByte(uint8_t data) {
-    this->writeArray(&data, 1);
-}
-
-void DeppUartMaster::writeWord(uint32_t data) {
-    uint8_t buf[4];
-    for (size_t i = 0; i < 4; ++i) {
-        buf[i] = static_cast<uint8_t>(data & 0xff);
-        data >>= 8;
-    }
-    this->writeArray(&buf[0], 4);
-}
-
 void DeppUartMaster::writeArray(const uint8_t* data, size_t len) {
     ssize_t retVal = 0;
     size_t count = 0;
@@ -143,22 +84,6 @@ void DeppUartMaster::writeArray(const uint8_t* data, size_t len) {
         }
         count += retVal;
     }
-}
-
-uint8_t DeppUartMaster::readByte() {
-    uint8_t ret = 0;
-    this->readArray(&ret, 1);
-    return ret;
-}
-
-uint32_t DeppUartMaster::readWord() {
-    uint8_t buf[4];
-    this->readArray(&buf[0], 4);
-    uint32_t retVal = buf[0];
-    retVal += static_cast<uint32_t>(buf[1]) << 8;
-    retVal += static_cast<uint32_t>(buf[2]) << 16;
-    retVal += static_cast<uint32_t>(buf[3]) << 24;
-    return retVal;
 }
 
 void DeppUartMaster::readArray(uint8_t* data, size_t len) {
@@ -175,6 +100,78 @@ void DeppUartMaster::readArray(uint8_t* data, size_t len) {
     }
 }
 
+void DeppUartMaster::writeByte(uint8_t data) {
+    this->writeArray(&data, 1);
+}
+
+uint8_t DeppUartMaster::readByte() {
+    uint8_t ret = 0;
+    this->readArray(&ret, 1);
+    return ret;
+}
+
+void DeppUartMaster::checkReturnValue() {
+    uint8_t retVal = this->readByte();
+    if (retVal != ERROR_NO_ERROR) {
+        std::stringstream ss;
+        ss << "Write COMMAND_WRITE_WORD resulted in something other than ERROR_NO_ERROR: " << (int)retVal;
+        throw std::runtime_error(ss.str());
+    }
+}
+
+void DeppUartMaster::writeWord(uint32_t data) {
+    uint8_t buf[4];
+    for (size_t i = 0; i < 4; ++i) {
+        buf[i] = static_cast<uint8_t>(data & 0xff);
+        data >>= 8;
+    }
+    this->writeArray(&buf[0], 4);
+}
+
+uint32_t DeppUartMaster::readWord() {
+    uint8_t buf[4];
+    this->readArray(&buf[0], 4);
+    uint32_t retVal = buf[0];
+    retVal += static_cast<uint32_t>(buf[1]) << 8;
+    retVal += static_cast<uint32_t>(buf[2]) << 16;
+    retVal += static_cast<uint32_t>(buf[3]) << 24;
+    return retVal;
+}
+
+void DeppUartMaster::writeWord(uint32_t address, uint32_t data) {
+    this->writeByte(COMMAND_WRITE_WORD);
+    this->checkReturnValue();
+    this->writeWord(address);
+    this->writeWord(data);
+    this->checkReturnValue();
+}
+
+uint32_t DeppUartMaster::readWord(uint32_t address) {
+    this->writeByte(COMMAND_READ_WORD);
+    this->checkReturnValue();
+    this->writeWord(address);
+    uint32_t data = this->readWord();
+    this->checkReturnValue();
+    return data;
+}
+
+void DeppUartMaster::writeWordSequence(uint32_t address, const std::vector<uint32_t>& data) {
+    size_t wordsTransmitted = 0;
+    while (wordsTransmitted < data.size()) {
+        this->writeByte(COMMAND_WRITE_WORD_SEQUENCE);
+        this->checkReturnValue();
+        uint32_t tmpAddr = address + wordsTransmitted*4;
+        this->writeWord(tmpAddr);
+        size_t wordsToWrite = std::min((size_t)256, data.size() - wordsTransmitted);
+        uint8_t sequenceSizeMinusOne = wordsToWrite - 1;
+        this->writeByte(sequenceSizeMinusOne);
+        for (size_t i = wordsTransmitted; i < wordsTransmitted + wordsToWrite; ++i) {
+            this->writeWord(data[i]);
+        }
+        this->checkReturnValue();
+        wordsTransmitted += wordsToWrite;
+    }
+}
 
 void DeppUartMaster::selfTest() {
     // Wrong byte
@@ -232,7 +229,6 @@ void DeppUartMaster::selfTest() {
         ss << "Read from address 0 does not result in ERROR_BUS, but in: " << (int)(retVal & 0xf);
         throw std::runtime_error(ss.str());
     }
-
     if (retVal >> 4 != BUS_FAULT_ADDRESS_OUT_OF_RANGE) {
         std::stringstream ss;
         ss << "Read from address 0 does not result in BUS_FAULT_ADDRESS_OUT_OF_RANGE, but in: " << (int)(retVal>>4);

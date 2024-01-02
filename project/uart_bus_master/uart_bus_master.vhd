@@ -24,7 +24,7 @@ end entity;
 
 architecture behaviourial of uart_bus_master is
 
-    type command_type is (no_command, command_read_word, command_write_word);
+    type command_type is (no_command, command_read_word, command_write_word, command_write_word_sequence);
     type state_type is (state_wait_for_command, state_command_response, state_wait_for_address, state_wait_for_count, state_read_word_from_uart, state_write_word_to_bus, state_read_word_from_bus, state_write_word_to_uart, state_finalize);
 
     signal tx_byte : std_logic_vector(7 downto 0) := (others => '0');
@@ -43,6 +43,8 @@ architecture behaviourial of uart_bus_master is
                 ret_val := command_read_word;
             when uart_bus_master_pkg.COMMAND_WRITE_WORD =>
                 ret_val := command_write_word;
+            when uart_bus_master_pkg.COMMAND_WRITE_WORD_SEQUENCE =>
+                ret_val := command_write_word_sequence;
             when others =>
                 ret_val := no_command;
         end case;
@@ -74,6 +76,9 @@ architecture behaviourial of uart_bus_master is
     signal bus_fault : boolean := false;
     signal bus_last_fault : bus_pkg.bus_fault_type := bus_pkg.bus_fault_no_fault;
 
+    signal sequence_size_buf : natural range 0 to 255;
+    signal state_buf : state_type;
+
 begin
     fsm : process(clk)
         variable cur_state : state_type := state_wait_for_command;
@@ -81,7 +86,11 @@ begin
 
         variable command : command_type := no_command;
         variable word_index_counter : natural range 0 to 3 := 0;
+        variable sequence_size : natural range 0 to 255;
         variable queue_wait_cycle : boolean := false;
+
+        variable bus_fault_occured : boolean := false;
+        variable first_bus_fault : bus_pkg.bus_fault_type;
     begin
         if rising_edge(clk) then
             rx_queue_pop_data <= false;
@@ -118,18 +127,39 @@ begin
 
                         if (word_index_counter = 3) then
                             word_index_counter := 0;
+                            sequence_size := 0;
                             if command = command_read_word then
                                 next_state := state_read_word_from_bus;
-                            else
+                            elsif command = command_write_word then
                                 next_state := state_read_word_from_uart;
+                            else
+                                next_state := state_wait_for_count;
                             end if;
                         else
                             word_index_counter := word_index_counter + 1;
                         end if;
                     end if;
+                when state_wait_for_count =>
+                    if queue_wait_cycle then
+                        queue_wait_cycle := false;
+                    elsif not rx_queue_empty then
+                        sequence_size := to_integer(unsigned(rx_queue_data_out));
+                        rx_queue_pop_data <= true;
+                        queue_wait_cycle := true;
+                        if command = command_write_word_sequence then
+                            next_state := state_read_word_from_uart;
+                        else
+                            next_state := state_read_word_from_bus;
+                        end if;
+                    end if;
                 when state_read_word_from_bus =>
                     bus_do_read <= true;
                     if bus_finished then
+                        bus_do_read <= false;
+                        if not bus_fault_occured and bus_fault then
+                            first_bus_fault := bus_last_fault;
+                            bus_fault_occured := true;
+                        end if;
                         next_state := state_write_word_to_uart;
                     end if;
                 when state_write_word_to_uart =>
@@ -142,7 +172,13 @@ begin
 
                         if word_index_counter = 3 then
                             word_index_counter := 0;
-                            next_state := state_finalize;
+                            if sequence_size = 0 then
+                                next_state := state_finalize;
+                            else
+                                sequence_size := sequence_size - 1;
+                                address_to_bus <= std_logic_vector(unsigned(address_to_bus) + 4);
+                                next_state := state_read_word_from_bus;
+                            end if;
                         else
                             word_index_counter := word_index_counter + 1;
                         end if;
@@ -164,7 +200,18 @@ begin
                 when state_write_word_to_bus =>
                     bus_do_write <= true;
                     if bus_finished then
-                        next_state := state_finalize;
+                        bus_do_write <= false;
+                        if not bus_fault_occured and bus_fault then
+                            first_bus_fault := bus_last_fault;
+                            bus_fault_occured := true;
+                        end if;
+                        if sequence_size = 0 then
+                            next_state := state_finalize;
+                        else
+                            sequence_size := sequence_size - 1;
+                            address_to_bus <= std_logic_vector(unsigned(address_to_bus) + 4);
+                            next_state := state_read_word_from_uart;
+                        end if;
                     end if;
                 when state_finalize =>
                     if queue_wait_cycle then
@@ -172,19 +219,20 @@ begin
                     elsif not tx_queue_full then
                         tx_queue_push_data <= true;
                         queue_wait_cycle := true;
-                        if bus_fault then
-                            tx_queue_data_in <= bus_last_fault & uart_bus_master_pkg.ERROR_BUS(3 downto 0);
+                        if bus_fault_occured then
+                            tx_queue_data_in <= first_bus_fault & uart_bus_master_pkg.ERROR_BUS(3 downto 0);
                         else
                             tx_queue_data_in <= uart_bus_master_pkg.ERROR_NO_ERROR;
                         end if;
+                        bus_fault_occured := false;
                         next_state := state_wait_for_command;
                     end if;
                 when others =>
                     next_state := cur_state;
             end case;
-
-
         end if;
+        sequence_size_buf <= sequence_size;
+        state_buf <= next_state;
     end process;
 
     bus_handling : process(clk)

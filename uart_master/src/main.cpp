@@ -15,12 +15,7 @@ static constexpr uint32_t cpuBaseAddress = 0x2000;
 
 static void writeFile(DeppUartMaster& master, const std::string& filePath, uint32_t startAddress) {
     std::vector<uint32_t> data = readFromFile(filePath);
-    uint32_t currentAddress = startAddress;
-    for (uint32_t elem : data) {
-        master.writeWord(currentAddress, elem);
-        currentAddress += 4;
-    }
-    currentAddress = startAddress;
+    master.writeWordSequence(startAddress, data);
 }
 
 static bool verifyWrite(DeppUartMaster& master, const std::string& filePath, uint32_t startAddress) {
@@ -49,6 +44,7 @@ static void stopProcessor(DeppUartMaster& master) {
 int main(int argc, char* argv[]) {
     DeppUartMaster master;
     master.selfTest();
+    std::cout << "Bus selftest completed OK" << std::endl;
     if (argc < 2) {
         std::cout << "Expected 1 argument: the file path" << std::endl;
         return EXIT_FAILURE;

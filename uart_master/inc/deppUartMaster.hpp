@@ -3,6 +3,7 @@
 #include <string>
 #include <cstdint>
 #include <termios.h>
+#include <vector>
 
 class DeppUartMaster {
     public:
@@ -15,12 +16,12 @@ class DeppUartMaster {
         ~DeppUartMaster();
 
         void writeWord(uint32_t address, uint32_t data);
+        void writeWordSequence(uint32_t address, const std::vector<uint32_t>& data);
         uint32_t readWord(uint32_t address);
         void selfTest();
     private:
         int fd;
         struct termios oldSettings;
-
 
         void writeByte(uint8_t data);
         void writeWord(uint32_t data);
@@ -29,4 +30,5 @@ class DeppUartMaster {
         uint8_t readByte();
         uint32_t readWord();
         void readArray(uint8_t* data, size_t len);
+        void checkReturnValue();
 };
