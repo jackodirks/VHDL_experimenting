@@ -18,6 +18,7 @@ class DeppUartMaster {
         void writeWord(uint32_t address, uint32_t data);
         void writeWordSequence(uint32_t address, const std::vector<uint32_t>& data);
         uint32_t readWord(uint32_t address);
+        std::vector<uint32_t> readWordSequence(uint32_t address, size_t wordCount);
         void selfTest();
     private:
         int fd;

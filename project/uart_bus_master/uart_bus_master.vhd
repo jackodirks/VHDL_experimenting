@@ -24,7 +24,7 @@ end entity;
 
 architecture behaviourial of uart_bus_master is
 
-    type command_type is (no_command, command_read_word, command_write_word, command_write_word_sequence);
+    type command_type is (no_command, command_read_word, command_write_word, command_read_word_sequence, command_write_word_sequence);
     type state_type is (state_wait_for_command, state_command_response, state_wait_for_address, state_wait_for_count, state_read_word_from_uart, state_write_word_to_bus, state_read_word_from_bus, state_write_word_to_uart, state_finalize);
 
     signal tx_byte : std_logic_vector(7 downto 0) := (others => '0');
@@ -70,6 +70,8 @@ architecture behaviourial of uart_bus_master is
                 ret_val := command_read_word;
             when uart_bus_master_pkg.COMMAND_WRITE_WORD =>
                 ret_val := command_write_word;
+            when uart_bus_master_pkg.COMMAND_READ_WORD_SEQUENCE =>
+                ret_val := command_read_word_sequence;
             when uart_bus_master_pkg.COMMAND_WRITE_WORD_SEQUENCE =>
                 ret_val := command_write_word_sequence;
             when others =>

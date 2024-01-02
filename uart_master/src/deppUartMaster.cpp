@@ -14,6 +14,7 @@ static constexpr uint8_t ERROR_BUS = 0x2;
 
 static constexpr uint8_t COMMAND_READ_WORD = 0x1;
 static constexpr uint8_t COMMAND_WRITE_WORD = 0x2;
+static constexpr uint8_t COMMAND_READ_WORD_SEQUENCE = 0x3;
 static constexpr uint8_t COMMAND_WRITE_WORD_SEQUENCE = 0x4;
 
 static constexpr uint8_t BUS_FAULT_NO_FAULT = 0x0;
@@ -114,7 +115,7 @@ void DeppUartMaster::checkReturnValue() {
     uint8_t retVal = this->readByte();
     if (retVal != ERROR_NO_ERROR) {
         std::stringstream ss;
-        ss << "Write COMMAND_WRITE_WORD resulted in something other than ERROR_NO_ERROR: " << (int)retVal;
+        ss << "Return value is something other than ERROR_NO_ERROR: " << (int)retVal;
         throw std::runtime_error(ss.str());
     }
 }
@@ -171,6 +172,26 @@ void DeppUartMaster::writeWordSequence(uint32_t address, const std::vector<uint3
         this->checkReturnValue();
         wordsTransmitted += wordsToWrite;
     }
+}
+
+std::vector<uint32_t> DeppUartMaster::readWordSequence(uint32_t address, size_t wordCount) {
+    std::vector<uint32_t> returnList(wordCount);
+    size_t wordsReceived = 0;
+    while(wordsReceived < wordCount) {
+        this->writeByte(COMMAND_READ_WORD_SEQUENCE);
+        this->checkReturnValue();
+        uint32_t tmpAddr = address + wordsReceived*4;
+        this->writeWord(tmpAddr);
+        size_t wordsToRead = std::min((size_t)256, wordCount - wordsReceived);
+        uint8_t sequenceSizeMinusOne = wordsToRead - 1;
+        this->writeByte(sequenceSizeMinusOne);
+        for (size_t i = wordsReceived; i < wordsReceived + wordsToRead; ++i) {
+            returnList[i] = this->readWord();
+        }
+        this->checkReturnValue();
+        wordsReceived += wordsToRead;
+    }
+    return returnList;
 }
 
 void DeppUartMaster::selfTest() {

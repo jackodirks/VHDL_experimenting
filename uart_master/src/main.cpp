@@ -22,10 +22,10 @@ static bool verifyWrite(DeppUartMaster& master, const std::string& filePath, uin
     std::vector<uint32_t> data = readFromFile(filePath);
     uint32_t currentAddress = startAddress;
     bool success = true;
+    std::vector<uint32_t> dataFromDevice = master.readWordSequence(startAddress, data.size());
     for (size_t i = 0; i < data.size(); ++i) {
-        uint32_t readData = master.readWord(currentAddress);
-        if (data[i] != readData) {
-            std::cout << std::hex << "Validation failed at address " << currentAddress << " expected data " << data[i] << " received data " << readData << std::dec << std::endl;
+        if (data[i] != dataFromDevice[i]) {
+            std::cout << std::hex << "Validation failed at address " << currentAddress << " expected data " << data[i] << " received data " << dataFromDevice[i] << std::dec << std::endl;
             success = false;
         }
         currentAddress += 4;
