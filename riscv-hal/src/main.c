@@ -153,6 +153,8 @@ int main() {
                     writeStringAndEndl("Your numbers, but sorted are:");
                     printNumbers(numbers, numCount);
                 }
+            } else {
+                writeStringAndEndl("There were no numbers in this string");
             }
             free(buf);
             buf = NULL;
